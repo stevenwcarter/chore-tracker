@@ -1,0 +1,3 @@
+cd site
+npx lint-staged
+CI=true yarn test

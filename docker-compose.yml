@@ -1,0 +1,12 @@
+---
+services:
+  db:
+    image: "mysql:8"
+    command: --max_allowed_packet=67108864
+    ports:
+      - 3306:3306
+    environment:
+      - MYSQL_ROOT_PASSWORD=master()
+      - MYSQL_DATABASE=database
+      - MYSQL_USER=user
+      - MYSQL_PASSWORD=password
