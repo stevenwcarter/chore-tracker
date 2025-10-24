@@ -1,7 +1,7 @@
+use crate::api::{auth, graphql, images};
 use crate::auth::OidcConfig;
 use crate::context::GraphQLContext;
 use crate::graphql::create_schema;
-use crate::api::{auth, graphql, images};
 
 use axum::extract::Request;
 use axum::http::{HeaderValue, StatusCode, Uri};
@@ -15,6 +15,7 @@ use std::sync::Arc;
 use tower::ServiceBuilder;
 use tower_http::compression::CompressionLayer;
 use tower_http::cors::{Any, CorsLayer};
+use tracing::{info, warn};
 
 #[derive(RustEmbed, Clone)]
 #[folder = "site/build/"]
@@ -57,9 +58,10 @@ pub async fn app(context: GraphQLContext) -> Router {
     let qm_schema = create_schema();
     let mut oidc_config = OidcConfig::from_env();
 
+    info!("OIDC Config: {:?}", oidc_config);
     // Initialize OIDC discovery config
     if let Err(e) = oidc_config.initialize().await {
-        log::warn!("Failed to initialize OIDC config: {}", e);
+        warn!("Failed to initialize OIDC config: {}", e);
     }
 
     let cors = CorsLayer::new()
@@ -79,8 +81,7 @@ pub async fn app(context: GraphQLContext) -> Router {
 
     let auth_routes = auth::auth_routes(oidc_config.clone(), context.clone());
 
-    let image_routes = images::image_routes()
-        .layer(Extension(context.clone()));
+    let image_routes = images::image_routes().layer(Extension(context.clone()));
 
     Router::new()
         .route("/assets/{*uri}", get(static_handler))

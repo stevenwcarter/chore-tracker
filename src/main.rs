@@ -5,9 +5,7 @@ use chore_tracker::{context::GraphQLContext, routes::app};
 use chore_tracker::db::get_pool;
 use chore_tracker::get_env_typed;
 use lambda_http::{Error, tracing};
-use log::*;
-
-use log::error;
+use tracing::{error, info};
 
 #[cfg(not(target_env = "msvc"))]
 use tikv_jemallocator::Jemalloc;
