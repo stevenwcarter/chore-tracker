@@ -71,6 +71,7 @@ reqwest = { version = "0.12.15", features = [
   "blocking",
   "deflate",
   "gzip",
+  "rustls-tls",
   "zstd",
 ] }
 chrono-tz = { version = "0.10.3", features = ["serde"] }
