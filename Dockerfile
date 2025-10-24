@@ -10,6 +10,7 @@ FROM dependencybuilder AS builder
 COPY --from=dependencybuilder /home/rust/src/target ./target/
 COPY src ./src/
 COPY migrations ./migrations/
+COPY site/build ./site/build
 RUN touch src/main.rs
 RUN cargo build --release
 
@@ -17,7 +18,6 @@ FROM scratch
 WORKDIR /
 COPY --from=builder /home/rust/src/target/x86_64-unknown-linux-musl/release/chore-tracker chore-tracker
 COPY env.prod .env
-COPY site/build ./site/build
 
 EXPOSE 4000
 
