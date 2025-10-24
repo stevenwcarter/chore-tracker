@@ -35,6 +35,7 @@ export const useUserChores = ({ userId, weekStartDate }: UseUserChoresOptions) =
       userId,
       weekStartDate: formatDateForGraphQL(weekStartDate),
     },
+    pollInterval: 30_000,
   });
 
   const [createChoreCompletion] = useMutation(CREATE_CHORE_COMPLETION, {

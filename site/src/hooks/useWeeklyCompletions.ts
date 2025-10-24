@@ -21,6 +21,7 @@ export const useWeeklyCompletions = ({ weekStartDate }: UseWeeklyCompletionsOpti
     variables: {
       weekStartDate: formatDateForGraphQL(weekStartDate),
     },
+    pollInterval: 30_000,
   });
 
   const [approveChoreCompletion] = useMutation(APPROVE_CHORE_COMPLETION, {
