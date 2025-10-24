@@ -5,6 +5,7 @@ use axum::{
 };
 use axum_extra::extract::cookie::{Cookie, CookieJar};
 use serde::{Deserialize, Serialize};
+use tracing::error;
 use uuid::Uuid;
 
 use crate::{context::GraphQLContext, get_env, svc::AdminSvc};
@@ -57,7 +58,21 @@ impl OidcConfig {
             .get(&self.discovery_url)
             .send()
             .await
-            .context("getting discovery URL")?;
+            .context("fetching oidc discovery config");
+
+        let response = match response {
+            Ok(resp) => resp,
+            Err(e) => {
+                error!("Failed to fetch OIDC discovery config: {:?}", e);
+                for cause in e.chain().skip(1) {
+                    error!("Caused by: {}", cause);
+                }
+                return Err(anyhow::anyhow!(
+                    "Failed to fetch OIDC discovery config: {:?}",
+                    e
+                ));
+            }
+        };
 
         if !response.status().is_success() {
             return Err(anyhow::anyhow!(
@@ -67,7 +82,10 @@ impl OidcConfig {
             ));
         }
 
-        let config: OidcDiscoveryConfig = response.json().await?;
+        let config: OidcDiscoveryConfig = response
+            .json()
+            .await
+            .context("parsing oidc discovery config as json")?;
         self.discovery_config = Some(config);
         Ok(())
     }
