@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use axum::{
     extract::{Query, State},
     response::{IntoResponse, Redirect},
@@ -53,12 +53,17 @@ impl OidcConfig {
     pub async fn initialize(&mut self) -> Result<()> {
         let client = reqwest::Client::new();
 
-        let response = client.get(&self.discovery_url).send().await?;
+        let response = client
+            .get(&self.discovery_url)
+            .send()
+            .await
+            .context("getting discovery URL")?;
 
         if !response.status().is_success() {
             return Err(anyhow::anyhow!(
-                "Failed to fetch OIDC discovery config: {}",
-                response.status()
+                "Failed to fetch OIDC discovery config: {}\n{:?}",
+                response.status(),
+                response
             ));
         }
 
@@ -281,4 +286,3 @@ pub async fn check_admin_session(
     let admin_uuid = session_cookie.value();
     AdminSvc::get(&context, admin_uuid)
 }
-
