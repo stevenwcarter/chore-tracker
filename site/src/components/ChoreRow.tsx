@@ -1,6 +1,7 @@
 import React from 'react';
 import { WeeklyChoreData, ChoreCompletion, PaymentType } from '../types/chore';
 import { formatCurrency, isSameDayAsString } from '../utils/dateUtils';
+import clsx from 'clsx';
 
 interface ChoreRowProps {
   choreData: WeeklyChoreData;
@@ -69,10 +70,18 @@ export const ChoreRow: React.FC<ChoreRowProps> = ({
       );
     }
 
+    const isFutureDate = date.getTime() > new Date().getTime();
+
+    const displayClasses = clsx(
+      'w-8 h-8 rounded-full border-2 border-gray-500 hover:border-blue-500 hover:bg-blue-600 hover:text-white transition-colors flex items-center justify-center text-gray-300',
+      !isFutureDate ? 'hover:bg-blue-600' : 'hover:bg-red-700 cursor-not-allowed',
+    );
+
     return (
       <button
         onClick={() => onCompleteChore(choreData.chore.id, choreData.chore.amountCents, date)}
-        className="w-8 h-8 rounded-full border-2 border-gray-500 hover:border-blue-500 hover:bg-blue-600 hover:text-white transition-colors flex items-center justify-center text-gray-300"
+        disabled={isFutureDate}
+        className={displayClasses}
         title="Mark as completed"
       >
         +
