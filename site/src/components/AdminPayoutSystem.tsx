@@ -15,7 +15,9 @@ export const AdminPayoutSystem: React.FC<AdminPayoutSystemProps> = (
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   const [isProcessingPayout, setIsProcessingPayout] = useState(false);
 
-  const { data, loading, error, refetch } = useQuery(GET_UNPAID_TOTALS);
+  const { data, loading, error, refetch } = useQuery(GET_UNPAID_TOTALS, {
+    fetchPolicy: 'no-cache',
+  });
 
   const [markCompletionsAsPaid] = useMutation(MARK_COMPLETIONS_AS_PAID, {
     onCompleted: () => {
