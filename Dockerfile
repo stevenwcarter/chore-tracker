@@ -18,7 +18,6 @@ WORKDIR /
 COPY --from=builder /home/rust/src/target/x86_64-unknown-linux-musl/release/chore-tracker chore-tracker
 COPY env.prod .env
 COPY site/build ./site/build
-COPY config.toml.prod-docker config.toml
 
 EXPOSE 4000
 
