@@ -83,9 +83,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Prepare build directory
+      - name: Prepare site/build directory
         run: |
-          mkdir -p ./dnd-react/build
+          mkdir -p ./site/build
       - name: Download build site artifacts
         uses: actions/download-artifact@v4
         with:
