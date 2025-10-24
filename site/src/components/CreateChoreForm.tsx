@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User } from '../types/chore';
+import { PaymentType, User } from '../types/chore';
 
 interface CreateChoreFormProps {
   users: User[];
@@ -9,9 +9,19 @@ interface CreateChoreFormProps {
   loading?: boolean;
 }
 
+const DAYS = {
+  Sunday: 1,
+  Monday: 2,
+  Tuesday: 4,
+  Wednesday: 8,
+  Thursday: 16,
+  Friday: 32,
+  Saturday: 64,
+};
+
 const CreateChoreForm: React.FC<CreateChoreFormProps> = ({
   users,
-  adminId: _adminId, // Admin ID for creating the chore
+  adminId,
   onSubmit,
   onCancel,
   loading = false,
@@ -19,15 +29,23 @@ const CreateChoreForm: React.FC<CreateChoreFormProps> = ({
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [value, setValue] = useState<number>(0);
+  const [paymentType, setPaymentType] = useState<PaymentType>(PaymentType.Daily);
   const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
+  const [selectedDays, setSelectedDays] = useState<string[]>([]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Selected Days:', selectedDays);
+    const requiredDays = selectedDays.reduce((acc, day) => acc + DAYS[day], 0);
+    console.log('Required Days Bitmask:', requiredDays);
     if (title.trim()) {
       const choreData = {
-        title: title.trim(),
+        name: title.trim(),
         description: description.trim(),
-        value,
+        paymentType: paymentType,
+        amountCents: value,
+        createdByAdminId: adminId,
+        requiredDays,
       };
       await onSubmit(choreData, selectedUserIds);
       // Reset form
@@ -92,6 +110,44 @@ const CreateChoreForm: React.FC<CreateChoreFormProps> = ({
           step="0.01"
           disabled={loading}
         />
+      </div>
+
+      <div>
+        <label htmlFor="paymentType" className="block text-sm font-medium text-gray-700 mb-1">
+          Value ($)
+        </label>
+        <select
+          id="paymentType"
+          value={value}
+          onChange={(e) => setPaymentType(e.target.value as PaymentType)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          disabled={loading}
+        >
+          <option value={PaymentType.Daily}>Daily</option>
+          <option value={PaymentType.Weekly}>Weekly</option>
+        </select>
+      </div>
+
+      <div>
+        <div className="block text-sm font-medium text-gray-700 mb-2">Required Days</div>
+        <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-200 rounded-md p-3">
+          {Object.keys(DAYS).map((day) => (
+            <label key={day} className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={selectedDays.includes(day)}
+                onChange={() =>
+                  setSelectedDays((prev) =>
+                    prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day],
+                  )
+                }
+                className="rounded text-blue-600 focus:ring-blue-500"
+                disabled={loading}
+              />
+              <span className="text-sm text-gray-700">{day}</span>
+            </label>
+          ))}
+        </div>
       </div>
 
       <div>

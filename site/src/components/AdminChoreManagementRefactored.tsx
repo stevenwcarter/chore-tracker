@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Chore } from '../types/chore';
+import { Chore, ChoreInput } from '../types/chore';
 import LoadingSpinner from './LoadingSpinner';
 import Modal from './Modal';
 import ChoreCard from './ChoreCard';
@@ -82,7 +82,7 @@ export const AdminChoreManagement: React.FC<AdminChoreManagementProps> = ({ admi
     }
   };
 
-  const handleCreateChore = async (choreData: any, selectedUserIds: number[]) => {
+  const handleCreateChore = async (choreData: ChoreInput, selectedUserIds: number[]) => {
     await createNewChore(choreData, selectedUserIds);
     setIsCreatingChore(false);
   };
