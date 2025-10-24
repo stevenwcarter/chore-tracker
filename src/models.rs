@@ -55,8 +55,8 @@ impl From<String> for AuthorType {
 impl From<AuthorType> for String {
     fn from(at: AuthorType) -> Self {
         match at {
-            AuthorType::User => "user".to_string(),
-            AuthorType::Admin => "admin".to_string(),
+            AuthorType::User => "user".to_owned(),
+            AuthorType::Admin => "admin".to_owned(),
         }
     }
 }

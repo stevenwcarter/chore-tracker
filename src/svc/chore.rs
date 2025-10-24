@@ -6,7 +6,6 @@ use crate::{
 };
 use anyhow::{Context, Result};
 use diesel::prelude::*;
-use tracing::error;
 
 pub struct ChoreSvc {}
 
@@ -150,4 +149,3 @@ impl ChoreSvc {
             .context("Could not load assigned users")
     }
 }
-

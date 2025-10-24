@@ -35,7 +35,7 @@ pub mod svc;
 /// Return an environment variable typed generically
 ///
 /// ```
-/// use axum_react_starter::get_env;
+/// use chore_tracker::get_env;
 /// assert!(get_env("PATH", "test").len() > 4);
 /// ````
 pub fn get_env(search_key: &str, default: &str) -> String {
@@ -49,7 +49,7 @@ pub fn get_env(search_key: &str, default: &str) -> String {
 /// Return an environment variable typed generically
 ///
 /// ```
-/// use axum_react_starter::get_env_typed;
+/// use chore_tracker::get_env_typed;
 /// assert!(get_env_typed::<u16>("SHLVL", 9) > 0);
 /// ````
 pub fn get_env_typed<T>(search_key: &str, default: T) -> T

@@ -5,7 +5,7 @@ use diesel::r2d2;
 use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::Pool;
 use diesel::r2d2::PooledConnection;
-use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
+use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
 use std::time::Duration;
 
 use crate::context::GraphQLContext;
@@ -18,11 +18,14 @@ pub struct ConnectionOptions {
     pub busy_timeout: Option<Duration>,
 }
 
-impl diesel::r2d2::CustomizeConnection<SqliteConnection, diesel::r2d2::Error> for ConnectionOptions {
+impl diesel::r2d2::CustomizeConnection<SqliteConnection, diesel::r2d2::Error>
+    for ConnectionOptions
+{
     fn on_acquire(&self, conn: &mut SqliteConnection) -> Result<(), diesel::r2d2::Error> {
         (|| {
             if let Some(d) = self.busy_timeout {
-                diesel::sql_query(format!("PRAGMA busy_timeout = {};", d.as_millis())).execute(conn)?;
+                diesel::sql_query(format!("PRAGMA busy_timeout = {};", d.as_millis()))
+                    .execute(conn)?;
             }
             diesel::sql_query("PRAGMA foreign_keys = ON;").execute(conn)?;
             Ok(())
@@ -35,13 +38,13 @@ pub fn get_pool() -> SqlitePool {
     use dotenvy::dotenv;
     use std::env;
     dotenv().ok();
-    let url = env::var("DATABASE_URL").unwrap_or_else(|_| "db/db.sqlite".to_string());
-    
+    let url = env::var("DATABASE_URL").unwrap_or_else(|_| "db/db.sqlite".to_owned());
+
     // Create the database directory if it doesn't exist
     if let Some(parent) = std::path::Path::new(&url).parent() {
         std::fs::create_dir_all(parent).expect("Could not create database directory");
     }
-    
+
     let mgr = ConnectionManager::<SqliteConnection>::new(&url);
     r2d2::Pool::builder()
         .min_idle(Some(3))

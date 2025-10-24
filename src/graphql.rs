@@ -1,14 +1,14 @@
-use juniper::{EmptySubscription, FieldError, FieldResult, RootNode};
+#![allow(clippy::too_many_arguments)]
 use chrono::NaiveDate;
+use juniper::{EmptySubscription, FieldError, FieldResult, RootNode};
 
 use crate::{
     context::GraphQLContext,
     models::{
-        User, UserInput, Admin, AdminInput, Chore, ChoreInput, 
-        ChoreCompletion, ChoreCompletionInput, ChoreCompletionNote, ChoreCompletionNoteInput,
-        UnpaidTotal
+        Admin, AdminInput, Chore, ChoreCompletion, ChoreCompletionInput, ChoreCompletionNote,
+        ChoreCompletionNoteInput, ChoreInput, UnpaidTotal, User, UserInput,
     },
-    svc::{UserSvc, AdminSvc, ChoreSvc, ChoreCompletionSvc, ChoreCompletionNoteSvc},
+    svc::{AdminSvc, ChoreCompletionNoteSvc, ChoreCompletionSvc, ChoreSvc, UserSvc},
 };
 
 pub struct Query;
@@ -19,7 +19,7 @@ impl Query {
     pub async fn get_user(context: &GraphQLContext, user_uuid: String) -> FieldResult<User> {
         graphql_translate_anyhow(UserSvc::get(context, &user_uuid))
     }
-    
+
     pub fn list_users(
         context: &GraphQLContext,
         limit: Option<i32>,
@@ -34,7 +34,7 @@ impl Query {
     pub async fn get_admin(context: &GraphQLContext, admin_uuid: String) -> FieldResult<Admin> {
         graphql_translate_anyhow(AdminSvc::get(context, &admin_uuid))
     }
-    
+
     pub fn list_admins(
         context: &GraphQLContext,
         limit: Option<i32>,
@@ -49,7 +49,7 @@ impl Query {
     pub async fn get_chore(context: &GraphQLContext, chore_uuid: String) -> FieldResult<Chore> {
         graphql_translate_anyhow(ChoreSvc::get(context, &chore_uuid))
     }
-    
+
     pub fn list_chores(
         context: &GraphQLContext,
         user_id: Option<i32>,
@@ -65,12 +65,12 @@ impl Query {
 
     // Chore Completions
     pub async fn get_chore_completion(
-        context: &GraphQLContext, 
-        completion_uuid: String
+        context: &GraphQLContext,
+        completion_uuid: String,
     ) -> FieldResult<ChoreCompletion> {
         graphql_translate_anyhow(ChoreCompletionSvc::get(context, &completion_uuid))
     }
-    
+
     pub fn list_chore_completions(
         context: &GraphQLContext,
         user_id: Option<i32>,
@@ -85,8 +85,15 @@ impl Query {
         let limit = limit.unwrap_or(100);
         let offset = offset.unwrap_or(0);
         graphql_translate_anyhow(ChoreCompletionSvc::list(
-            context, user_id, chore_id, date_from, date_to, 
-            approved_only, unpaid_only, limit, offset
+            context,
+            user_id,
+            chore_id,
+            date_from,
+            date_to,
+            approved_only,
+            unpaid_only,
+            limit,
+            offset,
         ))
     }
 
@@ -96,7 +103,11 @@ impl Query {
         user_id: i32,
         week_start_date: NaiveDate,
     ) -> FieldResult<Vec<ChoreCompletion>> {
-        graphql_translate_anyhow(ChoreCompletionSvc::get_weekly_view(context, user_id, week_start_date))
+        graphql_translate_anyhow(ChoreCompletionSvc::get_weekly_view(
+            context,
+            user_id,
+            week_start_date,
+        ))
     }
 
     // Get all completions for the week (for all users)
@@ -104,7 +115,10 @@ impl Query {
         context: &GraphQLContext,
         week_start_date: NaiveDate,
     ) -> FieldResult<Vec<ChoreCompletion>> {
-        graphql_translate_anyhow(ChoreCompletionSvc::get_all_weekly_completions(context, week_start_date))
+        graphql_translate_anyhow(ChoreCompletionSvc::get_all_weekly_completions(
+            context,
+            week_start_date,
+        ))
     }
 
     // Get total unpaid amounts per user
@@ -125,7 +139,9 @@ impl Query {
     ) -> FieldResult<Vec<ChoreCompletionNote>> {
         let visible_to_user_only = visible_to_user_only.unwrap_or(false);
         graphql_translate_anyhow(ChoreCompletionNoteSvc::list_for_completion(
-            context, completion_id, visible_to_user_only
+            context,
+            completion_id,
+            visible_to_user_only,
         ))
     }
 }
@@ -135,55 +151,37 @@ pub struct Mutation;
 #[juniper::graphql_object(context = GraphQLContext)]
 impl Mutation {
     // Users
-    pub async fn create_user(
-        context: &GraphQLContext,
-        user: UserInput,
-    ) -> FieldResult<User> {
+    pub async fn create_user(context: &GraphQLContext, user: UserInput) -> FieldResult<User> {
         graphql_translate_anyhow(UserSvc::create(context, &user.into()))
     }
-    
-    pub async fn update_user(
-        context: &GraphQLContext,
-        user: UserInput,
-    ) -> FieldResult<User> {
+
+    pub async fn update_user(context: &GraphQLContext, user: UserInput) -> FieldResult<User> {
         graphql_translate_anyhow(UserSvc::update(context, &user.into()))
     }
-    
+
     pub async fn delete_user(context: &GraphQLContext, user_uuid: String) -> FieldResult<bool> {
         graphql_translate_anyhow(UserSvc::delete(context, &user_uuid))?;
         Ok(true)
     }
 
     // Admins
-    pub async fn create_admin(
-        context: &GraphQLContext,
-        admin: AdminInput,
-    ) -> FieldResult<Admin> {
+    pub async fn create_admin(context: &GraphQLContext, admin: AdminInput) -> FieldResult<Admin> {
         graphql_translate_anyhow(AdminSvc::create(context, &admin.into()))
     }
-    
-    pub async fn update_admin(
-        context: &GraphQLContext,
-        admin: AdminInput,
-    ) -> FieldResult<Admin> {
+
+    pub async fn update_admin(context: &GraphQLContext, admin: AdminInput) -> FieldResult<Admin> {
         graphql_translate_anyhow(AdminSvc::update(context, &admin.into()))
     }
 
     // Chores
-    pub async fn create_chore(
-        context: &GraphQLContext,
-        chore: ChoreInput,
-    ) -> FieldResult<Chore> {
+    pub async fn create_chore(context: &GraphQLContext, chore: ChoreInput) -> FieldResult<Chore> {
         graphql_translate_anyhow(ChoreSvc::create(context, &chore.into()))
     }
-    
-    pub async fn update_chore(
-        context: &GraphQLContext,
-        chore: ChoreInput,
-    ) -> FieldResult<Chore> {
+
+    pub async fn update_chore(context: &GraphQLContext, chore: ChoreInput) -> FieldResult<Chore> {
         graphql_translate_anyhow(ChoreSvc::update(context, &chore.into()))
     }
-    
+
     pub async fn delete_chore(context: &GraphQLContext, chore_uuid: String) -> FieldResult<bool> {
         graphql_translate_anyhow(ChoreSvc::delete(context, &chore_uuid))?;
         Ok(true)
@@ -216,13 +214,17 @@ impl Mutation {
     ) -> FieldResult<ChoreCompletion> {
         graphql_translate_anyhow(ChoreCompletionSvc::create(context, &completion.into()))
     }
-    
+
     pub async fn approve_chore_completion(
         context: &GraphQLContext,
         completion_uuid: String,
         admin_id: i32,
     ) -> FieldResult<ChoreCompletion> {
-        graphql_translate_anyhow(ChoreCompletionSvc::approve(context, &completion_uuid, admin_id))
+        graphql_translate_anyhow(ChoreCompletionSvc::approve(
+            context,
+            &completion_uuid,
+            admin_id,
+        ))
     }
 
     pub async fn mark_completions_as_paid(
@@ -250,17 +252,17 @@ impl Mutation {
     ) -> FieldResult<ChoreCompletionNote> {
         graphql_translate_anyhow(ChoreCompletionNoteSvc::create(context, &note.into()))
     }
-    
+
     pub async fn update_chore_completion_note(
         context: &GraphQLContext,
         note: ChoreCompletionNoteInput,
     ) -> FieldResult<ChoreCompletionNote> {
         graphql_translate_anyhow(ChoreCompletionNoteSvc::update(context, &note.into()))
     }
-    
+
     pub async fn delete_chore_completion_note(
-        context: &GraphQLContext, 
-        note_uuid: String
+        context: &GraphQLContext,
+        note_uuid: String,
     ) -> FieldResult<bool> {
         graphql_translate_anyhow(ChoreCompletionNoteSvc::delete(context, &note_uuid))?;
         Ok(true)

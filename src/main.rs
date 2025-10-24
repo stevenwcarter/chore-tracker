@@ -1,10 +1,10 @@
 #![allow(non_snake_case)]
 
-use axum_react_starter::{context::GraphQLContext, routes::app};
+use chore_tracker::{context::GraphQLContext, routes::app};
 
-use axum_react_starter::db::get_pool;
-use axum_react_starter::get_env_typed;
-use lambda_http::{tracing, Error};
+use chore_tracker::db::get_pool;
+use chore_tracker::get_env_typed;
+use lambda_http::{Error, tracing};
 use log::*;
 
 use log::error;
@@ -30,7 +30,7 @@ async fn main() -> Result<(), Error> {
         .clone()
         .get()
         .expect("Could not get connections for migrations");
-    let migration_result = axum_react_starter::db::run_migrations(&mut conn);
+    let migration_result = chore_tracker::db::run_migrations(&mut conn);
     match migration_result {
         Ok(_) => info!("Migrations completed"),
         Err(e) => error!("Could not run migrations {:?}", e),

@@ -1,12 +1,13 @@
+#![allow(clippy::too_many_arguments)]
 use crate::{
-    context::GraphQLContext, 
-    db::get_conn, 
-    models::{ChoreCompletion, User}, 
-    schema::{chore_completions, users}
+    context::GraphQLContext,
+    db::get_conn,
+    models::{ChoreCompletion, User},
+    schema::{chore_completions, users},
 };
 use anyhow::{Context, Result};
-use diesel::prelude::*;
 use chrono::{NaiveDate, Utc};
+use diesel::prelude::*;
 
 pub struct ChoreCompletionSvc {}
 
@@ -69,9 +70,9 @@ impl ChoreCompletionSvc {
     }
 
     pub fn get_weekly_view(
-        context: &GraphQLContext, 
-        user_id: i32, 
-        week_start_date: NaiveDate
+        context: &GraphQLContext,
+        user_id: i32,
+        week_start_date: NaiveDate,
     ) -> Result<Vec<ChoreCompletion>> {
         let week_end_date = week_start_date + chrono::Duration::days(6);
 
@@ -85,8 +86,8 @@ impl ChoreCompletionSvc {
     }
 
     pub fn get_all_weekly_completions(
-        context: &GraphQLContext, 
-        week_start_date: NaiveDate
+        context: &GraphQLContext,
+        week_start_date: NaiveDate,
     ) -> Result<Vec<ChoreCompletion>> {
         let week_end_date = week_start_date + chrono::Duration::days(6);
 
@@ -101,12 +102,20 @@ impl ChoreCompletionSvc {
     pub fn get_unpaid_totals(context: &GraphQLContext) -> Result<Vec<(User, i32)>> {
         let results: Vec<(User, Option<i64>)> = users::table
             .left_join(chore_completions::table)
-            .filter(chore_completions::approved.eq(true).or(chore_completions::approved.is_null()))
-            .filter(chore_completions::paid_out.eq(false).or(chore_completions::paid_out.is_null()))
+            .filter(
+                chore_completions::approved
+                    .eq(true)
+                    .or(chore_completions::approved.is_null()),
+            )
+            .filter(
+                chore_completions::paid_out
+                    .eq(false)
+                    .or(chore_completions::paid_out.is_null()),
+            )
             .group_by(users::id)
             .select((
                 User::as_select(),
-                diesel::dsl::sum(chore_completions::amount_cents).nullable()
+                diesel::dsl::sum(chore_completions::amount_cents).nullable(),
             ))
             .load(&mut get_conn(context))
             .context("Could not load unpaid totals")?;
@@ -119,7 +128,10 @@ impl ChoreCompletionSvc {
         Ok(converted_results)
     }
 
-    pub fn create(context: &GraphQLContext, completion: &ChoreCompletion) -> Result<ChoreCompletion> {
+    pub fn create(
+        context: &GraphQLContext,
+        completion: &ChoreCompletion,
+    ) -> Result<ChoreCompletion> {
         diesel::insert_into(chore_completions::table)
             .values(completion)
             .execute(&mut get_conn(context))
@@ -129,9 +141,9 @@ impl ChoreCompletionSvc {
     }
 
     pub fn approve(
-        context: &GraphQLContext, 
-        completion_uuid: &str, 
-        admin_id: i32
+        context: &GraphQLContext,
+        completion_uuid: &str,
+        admin_id: i32,
     ) -> Result<ChoreCompletion> {
         diesel::update(chore_completions::table)
             .filter(chore_completions::uuid.eq(completion_uuid))
@@ -177,3 +189,4 @@ impl ChoreCompletionSvc {
         Ok(())
     }
 }
+

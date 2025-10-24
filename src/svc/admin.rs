@@ -53,7 +53,12 @@ impl AdminSvc {
         Self::get(context, &admin.uuid)
     }
 
-    pub fn get_or_create_by_oidc(context: &GraphQLContext, oidc_subject: &str, name: &str, email: &str) -> Result<Admin> {
+    pub fn get_or_create_by_oidc(
+        context: &GraphQLContext,
+        oidc_subject: &str,
+        name: &str,
+        email: &str,
+    ) -> Result<Admin> {
         // First try to get existing admin
         match Self::get_by_oidc_subject(context, oidc_subject) {
             Ok(admin) => Ok(admin),
@@ -62,13 +67,13 @@ impl AdminSvc {
                 let new_admin = Admin {
                     id: None,
                     uuid: uuid::Uuid::new_v4().to_string(),
-                    name: name.to_string(),
-                    email: email.to_string(),
-                    oidc_subject: oidc_subject.to_string(),
+                    name: name.to_owned(),
+                    email: email.to_owned(),
+                    oidc_subject: oidc_subject.to_owned(),
                     created_at: None,
                     updated_at: None,
                 };
-                
+
                 Self::create(context, &new_admin)
             }
         }
@@ -83,3 +88,4 @@ impl AdminSvc {
         Ok(())
     }
 }
+

@@ -1,8 +1,8 @@
 [package]
-name = "axum-react-starter"
+name = "chore-tracker"
 version = "0.1.0"
 edition = "2024"
-default-run = "axum-react-starter"
+default-run = "chore-tracker"
 
 [profile.release]
 codegen-units = 1

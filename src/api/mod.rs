@@ -1,12 +1,9 @@
-use core::fmt;
-use std::str::FromStr;
-
+use axum::Json;
 use axum::http::HeaderMap;
 use axum::response::IntoResponse;
 use axum::response::Response;
-use axum::Json;
-use axum::{http::StatusCode, routing::get, Router};
-use serde::{de, Deserialize, Deserializer, Serialize};
+use axum::{Router, http::StatusCode, routing::get};
+use serde::Serialize;
 
 use crate::context::GraphQLContext;
 
@@ -28,20 +25,6 @@ pub fn err_wrapper<T: Serialize>(result: anyhow::Result<T>) -> impl IntoResponse
             .map_err(|err| (StatusCode::NOT_FOUND, err.to_string()))
             .unwrap(),
     )
-}
-
-/// Serde deserialization decorator to map empty Strings to None,
-fn empty_string_as_none<'de, D, T>(de: D) -> Result<Option<T>, D::Error>
-where
-    D: Deserializer<'de>,
-    T: FromStr,
-    T::Err: fmt::Display,
-{
-    let opt = Option::<String>::deserialize(de)?;
-    match opt.as_deref() {
-        None | Some("") => Ok(None),
-        Some(s) => FromStr::from_str(s).map_err(de::Error::custom).map(Some),
-    }
 }
 
 // Make our own error that wraps `anyhow::Error`.

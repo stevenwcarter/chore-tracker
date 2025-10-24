@@ -1,3 +1,4 @@
+#![allow(clippy::collapsible_if)]
 use crate::context::GraphQLContext;
 use crate::svc::{UserImageSvc, UserSvc};
 
@@ -31,13 +32,13 @@ async fn upload_user_image(
     {
         if let Some(name) = field.name() {
             if name == "image" {
-                let content_type = field.content_type().unwrap_or("image/jpeg").to_string();
+                let content_type = field.content_type().unwrap_or("image/jpeg").to_owned();
 
                 // Validate content type
                 if !content_type.starts_with("image/") {
                     return Err((
                         StatusCode::BAD_REQUEST,
-                        "Only image files are allowed".to_string(),
+                        "Only image files are allowed".to_owned(),
                     ));
                 }
 
@@ -52,12 +53,15 @@ async fn upload_user_image(
                 if data.len() > 5 * 1024 * 1024 {
                     return Err((
                         StatusCode::PAYLOAD_TOO_LARGE,
-                        "Image too large (max 5MB)".to_string(),
+                        "Image too large (max 5MB)".to_owned(),
                     ));
                 }
 
                 // Delete existing image for this user
-                let user_id = user.id.ok_or((StatusCode::INTERNAL_SERVER_ERROR, "User ID not found".to_string()))?;
+                let user_id = user.id.ok_or((
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "User ID not found".to_owned(),
+                ))?;
                 let _ = UserImageSvc::delete_by_user_id(&context, user_id);
 
                 // Create new image
@@ -89,7 +93,7 @@ async fn upload_user_image(
         }
     }
 
-    Err((StatusCode::BAD_REQUEST, "No image field found".to_string()))
+    Err((StatusCode::BAD_REQUEST, "No image field found".to_owned()))
 }
 
 // Get user image handler
@@ -104,7 +108,7 @@ async fn get_user_image(
                 format!("Database error: {}", e),
             )
         })?
-        .ok_or((StatusCode::NOT_FOUND, "Image not found".to_string()))?;
+        .ok_or((StatusCode::NOT_FOUND, "Image not found".to_owned()))?;
 
     Response::builder()
         .header("Content-Type", image.content_type)
@@ -114,7 +118,7 @@ async fn get_user_image(
         .map_err(|_| {
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                "Failed to build response".to_string(),
+                "Failed to build response".to_owned(),
             )
         })
 }
@@ -131,7 +135,7 @@ async fn get_image_by_id(
                 format!("Database error: {}", e),
             )
         })?
-        .ok_or((StatusCode::NOT_FOUND, "Image not found".to_string()))?;
+        .ok_or((StatusCode::NOT_FOUND, "Image not found".to_owned()))?;
 
     Response::builder()
         .header("Content-Type", image.content_type)
@@ -141,7 +145,8 @@ async fn get_image_by_id(
         .map_err(|_| {
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                "Failed to build response".to_string(),
+                "Failed to build response".to_owned(),
             )
         })
 }
+
