@@ -79,7 +79,6 @@ export const useUserChores = ({ userId, weekStartDate }: UseUserChoresOptions) =
               ).filter((i) => i !== -1)
             : [],
           requiredDays: backendChore.requiredDays,
-          isActive: backendChore.active !== false,
           active: backendChore.active,
           createdAt: backendChore.createdAt,
           createdByAdminId: backendChore.createdByAdminId,

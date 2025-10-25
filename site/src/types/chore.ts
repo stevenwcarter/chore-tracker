@@ -24,7 +24,6 @@ export interface Chore {
   paymentType: PaymentType;
   daysOfWeek: number[];
   requiredDays?: number; // Backend field
-  isActive: boolean;
   active?: boolean; // Backend field
   createdAt: string;
   createdByAdminId: number; // Keep as string for now

@@ -5,6 +5,7 @@ import {
   GET_ALL_CHORES,
   GET_ALL_USERS,
   CREATE_CHORE,
+  UPDATE_CHORE,
   CREATE_USER,
   ASSIGN_CHORE_TO_USER,
   UNASSIGN_USER_FROM_CHORE,
@@ -29,6 +30,12 @@ export const useAdminChoreManagement = () => {
   } = useQuery(GET_ALL_USERS);
 
   const [createChore] = useMutation(CREATE_CHORE, {
+    onCompleted: () => {
+      refetchChores();
+    },
+  });
+
+  const [updateChore] = useMutation(UPDATE_CHORE, {
     onCompleted: () => {
       refetchChores();
     },
@@ -83,6 +90,45 @@ export const useAdminChoreManagement = () => {
     }
   };
 
+  const updateExistingChore = async (choreData: ChoreInput, selectedUserIds: number[] = []) => {
+    try {
+      const response = await updateChore({
+        variables: { chore: choreData },
+      });
+
+      if (response.data?.updateChore) {
+        const choreId = response.data.updateChore.id;
+
+        // Get current assignments
+        const currentChore = chores.find((c) => c.id === choreId);
+        const currentUserIds = currentChore?.assignedUsers?.map((u) => u.id) || [];
+
+        // Find users to assign (in selectedUserIds but not in currentUserIds)
+        const usersToAssign = selectedUserIds.filter((id) => !currentUserIds.includes(id));
+
+        // Find users to unassign (in currentUserIds but not in selectedUserIds)
+        const usersToUnassign = currentUserIds.filter((id) => !selectedUserIds.includes(id));
+
+        // Assign new users
+        for (const userId of usersToAssign) {
+          await assignChoreToUser({
+            variables: { choreId, userId },
+          });
+        }
+
+        // Unassign removed users
+        for (const userId of usersToUnassign) {
+          await unassignUserFromChore({
+            variables: { choreId, userId },
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error updating chore:', error);
+      throw error;
+    }
+  };
+
   const createNewUser = async (userData: UserInput) => {
     try {
       await createUser({
@@ -122,6 +168,7 @@ export const useAdminChoreManagement = () => {
     loading: choresLoading || usersLoading,
     error: choresError || usersError,
     createNewChore,
+    updateExistingChore,
     createNewUser,
     assignUser,
     unassignUser,

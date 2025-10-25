@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Chore, ChoreInput } from '../types/chore';
+import { Chore } from '../types/chore';
 import LoadingSpinner from './LoadingSpinner';
 import Modal from './Modal';
 import ChoreCard from './ChoreCard';
@@ -14,6 +14,7 @@ interface AdminChoreManagementProps {
 
 export const AdminChoreManagement: React.FC<AdminChoreManagementProps> = ({ adminId }) => {
   const [isCreatingChore, setIsCreatingChore] = useState(false);
+  const [editingChore, setEditingChore] = useState<Chore | null>(null);
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [isManagingUsers, setIsManagingUsers] = useState(false);
   const [selectedChore, setSelectedChore] = useState<Chore | null>(null);
@@ -24,6 +25,7 @@ export const AdminChoreManagement: React.FC<AdminChoreManagementProps> = ({ admi
     loading,
     error,
     createNewChore,
+    updateExistingChore,
     createNewUser,
     assignUser,
     unassignUser,
@@ -82,9 +84,14 @@ export const AdminChoreManagement: React.FC<AdminChoreManagementProps> = ({ admi
     }
   };
 
-  const handleCreateChore = async (choreData: ChoreInput, selectedUserIds: number[]) => {
+  const handleCreateChore = async (choreData: any, selectedUserIds: number[]) => {
     await createNewChore(choreData, selectedUserIds);
     setIsCreatingChore(false);
+  };
+
+  const handleUpdateChore = async (choreData: any, selectedUserIds: number[]) => {
+    await updateExistingChore(choreData, selectedUserIds);
+    setEditingChore(null);
   };
 
   const handleCreateUser = async (userData: any) => {
@@ -130,7 +137,12 @@ export const AdminChoreManagement: React.FC<AdminChoreManagementProps> = ({ admi
       {/* Existing Chores */}
       <div className="grid gap-4">
         {chores.map((chore) => (
-          <ChoreCard key={chore.id} chore={chore} onManage={setSelectedChore} />
+          <ChoreCard
+            key={chore.id}
+            chore={chore}
+            onManage={setSelectedChore}
+            onEdit={setEditingChore}
+          />
         ))}
       </div>
 
@@ -149,6 +161,24 @@ export const AdminChoreManagement: React.FC<AdminChoreManagementProps> = ({ admi
         />
       </Modal>
 
+      {/* Edit Chore Modal */}
+      <Modal
+        isOpen={!!editingChore}
+        onClose={() => setEditingChore(null)}
+        title={`Edit: ${editingChore?.name}`}
+        maxWidth="sm"
+      >
+        {editingChore && (
+          <CreateChoreForm
+            users={users}
+            adminId={adminId}
+            initialChore={editingChore}
+            onSubmit={handleUpdateChore}
+            onCancel={() => setEditingChore(null)}
+          />
+        )}
+      </Modal>
+
       {/* Create User Modal */}
       <Modal
         isOpen={isCreatingUser}
@@ -159,11 +189,11 @@ export const AdminChoreManagement: React.FC<AdminChoreManagementProps> = ({ admi
         <CreateUserForm onSubmit={handleCreateUser} onCancel={() => setIsCreatingUser(false)} />
       </Modal>
 
-      {/* Chore Management Modal */}
+      {/* Chore Assignment Modal */}
       <Modal
         isOpen={!!selectedChore}
         onClose={() => setSelectedChore(null)}
-        title={`Manage: ${selectedChore?.title || selectedChore?.name}`}
+        title={`Assign Users: ${selectedChore?.title || selectedChore?.name}`}
         maxWidth="sm"
       >
         {selectedChore && (

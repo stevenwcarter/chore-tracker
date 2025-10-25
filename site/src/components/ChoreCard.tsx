@@ -5,9 +5,10 @@ import { formatCurrency } from '../utils/dateUtils';
 interface ChoreCardProps {
   chore: Chore;
   onManage: (chore: Chore) => void;
+  onEdit: (chore: Chore) => void;
 }
 
-export const ChoreCard: React.FC<ChoreCardProps> = ({ chore, onManage }) => {
+export const ChoreCard: React.FC<ChoreCardProps> = ({ chore, onManage, onEdit }) => {
   return (
     <div className="bg-gray-800 text-white p-4 sm:p-6 rounded-lg shadow-md border border-gray-700">
       {/* Mobile: Stack vertically, Desktop: Side by side */}
@@ -21,12 +22,20 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({ chore, onManage }) => {
           )}
         </div>
         <div className="flex-shrink-0">
-          <button
-            onClick={() => onManage(chore)}
-            className="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-colors font-medium"
-          >
-            Manage
-          </button>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <button
+              onClick={() => onEdit(chore)}
+              className="w-full sm:w-auto px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm transition-colors font-medium"
+            >
+              Edit
+            </button>
+            <button
+              onClick={() => onManage(chore)}
+              className="w-full sm:w-auto px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-colors font-medium"
+            >
+              Assign
+            </button>
+          </div>
         </div>
       </div>
 
@@ -43,10 +52,10 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({ chore, onManage }) => {
           <span className="text-gray-400">Status:</span>
           <span
             className={`px-2 py-1 rounded text-xs ${
-              chore.isActive ? 'bg-green-600 text-green-100' : 'bg-red-600 text-red-100'
+              chore.active ? 'bg-green-600 text-green-100' : 'bg-red-600 text-red-100'
             }`}
           >
-            {chore.isActive ? 'Active' : 'Inactive'}
+            {chore.active ? 'Active' : 'Inactive'}
           </span>
         </div>
       </div>

@@ -209,6 +209,22 @@ export const CREATE_CHORE = gql`
   }
 `;
 
+export const UPDATE_CHORE = gql`
+  mutation UpdateChore($chore: ChoreInput!) {
+    updateChore(chore: $chore) {
+      id
+      uuid
+      name
+      description
+      amountCents
+      paymentType
+      requiredDays
+      active
+      createdAt
+    }
+  }
+`;
+
 export const ASSIGN_CHORE_TO_USER = gql`
   mutation AssignChoreToUser($choreId: Int!, $userId: Int!) {
     assignUserToChore(choreId: $choreId, userId: $userId)
