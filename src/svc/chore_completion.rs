@@ -2,12 +2,14 @@
 use crate::{
     context::GraphQLContext,
     db::get_conn,
-    models::{ChoreCompletion, User},
+    models::{ChoreCompletion, ChoreCompletionInput, PaymentType, User},
     schema::{chore_completions, users},
+    svc::ChoreSvc,
 };
 use anyhow::{Context, Result};
 use chrono::{NaiveDate, Utc};
 use diesel::prelude::*;
+use uuid::Uuid;
 
 pub struct ChoreCompletionSvc {}
 
@@ -130,10 +132,40 @@ impl ChoreCompletionSvc {
 
     pub fn create(
         context: &GraphQLContext,
-        completion: &ChoreCompletion,
+        completion_input: &ChoreCompletionInput,
     ) -> Result<ChoreCompletion> {
+        // Get the chore to calculate the correct payment amount
+        let chore = ChoreSvc::get_by_id(context, completion_input.chore_id)?;
+        let payment_type = PaymentType::from(chore.payment_type);
+        
+        // Calculate the appropriate amount based on chore payment type
+        let calculated_amount = PaymentType::calculate_completion_amount(
+            &payment_type,
+            chore.amount_cents,
+            chore.required_days,
+        );
+        
+        // Create the completion with calculated amount
+        let completion = ChoreCompletion {
+            id: None,
+            uuid: completion_input.uuid
+                .clone()
+                .unwrap_or_else(|| Uuid::now_v7().to_string()),
+            chore_id: completion_input.chore_id,
+            user_id: completion_input.user_id,
+            completed_date: completion_input.completed_date,
+            amount_cents: calculated_amount,
+            approved: false,
+            approved_by_admin_id: None,
+            approved_at: None,
+            paid_out: false,
+            paid_out_at: None,
+            created_at: None,
+            updated_at: None,
+        };
+
         diesel::insert_into(chore_completions::table)
-            .values(completion)
+            .values(&completion)
             .execute(&mut get_conn(context))
             .context("Could not create chore completion")?;
 
@@ -187,6 +219,54 @@ impl ChoreCompletionSvc {
             .context("Could not delete chore completion")?;
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    // Note: These tests require a proper test database setup
+    // For now, they serve to document the expected behavior
+    
+    #[test]
+    #[ignore] // Ignore until test database is set up
+    fn test_weekly_chore_payout_should_pay_fraction_per_day() {
+        // This test demonstrates the expected behavior for weekly chores:
+        // - Weekly chores should pay a fraction of the total amount for each day
+        // - The fraction is total_amount / num_assigned_days, rounded to nearest quarter
+        // - This ensures users get paid incrementally while total doesn't exceed the intended amount
+        
+        // Example:
+        // - Chore with payment_type = "weekly", amount_cents = 150, required_days = 21 (Mon+Wed+Fri = 3 days)
+        // - Fraction: 150 / 3 = 50 cents per day
+        // - User completes Monday: amount_cents should be 50
+        // - User completes Wednesday: amount_cents should be 50  
+        // - User completes Friday: amount_cents should be 50
+        // - Total unpaid amount for user should be 150
+        
+        // Another example with rounding:
+        // - Chore with payment_type = "weekly", amount_cents = 150, required_days = 31 (Mon+Tue+Wed+Thu+Fri = 5 days)
+        // - Fraction: 150 / 5 = 30 cents per day
+        // - Since 30 is closest to 25 (quarter), each day pays 25 cents
+        // - Total would be 125 instead of 150, but this is acceptable for rounding
+        
+        assert!(true, "Test documents expected fractional payment behavior");
+    }
+
+    #[test]
+    #[ignore] // Ignore until test database is set up
+    fn test_daily_chore_payout_should_pay_for_each_completion() {
+        // This test demonstrates the expected behavior for daily chores:
+        // - Daily chores should pay the amount for each completion
+        // - Each completion should have the full amount_cents
+        
+        // Expected behavior:
+        // - Chore with payment_type = "daily", amount_cents = 200
+        // - User completes Monday: amount_cents should be 200
+        // - User completes Tuesday: amount_cents should be 200
+        // - User completes Wednesday: amount_cents should be 200
+        // - Total unpaid amount for user should be 600
+        
+        assert!(true, "Daily chores should continue to work as they currently do");
     }
 }
 

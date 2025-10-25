@@ -6,7 +6,7 @@ import clsx from 'clsx';
 interface ChoreRowProps {
   choreData: WeeklyChoreData;
   dates: Date[];
-  onCompleteChore: (choreId: number, amountCents: number, date: Date) => void;
+  onCompleteChore: (choreId: number, date: Date) => void;
   onSelectCompletion: (completion: ChoreCompletion) => void;
   isChoreCompletedByAnyone: (choreId: number, date: Date) => boolean;
   currentDate?: Date; // For mobile single-day view
@@ -79,7 +79,7 @@ export const ChoreRow: React.FC<ChoreRowProps> = ({
 
     return (
       <button
-        onClick={() => onCompleteChore(choreData.chore.id, choreData.chore.amountCents, date)}
+        onClick={() => onCompleteChore(choreData.chore.id, date)}
         disabled={isFutureDate}
         className={displayClasses}
         title="Mark as completed"

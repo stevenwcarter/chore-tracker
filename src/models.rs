@@ -429,33 +429,57 @@ impl ChoreCompletion {
     }
 }
 
+// Payment calculation utilities
+impl PaymentType {
+    /// Calculates the number of days a chore is assigned for based on the requiredDays bitmask
+    fn get_assigned_days_count(required_days: i32) -> i32 {
+        let mut count = 0;
+        for i in 0..7 {
+            if (required_days >> i) & 1 == 1 {
+                count += 1;
+            }
+        }
+        count
+    }
+
+    /// Rounds an amount to the nearest quarter (25 cents)
+    fn round_to_nearest_quarter(amount: f64) -> i32 {
+        (amount / 25.0).round() as i32 * 25
+    }
+
+    /// Calculates the payment amount for a single chore completion
+    pub fn calculate_completion_amount(
+        payment_type: &PaymentType,
+        chore_amount_cents: i32,
+        required_days: i32,
+    ) -> i32 {
+        match payment_type {
+            PaymentType::Daily => {
+                // Daily chores pay the full amount for each completion
+                chore_amount_cents
+            }
+            PaymentType::Weekly => {
+                // Weekly chores pay a fraction based on how many days they're assigned for
+                let assigned_days_count = Self::get_assigned_days_count(required_days);
+                
+                if assigned_days_count == 0 {
+                    // Fallback: if no days assigned, pay the full amount
+                    chore_amount_cents
+                } else {
+                    let fraction_amount = chore_amount_cents as f64 / assigned_days_count as f64;
+                    Self::round_to_nearest_quarter(fraction_amount)
+                }
+            }
+        }
+    }
+}
+
 #[derive(GraphQLInputObject, Debug, Clone)]
 pub struct ChoreCompletionInput {
     pub uuid: Option<String>,
     pub chore_id: i32,
     pub user_id: i32,
     pub completed_date: NaiveDate,
-    pub amount_cents: i32,
-}
-
-impl From<ChoreCompletionInput> for ChoreCompletion {
-    fn from(input: ChoreCompletionInput) -> Self {
-        ChoreCompletion {
-            id: None,
-            uuid: input.uuid.unwrap_or_else(|| Uuid::now_v7().to_string()),
-            chore_id: input.chore_id,
-            user_id: input.user_id,
-            completed_date: input.completed_date,
-            amount_cents: input.amount_cents,
-            approved: false,
-            approved_by_admin_id: None,
-            approved_at: None,
-            paid_out: false,
-            paid_out_at: None,
-            created_at: None,
-            updated_at: None,
-        }
-    }
 }
 
 // Chore Completion Note model

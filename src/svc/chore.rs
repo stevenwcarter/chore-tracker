@@ -18,6 +18,14 @@ impl ChoreSvc {
             .context("Could not find chore")
     }
 
+    pub fn get_by_id(context: &GraphQLContext, chore_id: i32) -> Result<Chore> {
+        chores::table
+            .filter(chores::id.eq(chore_id))
+            .select(Chore::as_select())
+            .first(&mut get_conn(context))
+            .context("Could not find chore by ID")
+    }
+
     pub fn list(
         context: &GraphQLContext,
         user_id: Option<i32>,

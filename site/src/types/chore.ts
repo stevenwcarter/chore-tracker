@@ -113,7 +113,6 @@ export interface ChoreCompletionInput {
   choreId: number;
   userId: number;
   completedDate: string; // Required - format as YYYY-MM-DD
-  amountCents: number;
 }
 
 export interface ChoreCompletionNoteInput {

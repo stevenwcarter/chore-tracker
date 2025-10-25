@@ -97,7 +97,7 @@ export const useUserChores = ({ userId, weekStartDate }: UseUserChoresOptions) =
     }
   }, [userChoresData, weeklyData]);
 
-  const completeChore = async (choreId: number, amountCents: number, completionDate: Date) => {
+  const completeChore = async (choreId: number, completionDate: Date) => {
     try {
       const formattedDate = formatDateForGraphQL(completionDate);
       await createChoreCompletion({
@@ -106,7 +106,6 @@ export const useUserChores = ({ userId, weekStartDate }: UseUserChoresOptions) =
             choreId,
             userId,
             completedDate: formattedDate,
-            amountCents,
           },
         },
       });

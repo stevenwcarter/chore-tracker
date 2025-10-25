@@ -8,7 +8,7 @@ use crate::{
         Admin, AdminInput, Chore, ChoreCompletion, ChoreCompletionInput, ChoreCompletionNote,
         ChoreCompletionNoteInput, ChoreInput, UnpaidTotal, User, UserInput,
     },
-    svc::{AdminSvc, ChoreCompletionNoteSvc, ChoreCompletionSvc, ChoreSvc, UserSvc},
+    svc::{AdminSvc, ChoreCompletionFixSvc, ChoreCompletionNoteSvc, ChoreCompletionSvc, ChoreSvc, UserSvc},
 };
 
 pub struct Query;
@@ -212,7 +212,7 @@ impl Mutation {
         context: &GraphQLContext,
         completion: ChoreCompletionInput,
     ) -> FieldResult<ChoreCompletion> {
-        graphql_translate_anyhow(ChoreCompletionSvc::create(context, &completion.into()))
+        graphql_translate_anyhow(ChoreCompletionSvc::create(context, &completion))
     }
 
     pub async fn approve_chore_completion(
@@ -266,6 +266,30 @@ impl Mutation {
     ) -> FieldResult<bool> {
         graphql_translate_anyhow(ChoreCompletionNoteSvc::delete(context, &note_uuid))?;
         Ok(true)
+    }
+
+    // Chore Completion Fix utilities
+    /// Fixes all weekly chore completions to use correct fractional payment amounts.
+    /// Returns the number of records updated.
+    /// WARNING: This mutation will modify existing data. Use with caution.
+    pub async fn fix_weekly_completion_amounts(context: &GraphQLContext) -> FieldResult<i32> {
+        graphql_translate_anyhow(ChoreCompletionFixSvc::fix_weekly_completion_amounts(context))
+    }
+
+    /// Analyzes weekly chore completions to show which ones need fixing.
+    /// Returns a list of [chore_id, completion_count, current_total_cents, expected_total_cents].
+    pub async fn analyze_weekly_completion_amounts(context: &GraphQLContext) -> FieldResult<Vec<Vec<i32>>> {
+        let analysis = graphql_translate_anyhow(ChoreCompletionFixSvc::analyze_weekly_completion_amounts(context))?;
+        
+        // Convert the tuples to vectors for GraphQL compatibility
+        let result: Vec<Vec<i32>> = analysis
+            .into_iter()
+            .map(|(chore_id, completion_count, current_total, expected_total)| {
+                vec![chore_id, completion_count as i32, current_total as i32, expected_total as i32]
+            })
+            .collect();
+        
+        Ok(result)
     }
 }
 

@@ -85,13 +85,9 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
     }
   }, [weekRange, isMobile]);
 
-  const handleCompleteChore = async (
-    choreId: number,
-    amountCents: number,
-    completionDate: Date,
-  ) => {
+  const handleCompleteChore = async (choreId: number, completionDate: Date) => {
     try {
-      await completeChore(choreId, amountCents, completionDate);
+      await completeChore(choreId, completionDate);
       refetchAllCompletions();
     } catch (err) {
       console.error('Error completing chore:', err);
