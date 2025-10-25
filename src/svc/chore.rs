@@ -157,3 +157,280 @@ impl ChoreSvc {
             .context("Could not load assigned users")
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        models::{ChoreInput, PaymentType},
+        test_helpers::test_db::{
+            create_test_admin, create_test_chore, create_test_context, create_test_user,
+            day_patterns,
+        },
+    };
+
+    #[test]
+    fn test_chore_crud_operations() {
+        let context = create_test_context();
+        let admin = create_test_admin(&context, "Test Admin", "admin@test.com");
+
+        // Test creation
+        let chore = create_test_chore(
+            &context,
+            "Test Chore",
+            PaymentType::Daily,
+            150,
+            day_patterns::weekdays(),
+            admin.id.unwrap(),
+        );
+
+        assert_eq!(chore.name, "Test Chore");
+        assert_eq!(chore.amount_cents, 150);
+        assert_eq!(chore.payment_type, "daily");
+        assert_eq!(chore.required_days, day_patterns::weekdays());
+        assert!(chore.active);
+
+        // Test get by UUID
+        let retrieved = ChoreSvc::get(&context, &chore.uuid).unwrap();
+        assert_eq!(retrieved.uuid, chore.uuid);
+        assert_eq!(retrieved.name, chore.name);
+
+        // Test get by ID
+        let retrieved_by_id = ChoreSvc::get_by_id(&context, chore.id.unwrap()).unwrap();
+        assert_eq!(retrieved_by_id.uuid, chore.uuid);
+
+        // Test update
+        let updated_chore = Chore {
+            id: chore.id,
+            uuid: chore.uuid.clone(),
+            name: "Updated Chore".to_string(),
+            description: chore.description.clone(),
+            payment_type: chore.payment_type.clone(),
+            amount_cents: 200,
+            required_days: chore.required_days,
+            active: false,
+            created_by_admin_id: chore.created_by_admin_id,
+            created_at: chore.created_at,
+            updated_at: chore.updated_at,
+        };
+
+        let result = ChoreSvc::update(&context, &updated_chore).unwrap();
+        assert_eq!(result.name, "Updated Chore");
+        assert_eq!(result.amount_cents, 200);
+        assert!(!result.active);
+
+        // Test deletion
+        ChoreSvc::delete(&context, &chore.uuid).unwrap();
+        let deleted_result = ChoreSvc::get(&context, &chore.uuid);
+        assert!(deleted_result.is_err());
+    }
+
+    #[test]
+    fn test_chore_listing() {
+        let context = create_test_context();
+        let admin = create_test_admin(&context, "Test Admin", "admin@test.com");
+
+        // Create multiple chores
+        let _chore1 = create_test_chore(
+            &context,
+            "Active Chore",
+            PaymentType::Daily,
+            100,
+            day_patterns::every_day(),
+            admin.id.unwrap(),
+        );
+
+        let chore2_input = ChoreInput {
+            uuid: None,
+            name: "Inactive Chore".to_string(),
+            description: Some("Test inactive chore".to_string()),
+            payment_type: PaymentType::Weekly,
+            amount_cents: 200,
+            required_days: day_patterns::weekdays(),
+            active: Some(false), // Inactive
+            created_by_admin_id: admin.id.unwrap(),
+        };
+        let chore2 = Chore::from(chore2_input);
+        let _chore2 = ChoreSvc::create(&context, &chore2).unwrap();
+
+        let _chore3 = create_test_chore(
+            &context,
+            "Z Last Chore", // Name starts with Z to test ordering
+            PaymentType::Daily,
+            75,
+            day_patterns::monday_only(),
+            admin.id.unwrap(),
+        );
+
+        // Test listing all chores (including inactive)
+        let all_chores = ChoreSvc::list(&context, None, false, 100, 0).unwrap();
+        assert_eq!(all_chores.len(), 3);
+        // Should be ordered by name
+        assert_eq!(all_chores[0].name, "Active Chore");
+        assert_eq!(all_chores[1].name, "Inactive Chore");
+        assert_eq!(all_chores[2].name, "Z Last Chore");
+
+        // Test listing only active chores
+        let active_chores = ChoreSvc::list(&context, None, true, 100, 0).unwrap();
+        assert_eq!(active_chores.len(), 2);
+        assert!(active_chores.iter().all(|c| c.active));
+
+        // Test pagination
+        let first_page = ChoreSvc::list(&context, None, false, 2, 0).unwrap();
+        assert_eq!(first_page.len(), 2);
+
+        let second_page = ChoreSvc::list(&context, None, false, 2, 2).unwrap();
+        assert_eq!(second_page.len(), 1);
+        assert_eq!(second_page[0].name, "Z Last Chore");
+    }
+
+    #[test]
+    fn test_chore_user_assignments() {
+        let context = create_test_context();
+        let admin = create_test_admin(&context, "Test Admin", "admin@test.com");
+        let user1 = create_test_user(&context, "User 1");
+        let user2 = create_test_user(&context, "User 2");
+        let _user3 = create_test_user(&context, "User 3");
+
+        let chore = create_test_chore(
+            &context,
+            "Assignment Test Chore",
+            PaymentType::Daily,
+            100,
+            day_patterns::weekdays(),
+            admin.id.unwrap(),
+        );
+
+        // Initially no users assigned
+        let assigned_users = ChoreSvc::get_assigned_users(&context, chore.id.unwrap()).unwrap();
+        assert_eq!(assigned_users.len(), 0);
+
+        // Assign user1
+        ChoreSvc::assign_user(&context, chore.id.unwrap(), user1.id.unwrap()).unwrap();
+        let assigned_users = ChoreSvc::get_assigned_users(&context, chore.id.unwrap()).unwrap();
+        assert_eq!(assigned_users.len(), 1);
+        assert_eq!(assigned_users[0].id, user1.id);
+
+        // Assign user2
+        ChoreSvc::assign_user(&context, chore.id.unwrap(), user2.id.unwrap()).unwrap();
+        let assigned_users = ChoreSvc::get_assigned_users(&context, chore.id.unwrap()).unwrap();
+        assert_eq!(assigned_users.len(), 2);
+
+        // Try to assign user1 again (should be idempotent)
+        ChoreSvc::assign_user(&context, chore.id.unwrap(), user1.id.unwrap()).unwrap();
+        let assigned_users = ChoreSvc::get_assigned_users(&context, chore.id.unwrap()).unwrap();
+        assert_eq!(assigned_users.len(), 2); // Still only 2 users
+
+        // Unassign user1
+        ChoreSvc::unassign_user(&context, chore.id.unwrap(), user1.id.unwrap()).unwrap();
+        let assigned_users = ChoreSvc::get_assigned_users(&context, chore.id.unwrap()).unwrap();
+        assert_eq!(assigned_users.len(), 1);
+        assert_eq!(assigned_users[0].id, user2.id);
+
+        // Unassign user2
+        ChoreSvc::unassign_user(&context, chore.id.unwrap(), user2.id.unwrap()).unwrap();
+        let assigned_users = ChoreSvc::get_assigned_users(&context, chore.id.unwrap()).unwrap();
+        assert_eq!(assigned_users.len(), 0);
+    }
+
+    #[test]
+    fn test_list_chores_by_user() {
+        let context = create_test_context();
+        let admin = create_test_admin(&context, "Test Admin", "admin@test.com");
+        let user1 = create_test_user(&context, "User 1");
+        let user2 = create_test_user(&context, "User 2");
+
+        // Create chores
+        let chore1 = create_test_chore(
+            &context,
+            "Chore 1",
+            PaymentType::Daily,
+            100,
+            day_patterns::every_day(),
+            admin.id.unwrap(),
+        );
+
+        let chore2 = create_test_chore(
+            &context,
+            "Chore 2",
+            PaymentType::Weekly,
+            200,
+            day_patterns::weekdays(),
+            admin.id.unwrap(),
+        );
+
+        let chore3_input = ChoreInput {
+            uuid: None,
+            name: "Inactive Chore".to_string(),
+            description: None,
+            payment_type: PaymentType::Daily,
+            amount_cents: 150,
+            required_days: day_patterns::monday_only(),
+            active: Some(false), // Inactive
+            created_by_admin_id: admin.id.unwrap(),
+        };
+        let chore3 = Chore::from(chore3_input);
+        let chore3 = ChoreSvc::create(&context, &chore3).unwrap();
+
+        // Assign chores to users
+        ChoreSvc::assign_user(&context, chore1.id.unwrap(), user1.id.unwrap()).unwrap();
+        ChoreSvc::assign_user(&context, chore2.id.unwrap(), user1.id.unwrap()).unwrap();
+        ChoreSvc::assign_user(&context, chore3.id.unwrap(), user1.id.unwrap()).unwrap(); // Inactive chore
+
+        ChoreSvc::assign_user(&context, chore2.id.unwrap(), user2.id.unwrap()).unwrap();
+
+        // Test listing all chores for user1 (including inactive)
+        let user1_all_chores = ChoreSvc::list(&context, Some(user1.id.unwrap()), false, 100, 0).unwrap();
+        assert_eq!(user1_all_chores.len(), 3);
+
+        // Test listing only active chores for user1
+        let user1_active_chores = ChoreSvc::list(&context, Some(user1.id.unwrap()), true, 100, 0).unwrap();
+        assert_eq!(user1_active_chores.len(), 2);
+        assert!(user1_active_chores.iter().all(|c| c.active));
+
+        // Test listing chores for user2
+        let user2_chores = ChoreSvc::list(&context, Some(user2.id.unwrap()), false, 100, 0).unwrap();
+        assert_eq!(user2_chores.len(), 1);
+        assert_eq!(user2_chores[0].uuid, chore2.uuid);
+
+        // Test user with no assigned chores
+        let user_no_chores = create_test_user(&context, "User No Chores");
+        let no_chores = ChoreSvc::list(&context, Some(user_no_chores.id.unwrap()), false, 100, 0).unwrap();
+        assert_eq!(no_chores.len(), 0);
+    }
+
+    #[test]
+    fn test_chore_error_cases() {
+        let context = create_test_context();
+
+        // Test get non-existent chore
+        let result = ChoreSvc::get(&context, "non-existent-uuid");
+        assert!(result.is_err());
+
+        // Test get by non-existent ID
+        let result = ChoreSvc::get_by_id(&context, 99999);
+        assert!(result.is_err());
+
+        // Test delete non-existent chore (should not error)
+        let result = ChoreSvc::delete(&context, "non-existent-uuid");
+        assert!(result.is_ok()); // Diesel delete doesn't error if nothing is deleted
+
+        // Test assign user to non-existent chore
+        let user = create_test_user(&context, "Test User");
+        let result = ChoreSvc::assign_user(&context, 99999, user.id.unwrap());
+        assert!(result.is_err()); // Should fail due to foreign key constraint
+
+        // Test unassign from non-existent assignment (should not error)
+        let admin = create_test_admin(&context, "Test Admin", "admin@test.com");
+        let chore = create_test_chore(
+            &context,
+            "Test Chore",
+            PaymentType::Daily,
+            100,
+            day_patterns::every_day(),
+            admin.id.unwrap(),
+        );
+        let result = ChoreSvc::unassign_user(&context, chore.id.unwrap(), user.id.unwrap());
+        assert!(result.is_ok()); // Should not error even if assignment doesn't exist
+    }
+}
