@@ -1,5 +1,6 @@
 #![allow(deprecated)]
 #![warn(clippy::str_to_string)]
+#![warn(clippy::perf, clippy::nursery)]
 #![recursion_limit = "256"]
 
 // use chrono::{DateTime, NaiveDateTime, Utc};
@@ -43,7 +44,7 @@ pub fn get_env(search_key: &str, default: &str) -> String {
         .filter(|(key, _)| key.eq(search_key))
         .map(|(_, value)| value)
         .next()
-        .unwrap_or(default.to_owned())
+        .unwrap_or_else(|| default.to_owned())
 }
 
 /// Return an environment variable typed generically

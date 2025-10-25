@@ -2,9 +2,9 @@
 
 use chore_tracker::{context::GraphQLContext, routes::app};
 
+use anyhow::Result;
 use chore_tracker::db::get_pool;
 use chore_tracker::get_env_typed;
-use lambda_http::{Error, tracing};
 use tracing::{error, info};
 
 #[cfg(not(target_env = "msvc"))]
@@ -15,11 +15,11 @@ use tikv_jemallocator::Jemalloc;
 static GLOBAL: Jemalloc = Jemalloc;
 
 #[tokio::main(flavor = "multi_thread")]
-async fn main() -> Result<(), Error> {
+async fn main() -> Result<()> {
     use tokio::sync::mpsc;
 
     dotenvy::dotenv().ok();
-    tracing::init_default_subscriber();
+    tracing_subscriber::fmt::init();
 
     let context = GraphQLContext { pool: get_pool() };
 

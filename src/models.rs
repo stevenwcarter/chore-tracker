@@ -132,7 +132,7 @@ pub struct UserInput {
 
 impl From<UserInput> for User {
     fn from(input: UserInput) -> Self {
-        User {
+        Self {
             id: None,
             uuid: input.uuid.unwrap_or_else(|| Uuid::now_v7().to_string()),
             name: input.name,
