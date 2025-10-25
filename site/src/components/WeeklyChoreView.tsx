@@ -104,11 +104,9 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
   const isChoreCompletedByAnyone = (choreId: number, date: Date): boolean => {
     if (!allCompletionsData?.getAllWeeklyCompletions) return false;
 
-    return allCompletionsData.getAllWeeklyCompletions.some((completion: any) => {
-      const completionChoreId = completion.choreId;
-      const completionDate = completion.completedDate || completion.createdAt;
-      const isSameChore = completionChoreId === choreId;
-      const isSameDate = isSameDayAsString(date, completionDate);
+    return allCompletionsData.getAllWeeklyCompletions.some((completion) => {
+      const isSameChore = completion.choreId === choreId;
+      const isSameDate = isSameDayAsString(date, completion.completedDate);
       return isSameChore && isSameDate;
     });
   };
