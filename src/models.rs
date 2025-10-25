@@ -449,16 +449,16 @@ impl PaymentType {
 
     /// Calculates the payment amount for a single chore completion
     pub fn calculate_completion_amount(
-        payment_type: &PaymentType,
+        payment_type: &Self,
         chore_amount_cents: i32,
         required_days: i32,
     ) -> i32 {
         match payment_type {
-            PaymentType::Daily => {
+            Self::Daily => {
                 // Daily chores pay the full amount for each completion
                 chore_amount_cents
             }
-            PaymentType::Weekly => {
+            Self::Weekly => {
                 // Weekly chores pay a fraction based on how many days they're assigned for
                 let assigned_days_count = Self::get_assigned_days_count(required_days);
                 

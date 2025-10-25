@@ -1,4 +1,5 @@
 #![allow(deprecated)]
+#![allow(clippy::missing_const_for_fn)]
 #![warn(clippy::str_to_string)]
 #![warn(clippy::perf, clippy::nursery)]
 #![recursion_limit = "256"]
