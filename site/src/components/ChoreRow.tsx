@@ -25,18 +25,27 @@ export const ChoreRow: React.FC<ChoreRowProps> = ({
   const getCompletionForDate = (date: Date): ChoreCompletion | null => {
     return (
       choreData.completions.find((completion) => {
-        return isSameDayAsString(date, completion.completedAt);
+        return isSameDayAsString(date, completion.completedDate);
       }) || null
     );
   };
 
-  const isChoreScheduledForDay = (daysOfWeek: number[], date: Date): boolean => {
-    return daysOfWeek.includes(date.getDay());
+  const isChoreScheduledForDay = (daysOfWeek: number, date: Date): boolean => {
+    // Sun 1
+    // Mon 2
+    // Tues 4
+    // Wed 8
+    // Thu 16
+    // Fri 32
+    // Sat 64
+    const dayIndex = date.getDay(); // 0 (Sun) to 6 (Sat)
+    const dayBit = 1 << dayIndex; // 2^dayIndex
+    return (daysOfWeek & dayBit) === dayBit;
   };
 
   const renderChoreCell = (date: Date) => {
     const completion = getCompletionForDate(date);
-    const isScheduled = isChoreScheduledForDay(choreData.chore.daysOfWeek, date);
+    const isScheduled = isChoreScheduledForDay(choreData.chore.requiredDays, date);
     const isCompletedByAnyone = isChoreCompletedByAnyone(choreData.chore.id, date);
 
     if (!isScheduled) {
@@ -95,7 +104,7 @@ export const ChoreRow: React.FC<ChoreRowProps> = ({
       <div className="bg-gray-700 p-4 rounded-lg mb-4">
         <div className="flex justify-between items-start mb-3">
           <div className="flex-1">
-            <h3 className="font-medium text-white">{choreData.chore.title}</h3>
+            <h3 className="font-medium text-white">{choreData.chore.name}</h3>
             {choreData.chore.description && (
               <p className="text-sm text-gray-300">{choreData.chore.description}</p>
             )}
@@ -117,7 +126,7 @@ export const ChoreRow: React.FC<ChoreRowProps> = ({
     <tr className="hover:bg-gray-700">
       <td className="p-3 border-b border-gray-600">
         <div>
-          <div className="font-medium text-white">{choreData.chore.title}</div>
+          <div className="font-medium text-white">{choreData.chore.name}</div>
           {choreData.chore.description && (
             <div className="text-sm text-gray-300">{choreData.chore.description}</div>
           )}

@@ -190,7 +190,7 @@ export const AdminChoreManagement: React.FC<AdminChoreManagementProps> = ({ admi
       <Modal
         isOpen={!!selectedChore}
         onClose={() => setSelectedChore(null)}
-        title={`Assign Users: ${selectedChore?.title || selectedChore?.name}`}
+        title={`Assign Users: ${selectedChore?.name}`}
         maxWidth="sm"
       >
         {selectedChore && (

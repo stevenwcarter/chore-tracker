@@ -58,7 +58,6 @@ export const useUserChores = ({ userId, weekStartDate }: UseUserChoresOptions) =
         }
         completionMap.get(choreId)!.push({
           ...completion,
-          completedAt: completion.completedDate || completion.createdAt,
           approved: completion.approved || false,
         });
       });
@@ -68,16 +67,10 @@ export const useUserChores = ({ userId, weekStartDate }: UseUserChoresOptions) =
         const chore: Chore = {
           id: backendChore.id,
           uuid: backendChore.uuid,
-          title: backendChore.name || '',
           name: backendChore.name,
           description: backendChore.description,
           amountCents: backendChore.amountCents,
           paymentType: backendChore.paymentType,
-          daysOfWeek: backendChore.requiredDays
-            ? Array.from({ length: 7 }, (_, i) =>
-                (backendChore.requiredDays >> i) & 1 ? i : -1,
-              ).filter((i) => i !== -1)
-            : [],
           requiredDays: backendChore.requiredDays,
           active: backendChore.active,
           createdAt: backendChore.createdAt,

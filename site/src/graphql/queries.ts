@@ -43,7 +43,7 @@ export const GET_USER_CHORES = gql`
 `;
 
 export const GET_WEEKLY_CHORES = gql`
-  query GetWeeklyChores($userId: Int!, $weekStartDate: Date!) {
+  query GetWeeklyChores($userId: Int!, $weekStartDate: LocalDate!) {
     getWeeklyChoreCompletions(userId: $userId, weekStartDate: $weekStartDate) {
       id
       uuid
@@ -71,12 +71,20 @@ export const GET_WEEKLY_CHORES = gql`
         uuid
         name
       }
+      notes {
+        id
+        uuid
+        noteText
+        authorType
+        visibleToUser
+        createdAt
+      }
     }
   }
 `;
 
 export const GET_ALL_WEEKLY_COMPLETIONS = gql`
-  query GetAllWeeklyCompletions($weekStartDate: Date!) {
+  query GetAllWeeklyCompletions($weekStartDate: LocalDate!) {
     getAllWeeklyCompletions(weekStartDate: $weekStartDate) {
       id
       uuid
@@ -94,6 +102,14 @@ export const GET_ALL_WEEKLY_COMPLETIONS = gql`
         id
         uuid
         name
+      }
+      notes {
+        id
+        uuid
+        noteText
+        authorType
+        visibleToUser
+        createdAt
       }
     }
   }

@@ -15,18 +15,16 @@ export interface Admin {
 }
 
 export interface Chore {
-  id: number; // Keep as string for now
+  id: number;
   uuid: string;
-  title: string;
-  name?: string; // Backend field
+  name: string;
   description?: string;
   amountCents: number;
   paymentType: PaymentType;
-  daysOfWeek: number[];
-  requiredDays?: number; // Backend field
-  active?: boolean; // Backend field
+  requiredDays: number;
+  active?: boolean;
   createdAt: string;
-  createdByAdminId: number; // Keep as string for now
+  createdByAdminId: number;
   assignedUsers?: User[];
 }
 
@@ -35,24 +33,24 @@ export interface ChoreCompletion {
   uuid: string;
   choreId: number;
   userId: number;
-  completedAt: string;
-  completedDate?: string;
-  approved?: boolean;
+  completedDate: string;
+  approved: boolean;
   approvedAt?: string;
-  approvedByAdminId?: number; // Keep as string for now
+  approvedByAdminId?: number;
   amountCents: number;
   paidOutAt?: string;
-  createdAt: string;
-  updatedAt: string;
-  chore?: Chore;
-  user?: User;
-  notes?: ChoreCompletionNote[];
+  createdAt?: string;
+  updatedAt?: string;
+  chore: Chore;
+  user: User;
+  notes: ChoreCompletionNote[];
+  adminNotes: ChoreCompletionNote[];
 }
 
 export interface ChoreCompletionNote {
   id: number;
   choreCompletionId: number;
-  note: string;
+  noteText: string;
   authorType: AuthorType;
   authorUserId?: number;
   authorAdminId?: number;

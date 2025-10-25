@@ -116,9 +116,7 @@ export const ChoreCompletionDetail: React.FC<ChoreCompletionDetailProps> = ({
       {completion.chore && (
         <div>
           <p className="text-sm text-gray-400">Chore:</p>
-          <p className="font-medium text-white">
-            {completion.chore.name || completion.chore.title}
-          </p>
+          <p className="font-medium text-white">{completion.chore.name || completion.chore.name}</p>
         </div>
       )}
 
@@ -131,9 +129,7 @@ export const ChoreCompletionDetail: React.FC<ChoreCompletionDetailProps> = ({
 
       <div>
         <p className="text-sm text-gray-400">Completed Date:</p>
-        <p className="font-medium text-white">
-          {completion.completedDate || completion.completedAt || completion.createdAt}
-        </p>
+        <p className="font-medium text-white">{completion.completedDate}</p>
       </div>
 
       <div>
@@ -172,7 +168,7 @@ export const ChoreCompletionDetail: React.FC<ChoreCompletionDetailProps> = ({
               .map((note) => (
                 <div key={note.id} className="bg-gray-700 p-2 rounded text-sm">
                   <div className="flex justify-between items-start mb-1">
-                    <p className="text-white">{note.note}</p>
+                    <p className="text-white">{note.noteText}</p>
                     {isAdmin && !note.visibleToUser && (
                       <span className="text-xs bg-red-600 text-white px-1 rounded">Admin Only</span>
                     )}

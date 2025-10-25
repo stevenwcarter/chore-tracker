@@ -313,7 +313,7 @@ export const AdminCompletionReview: React.FC<AdminCompletionReviewProps> = ({ ad
                     {selectedCompletion.notes.map((note) => (
                       <div key={note.id} className="bg-gray-700 p-2 rounded text-sm">
                         <div className="flex justify-between items-start mb-1">
-                          <p className="text-white">{note.note}</p>
+                          <p className="text-white">{note.noteText}</p>
                           {!note.visibleToUser && (
                             <span className="text-xs bg-red-600 text-white px-1 rounded">
                               Admin Only
