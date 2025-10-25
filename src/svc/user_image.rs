@@ -30,7 +30,7 @@ impl UserImageSvc {
 
     pub fn get_by_user_id(context: &GraphQLContext, user_id: i32) -> Result<Option<UserImage>> {
         let mut conn = get_conn(context);
-        
+
         user_images::table
             .filter(user_images::user_id.eq(user_id))
             .order(user_images::created_at.desc())
@@ -42,7 +42,7 @@ impl UserImageSvc {
 
     pub fn get_by_id(context: &GraphQLContext, id: i32) -> Result<Option<UserImage>> {
         let mut conn = get_conn(context);
-        
+
         user_images::table
             .find(id)
             .select(UserImage::as_select())
@@ -53,7 +53,7 @@ impl UserImageSvc {
 
     pub fn delete_by_user_id(context: &GraphQLContext, user_id: i32) -> Result<usize> {
         let mut conn = get_conn(context);
-        
+
         diesel::delete(user_images::table.filter(user_images::user_id.eq(user_id)))
             .execute(&mut conn)
             .context("Failed to delete user images")
@@ -66,12 +66,12 @@ impl UserImageSvc {
     ) -> Result<()> {
         use crate::schema::users;
         let mut conn = get_conn(context);
-        
+
         diesel::update(users::table.filter(users::id.eq(user_id)))
             .set(users::image_id.eq(image_id))
             .execute(&mut conn)
             .context("Failed to update user image reference")?;
-        
+
         Ok(())
     }
 }
@@ -99,7 +99,7 @@ mod tests {
         UserImageInput {
             user_id,
             image_data: create_test_image_data(),
-            content_type: "image/png".to_string(),
+            content_type: "image/png".to_owned(),
             file_size: create_test_image_data().len() as i32,
         }
     }
@@ -168,7 +168,7 @@ mod tests {
         let image_input1 = UserImageInput {
             user_id: user.id.unwrap(),
             image_data: vec![1, 2, 3, 4],
-            content_type: "image/jpeg".to_string(),
+            content_type: "image/jpeg".to_owned(),
             file_size: 4,
         };
         let _first_image = UserImageSvc::create(&context, image_input1).unwrap();
@@ -180,7 +180,7 @@ mod tests {
         let image_input2 = UserImageInput {
             user_id: user.id.unwrap(),
             image_data: vec![5, 6, 7, 8],
-            content_type: "image/png".to_string(),
+            content_type: "image/png".to_owned(),
             file_size: 4,
         };
         let second_image = UserImageSvc::create(&context, image_input2).unwrap();
@@ -211,22 +211,38 @@ mod tests {
         let image_input3 = UserImageInput {
             user_id: user1.id.unwrap(),
             image_data: vec![9, 10, 11, 12],
-            content_type: "image/gif".to_string(),
+            content_type: "image/gif".to_owned(),
             file_size: 4,
         };
         let _image3 = UserImageSvc::create(&context, image_input3).unwrap();
 
         // Verify both users have images
-        assert!(UserImageSvc::get_by_user_id(&context, user1.id.unwrap()).unwrap().is_some());
-        assert!(UserImageSvc::get_by_user_id(&context, user2.id.unwrap()).unwrap().is_some());
+        assert!(
+            UserImageSvc::get_by_user_id(&context, user1.id.unwrap())
+                .unwrap()
+                .is_some()
+        );
+        assert!(
+            UserImageSvc::get_by_user_id(&context, user2.id.unwrap())
+                .unwrap()
+                .is_some()
+        );
 
         // Delete user1's images
         let deleted_count = UserImageSvc::delete_by_user_id(&context, user1.id.unwrap()).unwrap();
         assert_eq!(deleted_count, 2); // Should delete both images for user1
 
         // Verify user1 has no images, user2 still has images
-        assert!(UserImageSvc::get_by_user_id(&context, user1.id.unwrap()).unwrap().is_none());
-        assert!(UserImageSvc::get_by_user_id(&context, user2.id.unwrap()).unwrap().is_some());
+        assert!(
+            UserImageSvc::get_by_user_id(&context, user1.id.unwrap())
+                .unwrap()
+                .is_none()
+        );
+        assert!(
+            UserImageSvc::get_by_user_id(&context, user2.id.unwrap())
+                .unwrap()
+                .is_some()
+        );
 
         // Delete from user with no images should return 0
         let deleted_count2 = UserImageSvc::delete_by_user_id(&context, user1.id.unwrap()).unwrap();
@@ -251,18 +267,15 @@ mod tests {
             &context,
             user.id.unwrap(),
             Some(created_image.id),
-        ).unwrap();
+        )
+        .unwrap();
 
         // Verify user now references the image
         let updated_user = UserSvc::get_by_id(&context, user.id.unwrap()).unwrap();
         assert_eq!(updated_user.image_id, Some(created_image.id));
 
         // Clear the image reference
-        UserImageSvc::update_user_image_reference(
-            &context,
-            user.id.unwrap(),
-            None,
-        ).unwrap();
+        UserImageSvc::update_user_image_reference(&context, user.id.unwrap(), None).unwrap();
 
         // Verify reference is cleared
         let cleared_user = UserSvc::get_by_id(&context, user.id.unwrap()).unwrap();
@@ -273,7 +286,7 @@ mod tests {
     fn test_user_image_input_conversion() {
         let user_id = 123;
         let image_data = vec![1, 2, 3, 4, 5];
-        let content_type = "image/jpeg".to_string();
+        let content_type = "image/jpeg".to_owned();
         let file_size = 5;
 
         let input = UserImageInput {
@@ -298,9 +311,9 @@ mod tests {
         let context = create_test_context();
         let user = create_test_user(&context, "Test User");
 
-        let content_types = vec![
+        let content_types = [
             "image/png",
-            "image/jpeg", 
+            "image/jpeg",
             "image/gif",
             "image/webp",
             "image/svg+xml",
@@ -332,7 +345,7 @@ mod tests {
         let image_input = UserImageInput {
             user_id: user.id.unwrap(),
             image_data: large_image_data.clone(),
-            content_type: "image/png".to_string(),
+            content_type: "image/png".to_owned(),
             file_size: large_image_data.len() as i32,
         };
 
@@ -349,7 +362,7 @@ mod tests {
         let invalid_user_input = UserImageInput {
             user_id: 99999, // Non-existent user
             image_data: create_test_image_data(),
-            content_type: "image/png".to_string(),
+            content_type: "image/png".to_owned(),
             file_size: create_test_image_data().len() as i32,
         };
 
@@ -383,7 +396,8 @@ mod tests {
             &context,
             user.id.unwrap(),
             Some(created_image.id),
-        ).unwrap();
+        )
+        .unwrap();
 
         // Step 3: Verify the complete workflow
         let updated_user = UserSvc::get_by_id(&context, user.id.unwrap()).unwrap();
@@ -398,16 +412,13 @@ mod tests {
         let new_image_input = UserImageInput {
             user_id: user.id.unwrap(),
             image_data: vec![99, 100, 101],
-            content_type: "image/jpeg".to_string(),
+            content_type: "image/jpeg".to_owned(),
             file_size: 3,
         };
         let new_image = UserImageSvc::create(&context, new_image_input).unwrap();
 
-        UserImageSvc::update_user_image_reference(
-            &context,
-            user.id.unwrap(),
-            Some(new_image.id),
-        ).unwrap();
+        UserImageSvc::update_user_image_reference(&context, user.id.unwrap(), Some(new_image.id))
+            .unwrap();
 
         // Step 5: Verify new image is referenced and old data still exists
         let final_user = UserSvc::get_by_id(&context, user.id.unwrap()).unwrap();
@@ -434,3 +445,4 @@ mod tests {
         assert_eq!(clean_user.image_id, None);
     }
 }
+

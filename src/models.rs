@@ -22,8 +22,8 @@ pub enum PaymentType {
 impl From<String> for PaymentType {
     fn from(s: String) -> Self {
         match s.as_str() {
-            "weekly" => PaymentType::Weekly,
-            _ => PaymentType::Daily,
+            "weekly" => Self::Weekly,
+            _ => Self::Daily,
         }
     }
 }
@@ -46,8 +46,8 @@ pub enum AuthorType {
 impl From<String> for AuthorType {
     fn from(s: String) -> Self {
         match s.as_str() {
-            "admin" => AuthorType::Admin,
-            _ => AuthorType::User,
+            "admin" => Self::Admin,
+            _ => Self::User,
         }
     }
 }
@@ -113,7 +113,7 @@ pub struct UserImageInput {
 
 impl From<UserImageInput> for NewUserImage {
     fn from(input: UserImageInput) -> Self {
-        NewUserImage {
+        Self {
             user_id: input.user_id,
             image_data: input.image_data,
             content_type: input.content_type,
@@ -170,7 +170,7 @@ pub struct AdminInput {
 
 impl From<AdminInput> for Admin {
     fn from(input: AdminInput) -> Self {
-        Admin {
+        Self {
             id: None,
             uuid: input.uuid.unwrap_or_else(|| Uuid::now_v7().to_string()),
             name: input.name,
@@ -270,7 +270,7 @@ pub struct ChoreInput {
 
 impl From<ChoreInput> for Chore {
     fn from(input: ChoreInput) -> Self {
-        Chore {
+        Self {
             id: None,
             uuid: input.uuid.unwrap_or_else(|| Uuid::now_v7().to_string()),
             name: input.name,
@@ -305,7 +305,7 @@ pub struct ChoreAssignmentInput {
 
 impl From<ChoreAssignmentInput> for ChoreAssignment {
     fn from(input: ChoreAssignmentInput) -> Self {
-        ChoreAssignment {
+        Self {
             id: None,
             chore_id: input.chore_id,
             user_id: input.user_id,
@@ -461,7 +461,7 @@ impl PaymentType {
             Self::Weekly => {
                 // Weekly chores pay a fraction based on how many days they're assigned for
                 let assigned_days_count = Self::get_assigned_days_count(required_days);
-                
+
                 if assigned_days_count == 0 {
                     // Fallback: if no days assigned, pay the full amount
                     chore_amount_cents
@@ -546,7 +546,7 @@ pub struct ChoreCompletionNoteInput {
 
 impl From<ChoreCompletionNoteInput> for ChoreCompletionNote {
     fn from(input: ChoreCompletionNoteInput) -> Self {
-        ChoreCompletionNote {
+        Self {
             id: None,
             uuid: input.uuid.unwrap_or_else(|| Uuid::now_v7().to_string()),
             chore_completion_id: input.chore_completion_id,

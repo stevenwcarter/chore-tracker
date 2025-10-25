@@ -1,7 +1,7 @@
 #![allow(deprecated)]
-#![allow(clippy::missing_const_for_fn)]
 #![warn(clippy::str_to_string)]
 #![warn(clippy::perf, clippy::nursery)]
+#![allow(clippy::missing_const_for_fn)]
 #![recursion_limit = "256"]
 
 // use chrono::{DateTime, NaiveDateTime, Utc};

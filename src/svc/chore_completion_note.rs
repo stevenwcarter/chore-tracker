@@ -1,8 +1,6 @@
 use crate::{
-    context::GraphQLContext, 
-    db::get_conn, 
-    models::ChoreCompletionNote, 
-    schema::chore_completion_notes
+    context::GraphQLContext, db::get_conn, models::ChoreCompletionNote,
+    schema::chore_completion_notes,
 };
 use anyhow::{Context, Result};
 use diesel::prelude::*;
@@ -38,7 +36,10 @@ impl ChoreCompletionNoteSvc {
             .context("Could not load chore completion notes")
     }
 
-    pub fn create(context: &GraphQLContext, note: &ChoreCompletionNote) -> Result<ChoreCompletionNote> {
+    pub fn create(
+        context: &GraphQLContext,
+        note: &ChoreCompletionNote,
+    ) -> Result<ChoreCompletionNote> {
         diesel::insert_into(chore_completion_notes::table)
             .values(note)
             .execute(&mut get_conn(context))
@@ -47,7 +48,10 @@ impl ChoreCompletionNoteSvc {
         Self::get(context, &note.uuid)
     }
 
-    pub fn update(context: &GraphQLContext, note: &ChoreCompletionNote) -> Result<ChoreCompletionNote> {
+    pub fn update(
+        context: &GraphQLContext,
+        note: &ChoreCompletionNote,
+    ) -> Result<ChoreCompletionNote> {
         diesel::update(chore_completion_notes::table)
             .filter(chore_completion_notes::uuid.eq(&note.uuid))
             .set(note)
@@ -74,8 +78,8 @@ mod tests {
         models::{AuthorType, ChoreCompletionInput, ChoreCompletionNoteInput, PaymentType},
         svc::ChoreCompletionSvc,
         test_helpers::test_db::{
-            create_test_admin, create_test_chore, create_test_chore_assignment, create_test_context,
-            create_test_date, create_test_user, day_patterns,
+            create_test_admin, create_test_chore, create_test_chore_assignment,
+            create_test_context, create_test_date, create_test_user, day_patterns,
         },
     };
 
@@ -118,7 +122,7 @@ mod tests {
             author_type: AuthorType::User,
             author_user_id: Some(user.id.unwrap()),
             author_admin_id: None,
-            note_text: "I completed this task!".to_string(),
+            note_text: "I completed this task!".to_owned(),
             visible_to_user: Some(true),
         };
 
@@ -142,7 +146,7 @@ mod tests {
             author_type: AuthorType::Admin,
             author_user_id: None,
             author_admin_id: Some(admin.id.unwrap()),
-            note_text: "Good job!".to_string(),
+            note_text: "Good job!".to_owned(),
             visible_to_user: Some(true),
         };
 
@@ -160,12 +164,13 @@ mod tests {
             author_type: AuthorType::Admin,
             author_user_id: None,
             author_admin_id: Some(admin.id.unwrap()),
-            note_text: "Internal admin note".to_string(),
+            note_text: "Internal admin note".to_owned(),
             visible_to_user: Some(false),
         };
 
         let admin_private_note = ChoreCompletionNote::from(admin_private_note_input);
-        let created_private_note = ChoreCompletionNoteSvc::create(&context, &admin_private_note).unwrap();
+        let created_private_note =
+            ChoreCompletionNoteSvc::create(&context, &admin_private_note).unwrap();
 
         assert!(!created_private_note.visible_to_user);
 
@@ -177,7 +182,7 @@ mod tests {
             author_type: created_note.author_type.clone(),
             author_user_id: created_note.author_user_id,
             author_admin_id: created_note.author_admin_id,
-            note_text: "Updated note text".to_string(),
+            note_text: "Updated note text".to_owned(),
             visible_to_user: created_note.visible_to_user,
             created_at: created_note.created_at,
             updated_at: created_note.updated_at,
@@ -212,10 +217,34 @@ mod tests {
 
         // Create different types of notes
         let notes_data = [
-            ("User note", AuthorType::User, Some(user.id.unwrap()), None, true),
-            ("Admin public note", AuthorType::Admin, None, Some(admin.id.unwrap()), true),
-            ("Admin private note", AuthorType::Admin, None, Some(admin.id.unwrap()), false),
-            ("Another user note", AuthorType::User, Some(user.id.unwrap()), None, true),
+            (
+                "User note",
+                AuthorType::User,
+                Some(user.id.unwrap()),
+                None,
+                true,
+            ),
+            (
+                "Admin public note",
+                AuthorType::Admin,
+                None,
+                Some(admin.id.unwrap()),
+                true,
+            ),
+            (
+                "Admin private note",
+                AuthorType::Admin,
+                None,
+                Some(admin.id.unwrap()),
+                false,
+            ),
+            (
+                "Another user note",
+                AuthorType::User,
+                Some(user.id.unwrap()),
+                None,
+                true,
+            ),
         ];
 
         for (text, author_type, author_user_id, author_admin_id, visible) in notes_data {
@@ -225,7 +254,7 @@ mod tests {
                 author_type,
                 author_user_id,
                 author_admin_id,
-                note_text: text.to_string(),
+                note_text: text.to_owned(),
                 visible_to_user: Some(visible),
             };
 
@@ -234,26 +263,27 @@ mod tests {
         }
 
         // Test listing all notes (admin view)
-        let all_notes = ChoreCompletionNoteSvc::list_for_completion(
-            &context,
-            completion.id.unwrap(),
-            false,
-        ).unwrap();
+        let all_notes =
+            ChoreCompletionNoteSvc::list_for_completion(&context, completion.id.unwrap(), false)
+                .unwrap();
         assert_eq!(all_notes.len(), 4);
 
         // Test listing only user-visible notes
-        let user_visible_notes = ChoreCompletionNoteSvc::list_for_completion(
-            &context,
-            completion.id.unwrap(),
-            true,
-        ).unwrap();
+        let user_visible_notes =
+            ChoreCompletionNoteSvc::list_for_completion(&context, completion.id.unwrap(), true)
+                .unwrap();
         assert_eq!(user_visible_notes.len(), 3); // Excludes the private admin note
         assert!(user_visible_notes.iter().all(|note| note.visible_to_user));
 
         // Test notes are ordered by creation time
         for i in 1..all_notes.len() {
-            if let (Some(prev_time), Some(curr_time)) = (all_notes[i-1].created_at, all_notes[i].created_at) {
-                assert!(prev_time <= curr_time, "Notes should be ordered by creation time");
+            if let (Some(prev_time), Some(curr_time)) =
+                (all_notes[i - 1].created_at, all_notes[i].created_at)
+            {
+                assert!(
+                    prev_time <= curr_time,
+                    "Notes should be ordered by creation time"
+                );
             }
         }
     }
@@ -283,7 +313,7 @@ mod tests {
             author_type: AuthorType::User,
             author_user_id: Some(user.id.unwrap()),
             author_admin_id: None,
-            note_text: "User note".to_string(),
+            note_text: "User note".to_owned(),
             visible_to_user: None, // Should default to true
         };
 
@@ -302,7 +332,7 @@ mod tests {
             author_type: AuthorType::Admin,
             author_user_id: None,
             author_admin_id: Some(admin.id.unwrap()),
-            note_text: "Admin note".to_string(),
+            note_text: "Admin note".to_owned(),
             visible_to_user: Some(false),
         };
 
@@ -388,20 +418,17 @@ mod tests {
         }
 
         // Test admin view (all notes)
-        let all_notes = ChoreCompletionNoteSvc::list_for_completion(
-            &context,
-            completion.id.unwrap(),
-            false,
-        ).unwrap();
+        let all_notes =
+            ChoreCompletionNoteSvc::list_for_completion(&context, completion.id.unwrap(), false)
+                .unwrap();
         assert_eq!(all_notes.len(), visible_notes_count + hidden_notes_count);
 
         // Test user view (only visible notes)
-        let visible_notes = ChoreCompletionNoteSvc::list_for_completion(
-            &context,
-            completion.id.unwrap(),
-            true,
-        ).unwrap();
+        let visible_notes =
+            ChoreCompletionNoteSvc::list_for_completion(&context, completion.id.unwrap(), true)
+                .unwrap();
         assert_eq!(visible_notes.len(), visible_notes_count);
         assert!(visible_notes.iter().all(|note| note.visible_to_user));
     }
 }
+

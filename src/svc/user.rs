@@ -80,7 +80,7 @@ mod tests {
         let user = create_test_user(&context, "Test User");
         assert_eq!(user.name, "Test User");
         assert!(user.id.is_some());
-        assert!(user.uuid.len() > 0);
+        assert!(!user.uuid.is_empty());
 
         // Test get by UUID
         let retrieved = UserSvc::get(&context, &user.uuid).unwrap();
@@ -95,8 +95,8 @@ mod tests {
         let updated_user = User {
             id: user.id,
             uuid: user.uuid.clone(),
-            name: "Updated User".to_string(),
-            image_path: Some("/path/to/image.jpg".to_string()),
+            name: "Updated User".to_owned(),
+            image_path: Some("/path/to/image.jpg".to_owned()),
             created_at: user.created_at,
             updated_at: user.updated_at,
             image_id: None,
@@ -104,7 +104,7 @@ mod tests {
 
         let result = UserSvc::update(&context, &updated_user).unwrap();
         assert_eq!(result.name, "Updated User");
-        assert_eq!(result.image_path, Some("/path/to/image.jpg".to_string()));
+        assert_eq!(result.image_path, Some("/path/to/image.jpg".to_owned()));
 
         // Test deletion
         UserSvc::delete(&context, &user.uuid).unwrap();
@@ -124,7 +124,7 @@ mod tests {
         // Test listing all users
         let all_users = UserSvc::list(&context, 100, 0).unwrap();
         assert_eq!(all_users.len(), 3);
-        
+
         // Should be ordered by name
         assert_eq!(all_users[0].name, "Alice");
         assert_eq!(all_users[1].name, "Bob");
@@ -148,15 +148,15 @@ mod tests {
         // Test creating user from UserInput
         let user_input = UserInput {
             uuid: Some(Uuid::now_v7().to_string()),
-            name: "Input User".to_string(),
-            image_path: Some("/custom/path.jpg".to_string()),
+            name: "Input User".to_owned(),
+            image_path: Some("/custom/path.jpg".to_owned()),
         };
 
         let user = User::from(user_input.clone());
         let created_user = UserSvc::create(&context, &user).unwrap();
 
         assert_eq!(created_user.name, "Input User");
-        assert_eq!(created_user.image_path, Some("/custom/path.jpg".to_string()));
+        assert_eq!(created_user.image_path, Some("/custom/path.jpg".to_owned()));
         assert_eq!(created_user.uuid, user_input.uuid.unwrap());
     }
 
@@ -186,7 +186,7 @@ mod tests {
         let updated_user = User {
             id: user.id,
             uuid: user.uuid.clone(),
-            name: "New Name".to_string(),
+            name: "New Name".to_owned(),
             image_path: user.image_path.clone(),
             created_at: user.created_at,
             updated_at: user.updated_at,
@@ -201,8 +201,8 @@ mod tests {
         let updated_user = User {
             id: user.id,
             uuid: user.uuid.clone(),
-            name: result.name.clone(),
-            image_path: Some("/new/image.png".to_string()),
+            name: result.name,
+            image_path: Some("/new/image.png".to_owned()),
             created_at: user.created_at,
             updated_at: user.updated_at,
             image_id: user.image_id,
@@ -210,6 +210,7 @@ mod tests {
 
         let result = UserSvc::update(&context, &updated_user).unwrap();
         assert_eq!(result.name, "New Name"); // Should remain unchanged
-        assert_eq!(result.image_path, Some("/new/image.png".to_string()));
+        assert_eq!(result.image_path, Some("/new/image.png".to_owned()));
     }
 }
+

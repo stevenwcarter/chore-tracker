@@ -36,40 +36,43 @@ impl ChoreSvc {
         let limit: i64 = limit.into();
         let offset: i64 = offset.into();
 
-        if let Some(user_id) = user_id {
-            // When filtering by user, we need to join with assignments
-            let mut query = chores::table
-                .inner_join(chore_assignments::table)
-                .filter(chore_assignments::user_id.eq(user_id))
-                .into_boxed();
+        user_id.map_or_else(
+            || {
+                // When not filtering by user, simple query
+                let mut query = chores::table.into_boxed();
 
-            if active_only {
-                query = query.filter(chores::active.eq(true));
-            }
+                if active_only {
+                    query = query.filter(chores::active.eq(true));
+                }
 
-            query
-                .select(Chore::as_select())
-                .order_by(chores::name.asc())
-                .limit(limit)
-                .offset(offset)
-                .load::<Chore>(&mut get_conn(context))
-                .context("Could not load chores for user")
-        } else {
-            // When not filtering by user, simple query
-            let mut query = chores::table.into_boxed();
+                query
+                    .select(Chore::as_select())
+                    .order_by(chores::name.asc())
+                    .limit(limit)
+                    .offset(offset)
+                    .load::<Chore>(&mut get_conn(context))
+                    .context("Could not load chores")
+            },
+            |user_id| {
+                // When filtering by user, we need to join with assignments
+                let mut query = chores::table
+                    .inner_join(chore_assignments::table)
+                    .filter(chore_assignments::user_id.eq(user_id))
+                    .into_boxed();
 
-            if active_only {
-                query = query.filter(chores::active.eq(true));
-            }
+                if active_only {
+                    query = query.filter(chores::active.eq(true));
+                }
 
-            query
-                .select(Chore::as_select())
-                .order_by(chores::name.asc())
-                .limit(limit)
-                .offset(offset)
-                .load::<Chore>(&mut get_conn(context))
-                .context("Could not load chores")
-        }
+                query
+                    .select(Chore::as_select())
+                    .order_by(chores::name.asc())
+                    .limit(limit)
+                    .offset(offset)
+                    .load::<Chore>(&mut get_conn(context))
+                    .context("Could not load chores for user")
+            },
+        )
     }
 
     pub fn create(context: &GraphQLContext, chore: &Chore) -> Result<Chore> {
@@ -203,7 +206,7 @@ mod tests {
         let updated_chore = Chore {
             id: chore.id,
             uuid: chore.uuid.clone(),
-            name: "Updated Chore".to_string(),
+            name: "Updated Chore".to_owned(),
             description: chore.description.clone(),
             payment_type: chore.payment_type.clone(),
             amount_cents: 200,
@@ -242,8 +245,8 @@ mod tests {
 
         let chore2_input = ChoreInput {
             uuid: None,
-            name: "Inactive Chore".to_string(),
-            description: Some("Test inactive chore".to_string()),
+            name: "Inactive Chore".to_owned(),
+            description: Some("Test inactive chore".to_owned()),
             payment_type: PaymentType::Weekly,
             amount_cents: 200,
             required_days: day_patterns::weekdays(),
@@ -361,7 +364,7 @@ mod tests {
 
         let chore3_input = ChoreInput {
             uuid: None,
-            name: "Inactive Chore".to_string(),
+            name: "Inactive Chore".to_owned(),
             description: None,
             payment_type: PaymentType::Daily,
             amount_cents: 150,
@@ -380,22 +383,26 @@ mod tests {
         ChoreSvc::assign_user(&context, chore2.id.unwrap(), user2.id.unwrap()).unwrap();
 
         // Test listing all chores for user1 (including inactive)
-        let user1_all_chores = ChoreSvc::list(&context, Some(user1.id.unwrap()), false, 100, 0).unwrap();
+        let user1_all_chores =
+            ChoreSvc::list(&context, Some(user1.id.unwrap()), false, 100, 0).unwrap();
         assert_eq!(user1_all_chores.len(), 3);
 
         // Test listing only active chores for user1
-        let user1_active_chores = ChoreSvc::list(&context, Some(user1.id.unwrap()), true, 100, 0).unwrap();
+        let user1_active_chores =
+            ChoreSvc::list(&context, Some(user1.id.unwrap()), true, 100, 0).unwrap();
         assert_eq!(user1_active_chores.len(), 2);
         assert!(user1_active_chores.iter().all(|c| c.active));
 
         // Test listing chores for user2
-        let user2_chores = ChoreSvc::list(&context, Some(user2.id.unwrap()), false, 100, 0).unwrap();
+        let user2_chores =
+            ChoreSvc::list(&context, Some(user2.id.unwrap()), false, 100, 0).unwrap();
         assert_eq!(user2_chores.len(), 1);
         assert_eq!(user2_chores[0].uuid, chore2.uuid);
 
         // Test user with no assigned chores
         let user_no_chores = create_test_user(&context, "User No Chores");
-        let no_chores = ChoreSvc::list(&context, Some(user_no_chores.id.unwrap()), false, 100, 0).unwrap();
+        let no_chores =
+            ChoreSvc::list(&context, Some(user_no_chores.id.unwrap()), false, 100, 0).unwrap();
         assert_eq!(no_chores.len(), 0);
     }
 
@@ -434,3 +441,4 @@ mod tests {
         assert!(result.is_ok()); // Should not error even if assignment doesn't exist
     }
 }
+

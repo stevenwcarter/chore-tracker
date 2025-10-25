@@ -60,9 +60,8 @@ impl AdminSvc {
         email: &str,
     ) -> Result<Admin> {
         // First try to get existing admin
-        match Self::get_by_oidc_subject(context, oidc_subject) {
-            Ok(admin) => Ok(admin),
-            Err(_) => {
+        Self::get_by_oidc_subject(context, oidc_subject).map_or_else(
+            |_| {
                 // Admin doesn't exist, create a new one
                 let new_admin = Admin {
                     id: None,
@@ -75,8 +74,9 @@ impl AdminSvc {
                 };
 
                 Self::create(context, &new_admin)
-            }
-        }
+            },
+            Ok,
+        )
     }
 
     pub fn delete(context: &GraphQLContext, admin_uuid: &str) -> Result<()> {
@@ -103,7 +103,7 @@ mod tests {
         assert_eq!(admin.name, "Test Admin");
         assert_eq!(admin.email, "admin@test.com");
         assert!(admin.id.is_some());
-        assert!(admin.uuid.len() > 0);
+        assert!(!admin.uuid.is_empty());
         assert!(admin.oidc_subject.starts_with("test-oidc-"));
 
         // Test get by UUID
@@ -113,15 +113,16 @@ mod tests {
         assert_eq!(retrieved.email, admin.email);
 
         // Test get by OIDC subject
-        let retrieved_by_oidc = AdminSvc::get_by_oidc_subject(&context, &admin.oidc_subject).unwrap();
+        let retrieved_by_oidc =
+            AdminSvc::get_by_oidc_subject(&context, &admin.oidc_subject).unwrap();
         assert_eq!(retrieved_by_oidc.uuid, admin.uuid);
 
         // Test update
         let updated_admin = Admin {
             id: admin.id,
             uuid: admin.uuid.clone(),
-            name: "Updated Admin".to_string(),
-            email: "updated@test.com".to_string(),
+            name: "Updated Admin".to_owned(),
+            email: "updated@test.com".to_owned(),
             oidc_subject: admin.oidc_subject.clone(),
             created_at: admin.created_at,
             updated_at: admin.updated_at,
@@ -149,7 +150,7 @@ mod tests {
         // Test listing all admins
         let all_admins = AdminSvc::list(&context, 100, 0).unwrap();
         assert_eq!(all_admins.len(), 3);
-        
+
         // Should be ordered by name
         assert_eq!(all_admins[0].name, "Alice Admin");
         assert_eq!(all_admins[1].name, "Bob Admin");
@@ -181,7 +182,13 @@ mod tests {
         assert_eq!(admin1.oidc_subject, oidc_subject);
 
         // Second call should return the existing admin
-        let admin2 = AdminSvc::get_or_create_by_oidc(&context, oidc_subject, "Different Name", "different@email.com").unwrap();
+        let admin2 = AdminSvc::get_or_create_by_oidc(
+            &context,
+            oidc_subject,
+            "Different Name",
+            "different@email.com",
+        )
+        .unwrap();
         assert_eq!(admin2.uuid, admin1.uuid); // Same admin
         assert_eq!(admin2.name, name); // Original name preserved
         assert_eq!(admin2.email, email); // Original email preserved

@@ -58,10 +58,12 @@ async fn upload_user_image(
                 }
 
                 // Delete existing image for this user
-                let user_id = user.id.ok_or((
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "User ID not found".to_owned(),
-                ))?;
+                let user_id = user.id.ok_or_else(|| {
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        "User ID not found".to_owned(),
+                    )
+                })?;
                 let _ = UserImageSvc::delete_by_user_id(&context, user_id);
 
                 // Create new image
@@ -108,7 +110,7 @@ async fn get_user_image(
                 format!("Database error: {}", e),
             )
         })?
-        .ok_or((StatusCode::NOT_FOUND, "Image not found".to_owned()))?;
+        .ok_or_else(|| (StatusCode::NOT_FOUND, "Image not found".to_owned()))?;
 
     Response::builder()
         .header("Content-Type", image.content_type)
@@ -135,7 +137,7 @@ async fn get_image_by_id(
                 format!("Database error: {}", e),
             )
         })?
-        .ok_or((StatusCode::NOT_FOUND, "Image not found".to_owned()))?;
+        .ok_or_else(|| (StatusCode::NOT_FOUND, "Image not found".to_owned()))?;
 
     Response::builder()
         .header("Content-Type", image.content_type)
@@ -149,4 +151,3 @@ async fn get_image_by_id(
             )
         })
 }
-

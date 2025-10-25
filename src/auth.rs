@@ -198,17 +198,10 @@ pub async fn login_handler(
 ) -> impl IntoResponse {
     let state = Uuid::new_v4().to_string();
 
-    match oidc_config.get_authorization_url(&state) {
-        Ok(auth_url) => {
-            // In a real implementation, you'd store the state in a session/cache to verify on callback
-            // For now, we'll redirect directly to the OIDC provider
-            Redirect::to(&auth_url).into_response()
-        }
-        Err(_) => {
-            // OIDC config not initialized or other error
-            Redirect::to("/?error=oidc_config_error").into_response()
-        }
-    }
+    oidc_config.get_authorization_url(&state).map_or_else(
+        |_| Redirect::to("/?error=oidc_config_error").into_response(),
+        |auth_url| Redirect::to(&auth_url).into_response(),
+    )
 }
 
 pub async fn callback_handler(
@@ -249,12 +242,11 @@ pub async fn callback_handler(
                         Ok(admin) => {
                             println!("Admin authenticated: {}", admin.uuid);
                             // Create admin session
-                            let session_cookie =
-                                Cookie::build(("admin_session", admin.uuid.clone()))
-                                    .path("/")
-                                    .http_only(true)
-                                    .secure(false) // Set to true in production with HTTPS
-                                    .build();
+                            let session_cookie = Cookie::build(("admin_session", admin.uuid))
+                                .path("/")
+                                .http_only(true)
+                                .secure(false) // Set to true in production with HTTPS
+                                .build();
 
                             let jar = jar.add(session_cookie);
                             (jar, Redirect::to("/admin")).into_response()
@@ -287,10 +279,10 @@ pub async fn me_handler(
     State((_oidc_config, context)): State<(OidcConfig, GraphQLContext)>,
     jar: CookieJar,
 ) -> axum::response::Response {
-    match check_admin_session(State(context), jar).await {
-        Ok(admin) => axum::Json(admin).into_response(),
-        Err(_) => axum::http::StatusCode::UNAUTHORIZED.into_response(),
-    }
+    (check_admin_session(State(context), jar).await).map_or_else(
+        |_| axum::http::StatusCode::UNAUTHORIZED.into_response(),
+        |admin| axum::Json(admin).into_response(),
+    )
 }
 
 pub async fn check_admin_session(

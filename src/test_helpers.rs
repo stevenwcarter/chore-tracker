@@ -1,12 +1,12 @@
 #[cfg(test)]
 pub mod test_db {
-    use chrono::Datelike;
     use crate::{
         context::GraphQLContext,
-        db::{run_migrations, ConnectionOptions},
+        db::{ConnectionOptions, run_migrations},
         models::{Admin, Chore, ChoreAssignment, ChoreInput, PaymentType, User},
         schema::{admins, chore_assignments, chores, users},
     };
+    use chrono::Datelike;
     use chrono::{NaiveDate, Utc};
     use diesel::{
         prelude::*,
@@ -48,7 +48,7 @@ pub mod test_db {
         let user = User {
             id: None,
             uuid: Uuid::now_v7().to_string(),
-            name: name.to_string(),
+            name: name.to_owned(),
             image_path: None,
             created_at: None,
             updated_at: None,
@@ -72,8 +72,8 @@ pub mod test_db {
         let admin = Admin {
             id: None,
             uuid: Uuid::now_v7().to_string(),
-            name: name.to_string(),
-            email: email.to_string(),
+            name: name.to_owned(),
+            email: email.to_owned(),
             oidc_subject: format!("test-oidc-{}", Uuid::now_v7()),
             created_at: None,
             updated_at: None,
@@ -102,7 +102,7 @@ pub mod test_db {
     ) -> Chore {
         let chore_input = ChoreInput {
             uuid: None,
-            name: name.to_string(),
+            name: name.to_owned(),
             description: Some(format!("Test description for {}", name)),
             payment_type,
             amount_cents,
@@ -194,3 +194,4 @@ pub mod test_db {
         }
     }
 }
+
