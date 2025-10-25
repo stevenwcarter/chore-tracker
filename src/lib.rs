@@ -17,6 +17,9 @@ pub mod routes;
 pub mod schema;
 pub mod svc;
 
+#[cfg(test)]
+pub mod test_helpers;
+
 // pub(crate) fn format_millis(millis: i64) -> String {
 //     let secs = millis / 1000;
 //     let nsecs = (millis % 1000) * 1_000_000;
