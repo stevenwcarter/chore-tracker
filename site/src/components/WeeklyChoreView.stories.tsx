@@ -516,54 +516,6 @@ export const LongUserName: Story = {
 };
 
 // Fixed date story for consistent screenshots and testing
-const fixedWeekStartDate = '2023-10-23'; // Fixed Monday
-const fixedMockCompletions: ChoreCompletion[] = [
-  {
-    id: 1,
-    uuid: 'completion-1',
-    choreId: 1,
-    userId: 1,
-    completedDate: '2023-10-23', // Monday
-    approved: true,
-    approvedAt: '2023-10-23T15:00:00Z',
-    amountCents: 500,
-    createdAt: '2023-10-23T10:00:00Z',
-    chore: mockChores[0],
-    user: mockUser,
-    notes,
-    adminNotes,
-  },
-  {
-    id: 2,
-    uuid: 'completion-2',
-    choreId: 2,
-    userId: 1,
-    completedDate: '2023-10-24', // Tuesday
-    approved: false,
-    amountCents: 200,
-    createdAt: '2023-10-24T08:00:00Z',
-    chore: mockChores[1],
-    user: mockUser,
-    notes,
-    adminNotes,
-  },
-  {
-    id: 3,
-    uuid: 'completion-3',
-    choreId: 3,
-    userId: 1,
-    completedDate: '2023-10-25', // Wednesday
-    approved: true,
-    approvedAt: '2023-10-25T16:00:00Z',
-    amountCents: 1500,
-    createdAt: '2023-10-25T14:00:00Z',
-    chore: mockChores[2],
-    user: mockUser,
-    notes,
-    adminNotes,
-  },
-];
-
 export const MobileView: Story = {
   args: {
     user: mockUser,
