@@ -31,13 +31,7 @@ export const ChoreRow: React.FC<ChoreRowProps> = ({
   };
 
   const isChoreScheduledForDay = (daysOfWeek: number, date: Date): boolean => {
-    // Sun 1
-    // Mon 2
-    // Tues 4
-    // Wed 8
-    // Thu 16
-    // Fri 32
-    // Sat 64
+    // Sun 1, Mon 2, Tues 4, Wed 8, Thu 16, Fri 32, Sat 64
     const dayIndex = date.getDay(); // 0 (Sun) to 6 (Sat)
     const dayBit = 1 << dayIndex; // 2^dayIndex
     return (daysOfWeek & dayBit) === dayBit;
@@ -47,6 +41,13 @@ export const ChoreRow: React.FC<ChoreRowProps> = ({
     const completion = getCompletionForDate(date);
     const isScheduled = isChoreScheduledForDay(choreData.chore.requiredDays, date);
     const isCompletedByAnyone = isChoreCompletedByAnyone(choreData.chore.id, date);
+
+    const getCompletionNotes = () => {
+      if (!completion || !completion.notes || completion.notes.length === 0) {
+        return '';
+      }
+      return completion.notes.map((note) => note.noteText).join('\n');
+    };
 
     if (!isScheduled) {
       return <div className="w-8 h-8"></div>;
@@ -65,7 +66,9 @@ export const ChoreRow: React.FC<ChoreRowProps> = ({
             {completion.approved ? '✓' : '?'}
           </div>
           {completion.notes && completion.notes.length > 0 && (
-            <div className="text-xs text-blue-400">📝 {completion.notes.length}</div>
+            <div className="text-xs text-blue-400" title={getCompletionNotes()}>
+              📝 {completion.notes.length}
+            </div>
           )}
         </div>
       );
