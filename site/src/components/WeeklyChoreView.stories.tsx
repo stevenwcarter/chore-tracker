@@ -5,6 +5,8 @@ import { WeeklyChoreView } from './WeeklyChoreView';
 import { User, ChoreCompletion, PaymentType, AuthorType } from '../types/chore';
 import { GET_ALL_WEEKLY_COMPLETIONS, GET_USER_CHORES, GET_WEEKLY_CHORES } from '../graphql/queries';
 
+const testDate = new Date(Date.now() - 4 * 60 * 60 *1000).toISOString(); // 4 hours ago
+
 const notes= [
       {
         id: 1,
@@ -12,7 +14,7 @@ const notes= [
         authorType: AuthorType.User,
         noteText: 'Completed on time!',
         visibleToUser: true,
-        createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), // 4 hours ago
+        createdAt: testDate, // 4 hours ago
       }
     ];
     const adminNotes = [
@@ -22,7 +24,7 @@ const notes= [
         authorType: AuthorType.User,
         noteText: 'Completed on time! (admin only)',
         visibleToUser: false,
-        createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), // 4 hours ago
+        createdAt: testDate, // 4 hours ago
       }
     ];
 // Mock data for stories
@@ -143,7 +145,7 @@ const mockCompletions: ChoreCompletion[] = [
     approved: true,
     approvedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), // 1 hour ago
     amountCents: 200,
-    createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), // 4 hours ago
+    createdAt: testDate, // 4 hours ago
     chore: mockChores[1],
     user: mockUser,
     notes,
