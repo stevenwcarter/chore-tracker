@@ -9,7 +9,11 @@ use serde::Serialize;
 use tracing::info;
 use uuid::Uuid;
 
-use crate::{context::GraphQLContext, schema::*, svc::ChoreCompletionNoteSvc};
+use crate::{
+    context::GraphQLContext,
+    schema::*,
+    svc::{ChoreCompletionNoteSvc, UserImageSvc},
+};
 use diesel::prelude::*;
 
 // Enums
@@ -62,9 +66,7 @@ impl From<AuthorType> for String {
 }
 
 // User model
-#[derive(
-    Queryable, Debug, Clone, Identifiable, Insertable, Selectable, AsChangeset, GraphQLObject,
-)]
+#[derive(Queryable, Debug, Clone, Identifiable, Insertable, Selectable, AsChangeset)]
 #[diesel(primary_key(id))]
 #[diesel(table_name = users)]
 pub struct User {
@@ -75,6 +77,40 @@ pub struct User {
     pub created_at: Option<NaiveDateTime>,
     pub updated_at: Option<NaiveDateTime>,
     pub image_id: Option<i32>,
+}
+
+#[juniper::graphql_object(context = GraphQLContext)]
+impl User {
+    pub fn id(&self) -> Option<i32> {
+        self.id
+    }
+    pub fn uuid(&self) -> &str {
+        &self.uuid
+    }
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+    pub fn image_path(&self, context: &GraphQLContext) -> Option<String> {
+        // check if image is uploaded in database, then return path like `/images/user/{user_id}`
+        // image is not stored in image_path, this is what we're telling the frontend to load
+
+        // TODO: Add check for image
+        let image = UserImageSvc::get_by_user_id(context, self.id?);
+        if let Ok(Some(image)) = image {
+            return Some(format!("/images/user/{}", image.id));
+        }
+
+        None
+    }
+    pub fn created_at(&self) -> Option<NaiveDateTime> {
+        self.created_at
+    }
+    pub fn updated_at(&self) -> Option<NaiveDateTime> {
+        self.updated_at
+    }
+    pub fn image_id(&self) -> Option<i32> {
+        self.image_id
+    }
 }
 
 // User image model for storing images in database
@@ -136,7 +172,7 @@ impl From<UserInput> for User {
             id: None,
             uuid: input.uuid.unwrap_or_else(|| Uuid::now_v7().to_string()),
             name: input.name,
-            image_path: input.image_path,
+            image_path: None,
             created_at: None,
             updated_at: None,
             image_id: None,
@@ -562,10 +598,20 @@ impl From<ChoreCompletionNoteInput> for ChoreCompletionNote {
 }
 
 // Helper GraphQL object for unpaid totals
-#[derive(Debug, Clone, GraphQLObject)]
+#[derive(Debug, Clone)]
 pub struct UnpaidTotal {
     pub user: User,
     pub amount_cents: i32,
+}
+
+#[juniper::graphql_object(context = GraphQLContext)]
+impl UnpaidTotal {
+    pub fn user(&self) -> &User {
+        &self.user
+    }
+    pub fn amount_cents(&self) -> i32 {
+        self.amount_cents
+    }
 }
 
 impl UnpaidTotal {

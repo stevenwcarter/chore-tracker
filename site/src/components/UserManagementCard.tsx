@@ -1,5 +1,6 @@
 import React from 'react';
 import { User } from '../types/chore';
+import UserImage from './UserImage';
 
 interface UserManagementCardProps {
   user: User;
@@ -12,13 +13,6 @@ export const UserManagementCard: React.FC<UserManagementCardProps> = ({
   onImageUpload,
   onRemoveImage,
 }) => {
-  const getUserImageUrl = (userObj: User): string | null => {
-    if (userObj.id) {
-      return `/images/user/${userObj.id}`;
-    }
-    return null;
-  };
-
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -26,22 +20,14 @@ export const UserManagementCard: React.FC<UserManagementCardProps> = ({
     }
   };
 
+  console.log(user);
+
   return (
     <div className="bg-gray-700 p-4 rounded-lg border border-gray-600">
       {/* Mobile: Stack vertically, Desktop: Side by side */}
       <div className="flex flex-col sm:flex-row sm:justify-between gap-4">
         <div className="flex items-center gap-4">
-          {getUserImageUrl(user) ? (
-            <img
-              src={getUserImageUrl(user)!}
-              alt={user.name}
-              className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover"
-            />
-          ) : (
-            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gray-600 flex items-center justify-center">
-              <span className="text-lg sm:text-2xl text-gray-400">👤</span>
-            </div>
-          )}
+          <UserImage user={user} />
           <div>
             <h4 className="text-base sm:text-lg font-semibold text-white">{user.name}</h4>
             <p className="text-xs sm:text-sm text-gray-400">ID: {user.id}</p>

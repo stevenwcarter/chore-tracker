@@ -16,6 +16,7 @@ import DayNavigator from './DayNavigator';
 import ChoreGridHeader from './ChoreGridHeader';
 import ChoreRow from './ChoreRow';
 import { useUserChores } from 'hooks/useUserChores';
+import UserImage from './UserImage';
 
 interface WeeklyChoreViewProps {
   user: User;
@@ -60,14 +61,6 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
-
-  // Helper function to get user image URL
-  const getUserImageUrl = (userObj: User): string | null => {
-    if (userObj.id) {
-      return `/images/user/${userObj.id}`;
-    }
-    return null;
-  };
 
   // Use custom hook for user chores
   const {
@@ -137,25 +130,13 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
           {onBack && (
             <button
               onClick={onBack}
-              className="p-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+              className="p-4 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition-colors border"
               aria-label="Go back"
             >
               ← Back
             </button>
           )}
-          <div className="w-12 h-12 rounded-full overflow-hidden bg-linear-to-br from-blue-400 to-purple-500 flex items-center justify-center">
-            {getUserImageUrl(user) ? (
-              <img
-                src={getUserImageUrl(user)!}
-                alt={user.name}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <span className="text-white text-lg font-bold">
-                {user.name.charAt(0).toUpperCase()}
-              </span>
-            )}
-          </div>
+          <UserImage user={user} />
           <div>
             <h2 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-white`}>
               {user.name}'s Chores

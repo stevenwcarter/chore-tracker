@@ -2,20 +2,13 @@ import { useQuery } from '@apollo/client';
 import { GET_ALL_USERS } from 'graphql/queries';
 import { User } from 'types/chore';
 import LoadingSpinner from './LoadingSpinner';
+import UserImage from './UserImage';
 
 interface UserSelectorProps {
   selectedUserId: number | null;
   onUserSelect: (user: User) => void;
   className?: string;
 }
-
-// Helper function to get user image URL
-const getUserImageUrl = (userObj: User): string | null => {
-  if (userObj.id) {
-    return `/images/user/${userObj.id}`;
-  }
-  return null;
-};
 
 export default function UserSelector({
   selectedUserId,
@@ -44,19 +37,7 @@ export default function UserSelector({
                 : 'hover:scale-105 hover:shadow-lg'
             }`}
           >
-            <div className="w-20 h-20 rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
-              {getUserImageUrl(user) ? (
-                <img
-                  src={getUserImageUrl(user)!}
-                  alt={user.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span className="text-white text-2xl font-bold">
-                  {user.name.charAt(0).toUpperCase()}
-                </span>
-              )}
-            </div>
+            <UserImage user={user} />
             <div className="mt-2 text-center">
               <span className="text-sm font-medium text-white">{user.name}</span>
             </div>
