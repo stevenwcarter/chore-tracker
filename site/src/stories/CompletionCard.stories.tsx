@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
-import { CompletionCard } from './CompletionCard';
-import { ChoreCompletion, PaymentType } from '../types/chore';
+import { CompletionCard } from 'components/CompletionCard';
+import { ChoreCompletion, PaymentType } from 'types/chore';
 
 // Mock data for stories
 const baseCompletion: ChoreCompletion = {

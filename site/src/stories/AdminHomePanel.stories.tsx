@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { MemoryRouter } from 'react-router-dom';
-import { AdminHomePanel } from './AdminHomePanel';
-import { Admin } from '../types/chore';
+import { AdminHomePanel } from 'components/AdminHomePanel';
+import { Admin } from 'types/chore';
 
 // Mock data for stories
 const mockAdmin: Admin = {

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
-import CreateUserForm from './CreateUserForm';
+import CreateUserForm from 'components/CreateUserForm';
 
 const meta = {
   title: 'Components/CreateUserForm',

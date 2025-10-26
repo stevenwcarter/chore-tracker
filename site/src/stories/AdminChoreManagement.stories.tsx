@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { MockedProvider } from '@apollo/client/testing';
-import { AdminChoreManagement } from './AdminChoreManagement';
-import { Chore, User, PaymentType } from '../types/chore';
-import { GET_ALL_CHORES, GET_ALL_USERS } from '../graphql/queries';
+import { AdminChoreManagement } from 'components/AdminChoreManagement';
+import { Chore, User, PaymentType } from 'types/chore';
+import { GET_ALL_CHORES, GET_ALL_USERS } from 'graphql/queries';
 
 // Mock data for stories
 const mockUsers: User[] = [

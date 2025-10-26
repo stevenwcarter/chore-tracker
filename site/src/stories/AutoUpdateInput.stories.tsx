@@ -1,6 +1,6 @@
 import { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
-import { AutoUpdateInput } from './AutoUpdateInput';
+import { AutoUpdateInput } from 'components/AutoUpdateInput';
 
 const meta = {
   title: 'Components/AutoUpdateInput',

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
-import CreateChoreForm from './CreateChoreForm';
-import { User, Chore, PaymentType } from '../types/chore';
+import CreateChoreForm from 'components/CreateChoreForm';
+import { User, Chore, PaymentType } from 'types/chore';
 
 // Mock data for stories
 const mockUsers: User[] = [

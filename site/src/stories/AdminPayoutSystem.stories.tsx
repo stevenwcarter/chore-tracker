@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { MockedProvider } from '@apollo/client/testing';
-import { AdminPayoutSystem } from './AdminPayoutSystem';
-import { UnpaidTotal } from '../types/chore';
-import { GET_UNPAID_TOTALS } from '../graphql/queries';
+import { AdminPayoutSystem } from 'components/AdminPayoutSystem';
+import { UnpaidTotal } from 'types/chore';
+import { GET_UNPAID_TOTALS } from 'graphql/queries';
 
 // Mock data for stories
 const mockUnpaidTotals: UnpaidTotal[] = [

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
-import UserManagementCard from './UserManagementCard';
-import { User } from '../types/chore';
+import UserManagementCard from 'components/UserManagementCard';
+import { User } from 'types/chore';
 
 // Mock data for stories
 const userWithImage: User = {

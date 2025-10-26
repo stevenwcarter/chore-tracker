@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { MockedProvider } from '@apollo/client/testing';
-import { AdminCompletionReview } from './AdminCompletionReview';
-import { ChoreCompletion, PaymentType, AuthorType } from '../types/chore';
-import { GET_ALL_WEEKLY_COMPLETIONS } from '../graphql/queries';
+import { AdminCompletionReview } from 'components/AdminCompletionReview';
+import { ChoreCompletion, PaymentType, AuthorType } from 'types/chore';
+import { GET_ALL_WEEKLY_COMPLETIONS } from 'graphql/queries';
 
 // Mock data for stories
 const mockChore = {

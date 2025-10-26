@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
-import { DayNavigator } from './DayNavigator';
+import { DayNavigator } from 'components/DayNavigator';
 
 // Create a mock week of dates
 const createWeekDates = (startDate: Date): Date[] => {

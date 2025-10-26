@@ -1,7 +1,7 @@
 import { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
-import { ChoreCard } from './ChoreCard';
-import { Chore, PaymentType } from '../types/chore';
+import { ChoreCard } from 'components/ChoreCard';
+import { Chore, PaymentType } from 'types/chore';
 
 // Mock data for stories
 const mockUsers = [
