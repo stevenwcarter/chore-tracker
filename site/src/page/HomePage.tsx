@@ -25,21 +25,9 @@ export const HomePage = () => {
 
   return (
     <div className="space-y-6">
-      {selectedUser ? (
-        <WeeklyChoreView user={selectedUser} onBack={() => setSelectedUser(null)} />
-      ) : (
-        currentAdmin && <AdminHomePanel currentAdmin={currentAdmin} />
-      )}
-      <div className="space-y-8">
-        <div className="text-center">
-          <h2 className="text-3xl font-bold text-gray-200 mb-4">Welcome to Chore Tracker!</h2>
-          <p className="text-gray-300 mb-8">
-            Track your chores and earn rewards for completing them.
-          </p>
-        </div>
-
-        <UserSelector selectedUserId={null} onUserSelect={handleUserSelect} />
-      </div>
+      {currentAdmin && <AdminHomePanel currentAdmin={currentAdmin} />}
+      <UserSelector selectedUserId={null} onUserSelect={handleUserSelect} />
+      {selectedUser && <WeeklyChoreView user={selectedUser} onBack={() => setSelectedUser(null)} />}
     </div>
   );
 };
