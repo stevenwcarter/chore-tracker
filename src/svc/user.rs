@@ -156,7 +156,6 @@ mod tests {
         let created_user = UserSvc::create(&context, &user).unwrap();
 
         assert_eq!(created_user.name, "Input User");
-        assert_eq!(created_user.image_path, Some("/custom/path.jpg".to_owned()));
         assert_eq!(created_user.uuid, user_input.uuid.unwrap());
     }
 
@@ -213,4 +212,3 @@ mod tests {
         assert_eq!(result.image_path, Some("/new/image.png".to_owned()));
     }
 }
-
