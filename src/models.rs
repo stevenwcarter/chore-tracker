@@ -97,7 +97,7 @@ impl User {
         // TODO: Add check for image
         let image = UserImageSvc::get_by_user_id(context, self.id?);
         if let Ok(Some(image)) = image {
-            return Some(format!("/images/user/{}", image.id));
+            return Some(format!("/images/user/{}", self.id.unwrap()));
         }
 
         None
