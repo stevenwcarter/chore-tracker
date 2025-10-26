@@ -1,6 +1,6 @@
 import { useQuery } from '@apollo/client';
-import { GET_ALL_USERS } from '../graphql/queries';
-import { User } from '../types/chore';
+import { GET_ALL_USERS } from 'graphql/queries';
+import { User } from 'types/chore';
 import LoadingSpinner from './LoadingSpinner';
 
 interface UserSelectorProps {
