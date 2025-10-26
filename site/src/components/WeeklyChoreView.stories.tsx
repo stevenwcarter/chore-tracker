@@ -2,9 +2,29 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
 import { MockedProvider } from '@apollo/client/testing';
 import { WeeklyChoreView } from './WeeklyChoreView';
-import { User, ChoreCompletion, PaymentType } from '../types/chore';
-import { GET_ALL_WEEKLY_COMPLETIONS, GET_USER_CHORES } from '../graphql/queries';
+import { User, ChoreCompletion, PaymentType, AuthorType } from '../types/chore';
+import { GET_ALL_WEEKLY_COMPLETIONS, GET_USER_CHORES, GET_WEEKLY_CHORES } from '../graphql/queries';
 
+const notes= [
+      {
+        id: 1,
+        choreCompletionId: 1,
+        authorType: AuthorType.User,
+        noteText: 'Completed on time!',
+        visibleToUser: true,
+        createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), // 4 hours ago
+      }
+    ];
+    const adminNotes = [
+      {
+        id: 2,
+        choreCompletionId: 1,
+        authorType: AuthorType.User,
+        noteText: 'Completed on time! (admin only)',
+        visibleToUser: false,
+        createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), // 4 hours ago
+      }
+    ];
 // Mock data for stories
 const mockUser: User = {
   id: 1,
@@ -53,70 +73,104 @@ const mockChores = [
   },
 ];
 
+// Helper function to get the Sunday of the current week (matching dateUtils.ts logic)
+const getCurrentWeekStart = () => {
+  const today = new Date();
+  const day = today.getDay();
+  const diff = today.getDate() - day; // Subtract days since Sunday
+  const weekStart = new Date(today);
+  weekStart.setDate(diff);
+  weekStart.setHours(0, 0, 0, 0);
+  return weekStart;
+};
+
+// Helper function to format date for GraphQL (matching dateUtils.ts)
+const formatDateForGraphQL = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+// Create a date for current week (using Sunday as start, matching dateUtils.ts)
+const currentWeekStart = getCurrentWeekStart();
+const weekStartDate = formatDateForGraphQL(currentWeekStart);
+
+// Update completion dates to be in the current week
+const getDateInCurrentWeek = (dayOffset: number): string => {
+  const date = new Date(currentWeekStart);
+  date.setDate(currentWeekStart.getDate() + dayOffset);
+  return formatDateForGraphQL(date);
+};
+
+// Mock completions with current week dates
 const mockCompletions: ChoreCompletion[] = [
   {
     id: 1,
     uuid: 'completion-1',
     choreId: 1,
     userId: 1,
-    completedDate: '2023-10-23',
+    completedDate: getDateInCurrentWeek(0), // Monday
     approved: true,
-    approvedAt: '2023-10-23T15:00:00Z',
+    approvedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
     amountCents: 500,
-    createdAt: '2023-10-23T10:00:00Z',
+    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), // 5 hours ago
     chore: mockChores[0],
     user: mockUser,
-    notes: [],
-    adminNotes: [],
+    notes,
+    adminNotes,
   },
   {
     id: 2,
     uuid: 'completion-2',
     choreId: 2,
     userId: 1,
-    completedDate: '2023-10-23',
+    completedDate: getDateInCurrentWeek(0), // Monday
     approved: false,
     amountCents: 200,
-    createdAt: '2023-10-23T08:00:00Z',
+    createdAt: new Date(Date.now() - 7 * 60 * 60 * 1000).toISOString(), // 7 hours ago
     chore: mockChores[1],
     user: mockUser,
-    notes: [],
-    adminNotes: [],
+    notes,
+    adminNotes,
   },
   {
     id: 3,
     uuid: 'completion-3',
     choreId: 2,
     userId: 1,
-    completedDate: '2023-10-24',
+    completedDate: getDateInCurrentWeek(1), // Tuesday
     approved: true,
-    approvedAt: '2023-10-24T16:00:00Z',
+    approvedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), // 1 hour ago
     amountCents: 200,
-    createdAt: '2023-10-24T09:00:00Z',
+    createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), // 4 hours ago
     chore: mockChores[1],
     user: mockUser,
-    notes: [],
-    adminNotes: [],
+    notes,
+    adminNotes,
   },
   {
     id: 4,
     uuid: 'completion-4',
     choreId: 3,
     userId: 1,
-    completedDate: '2023-10-25',
+    completedDate: getDateInCurrentWeek(2), // Wednesday
     approved: false,
     amountCents: 1500,
-    createdAt: '2023-10-25T14:00:00Z',
+    createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(), // 3 hours ago
     chore: mockChores[2],
     user: mockUser,
-    notes: [],
-    adminNotes: [],
+    notes,
+    adminNotes,
   },
 ];
 
-// Create a date for current week (using Monday as start)
-const currentDate = new Date('2023-10-23'); // Monday
-const weekStartDate = currentDate.toISOString().split('T')[0];
+// Mock weekly completions with full chore and user data
+const mockWeeklyCompletions = mockCompletions.map(completion => ({
+  ...completion,
+  chore: mockChores.find(chore => chore.id === completion.choreId),
+  user: mockUser,
+}));
 
 // Mock GraphQL responses
 const mockWithData = [
@@ -132,6 +186,30 @@ const mockWithData = [
         listChores: mockChores,
       },
     },
+    newData: () => ({
+      data: {
+        listChores: mockChores,
+      },
+    }),
+  },
+  {
+    request: {
+      query: GET_WEEKLY_CHORES,
+      variables: {
+        userId: 1,
+        weekStartDate: weekStartDate,
+      },
+    },
+    result: {
+      data: {
+        getWeeklyChoreCompletions: mockWeeklyCompletions,
+      },
+    },
+    newData: () => ({
+      data: {
+        getWeeklyChoreCompletions: mockWeeklyCompletions,
+      },
+    }),
   },
   {
     request: {
@@ -145,6 +223,11 @@ const mockWithData = [
         getAllWeeklyCompletions: mockCompletions,
       },
     },
+    newData: () => ({
+      data: {
+        getAllWeeklyCompletions: mockCompletions,
+      },
+    }),
   },
 ];
 
@@ -161,6 +244,30 @@ const mockNoCompletions = [
         listChores: mockChores,
       },
     },
+    newData: () => ({
+      data: {
+        listChores: mockChores,
+      },
+    }),
+  },
+  {
+    request: {
+      query: GET_WEEKLY_CHORES,
+      variables: {
+        userId: 1,
+        weekStartDate: weekStartDate,
+      },
+    },
+    result: {
+      data: {
+        getWeeklyChoreCompletions: [],
+      },
+    },
+    newData: () => ({
+      data: {
+        getWeeklyChoreCompletions: [],
+      },
+    }),
   },
   {
     request: {
@@ -174,6 +281,11 @@ const mockNoCompletions = [
         getAllWeeklyCompletions: [],
       },
     },
+    newData: () => ({
+      data: {
+        getAllWeeklyCompletions: [],
+      },
+    }),
   },
 ];
 
@@ -190,6 +302,30 @@ const mockNoChores = [
         listChores: [],
       },
     },
+    newData: () => ({
+      data: {
+        listChores: [],
+      },
+    }),
+  },
+  {
+    request: {
+      query: GET_WEEKLY_CHORES,
+      variables: {
+        userId: 1,
+        weekStartDate: weekStartDate,
+      },
+    },
+    result: {
+      data: {
+        getWeeklyChoreCompletions: [],
+      },
+    },
+    newData: () => ({
+      data: {
+        getWeeklyChoreCompletions: [],
+      },
+    }),
   },
   {
     request: {
@@ -203,6 +339,11 @@ const mockNoChores = [
         getAllWeeklyCompletions: [],
       },
     },
+    newData: () => ({
+      data: {
+        getAllWeeklyCompletions: [],
+      },
+    }),
   },
 ];
 
@@ -220,6 +361,31 @@ const mockLoading = [
         listChores: mockChores,
       },
     },
+    newData: () => ({
+      data: {
+        listChores: mockChores,
+      },
+    }),
+  },
+  {
+    request: {
+      query: GET_WEEKLY_CHORES,
+      variables: {
+        userId: 1,
+        weekStartDate: weekStartDate,
+      },
+    },
+    delay: 5000,
+    result: {
+      data: {
+        getWeeklyChoreCompletions: mockWeeklyCompletions,
+      },
+    },
+    newData: () => ({
+      data: {
+        getWeeklyChoreCompletions: mockWeeklyCompletions,
+      },
+    }),
   },
   {
     request: {
@@ -234,6 +400,11 @@ const mockLoading = [
         getAllWeeklyCompletions: mockCompletions,
       },
     },
+    newData: () => ({
+      data: {
+        getAllWeeklyCompletions: mockCompletions,
+      },
+    }),
   },
 ];
 
@@ -342,4 +513,77 @@ export const LongUserName: Story = {
       </MockedProvider>
     ),
   ],
+};
+
+// Fixed date story for consistent screenshots and testing
+const fixedWeekStartDate = '2023-10-23'; // Fixed Monday
+const fixedMockCompletions: ChoreCompletion[] = [
+  {
+    id: 1,
+    uuid: 'completion-1',
+    choreId: 1,
+    userId: 1,
+    completedDate: '2023-10-23', // Monday
+    approved: true,
+    approvedAt: '2023-10-23T15:00:00Z',
+    amountCents: 500,
+    createdAt: '2023-10-23T10:00:00Z',
+    chore: mockChores[0],
+    user: mockUser,
+    notes,
+    adminNotes,
+  },
+  {
+    id: 2,
+    uuid: 'completion-2',
+    choreId: 2,
+    userId: 1,
+    completedDate: '2023-10-24', // Tuesday
+    approved: false,
+    amountCents: 200,
+    createdAt: '2023-10-24T08:00:00Z',
+    chore: mockChores[1],
+    user: mockUser,
+    notes,
+    adminNotes,
+  },
+  {
+    id: 3,
+    uuid: 'completion-3',
+    choreId: 3,
+    userId: 1,
+    completedDate: '2023-10-25', // Wednesday
+    approved: true,
+    approvedAt: '2023-10-25T16:00:00Z',
+    amountCents: 1500,
+    createdAt: '2023-10-25T14:00:00Z',
+    chore: mockChores[2],
+    user: mockUser,
+    notes,
+    adminNotes,
+  },
+];
+
+export const MobileView: Story = {
+  args: {
+    user: mockUser,
+    isAdmin: false,
+  },
+  decorators: [
+    (Story) => (
+      <MockedProvider mocks={mockWithData} addTypename={false}>
+        <Story />
+      </MockedProvider>
+    ),
+  ],
+  parameters: {
+    viewport: {
+      defaultViewport: 'mobile1',
+    },
+    docs: {
+      description: {
+        story: 'Mobile layout showing day navigation and card-based chore display.',
+      },
+    },
+  },
 };
