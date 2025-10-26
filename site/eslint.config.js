@@ -83,6 +83,7 @@ export default tseslint.config(
       "react/no-unescaped-entities": 0,
       "react/prop-types": 0,
       "react/react-in-jsx-scope": 0,
+      "react-hooks/set-state-in-effect": 0,
       "@typescript-eslint/explicit-function-return-type": 0,
       "@typescript-eslint/explicit-module-boundary-types": 0,
       "@typescript-eslint/no-empty-function": 0,

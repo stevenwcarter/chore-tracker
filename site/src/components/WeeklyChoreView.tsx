@@ -32,8 +32,23 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
 }) => {
   const [currentWeekStart, setCurrentWeekStart] = useState(getWeekDateRange().start);
   const [selectedCompletion, setSelectedCompletion] = useState<ChoreCompletion | null>(null);
-  const [currentDate, setCurrentDate] = useState(new Date());
   const [isMobile, setIsMobile] = useState(false);
+
+  const weekRange = useMemo(() => getWeekDateRange(currentWeekStart), [currentWeekStart]);
+
+  // For mobile, always use the first day of the current week
+  // For desktop, allow free navigation through the week
+  const [selectedDate, setSelectedDate] = useState(() => {
+    return weekRange.dates.length > 0 ? weekRange.dates[0] : new Date();
+  });
+
+  // Derive the current date based on mobile state
+  const currentDate = useMemo(() => {
+    if (isMobile && weekRange.dates.length > 0) {
+      return weekRange.dates[0];
+    }
+    return selectedDate;
+  }, [isMobile, weekRange.dates, selectedDate]);
 
   // Check for mobile screen size
   useEffect(() => {
@@ -53,8 +68,6 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
     }
     return null;
   };
-
-  const weekRange = useMemo(() => getWeekDateRange(currentWeekStart), [currentWeekStart]);
 
   // Use custom hook for user chores
   const {
@@ -77,13 +90,6 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
       },
     },
   );
-
-  // Set initial current date to first day of week on mobile
-  useEffect(() => {
-    if (isMobile && weekRange.dates.length > 0) {
-      setCurrentDate(weekRange.dates[0]);
-    }
-  }, [weekRange, isMobile]);
 
   const handleCompleteChore = async (choreId: number, completionDate: Date) => {
     try {
@@ -115,7 +121,7 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
     setCurrentWeekStart(newWeekStart);
     if (isMobile) {
       const newWeekRange = getWeekDateRange(newWeekStart);
-      setCurrentDate(newWeekRange.dates[0]);
+      setSelectedDate(newWeekRange.dates[0]);
     }
   };
 
@@ -176,7 +182,7 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
         <DayNavigator
           currentDate={currentDate}
           weekDates={weekRange.dates}
-          onDateChange={setCurrentDate}
+          onDateChange={setSelectedDate}
         />
       )}
 

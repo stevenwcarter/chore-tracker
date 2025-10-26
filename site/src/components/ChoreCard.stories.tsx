@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
 import { ChoreCard } from './ChoreCard';
 import { Chore, PaymentType } from '../types/chore';
