@@ -110,7 +110,7 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
   const isChoreCompletedByAnyone = (choreId: number, date: Date): boolean => {
     if (!allCompletionsData?.getAllWeeklyCompletions) return false;
 
-    return allCompletionsData.getAllWeeklyCompletions.some((completion) => {
+    return allCompletionsData.getAllWeeklyCompletions.some((completion: ChoreCompletion) => {
       const isSameChore = completion.choreId === choreId;
       const isSameDate = isSameDayAsString(date, completion.completedDate);
       return isSameChore && isSameDate;
@@ -143,7 +143,7 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
               ← Back
             </button>
           )}
-          <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
+          <div className="w-12 h-12 rounded-full overflow-hidden bg-linear-to-br from-blue-400 to-purple-500 flex items-center justify-center">
             {getUserImageUrl(user) ? (
               <img
                 src={getUserImageUrl(user)!}
