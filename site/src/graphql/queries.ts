@@ -1,12 +1,7 @@
-import { gql, TypedDocumentNode } from '@apollo/client';
-import { Chore, ChoreCompletion, User } from 'types/chore';
-
-type GetAllUsersQuery = {
-  listUsers: (User & { __typename: 'User' })[];
-};
+import { gql } from '@apollo/client';
 
 // User queries
-export const GET_ALL_USERS: TypedDocumentNode<GetAllUsersQuery> = gql`
+export const GET_ALL_USERS = gql`
   query GetAllUsers {
     listUsers {
       id
@@ -18,10 +13,7 @@ export const GET_ALL_USERS: TypedDocumentNode<GetAllUsersQuery> = gql`
   }
 `;
 
-type GetUserQuery = {
-  getUser: (User & { __typename: 'User' })[];
-};
-export const GET_USER: TypedDocumentNode<GetUserQuery, { userUuid: string }> = gql`
+export const GET_USER = gql`
   query GetUser($userUuid: String!) {
     getUser(userUuid: $userUuid) {
       id
@@ -33,12 +25,8 @@ export const GET_USER: TypedDocumentNode<GetUserQuery, { userUuid: string }> = g
   }
 `;
 
-type GetUserChoresQuery = {
-  listChores: (Chore & { __typename: 'Chore' })[];
-};
-type GetUserChoresVariables = { userId: number; activeOnly?: boolean };
 // Chore queries
-export const GET_USER_CHORES: TypedDocumentNode<GetUserChoresQuery, GetUserChoresVariables> = gql`
+export const GET_USER_CHORES = gql`
   query GetUserChores($userId: Int!) {
     listChores(userId: $userId, activeOnly: true) {
       id
@@ -54,14 +42,7 @@ export const GET_USER_CHORES: TypedDocumentNode<GetUserChoresQuery, GetUserChore
   }
 `;
 
-type GetWeeklyChoresQuery = {
-  getWeeklyChoreCompletions: (ChoreCompletion & { __typename: 'ChoreCompletion' })[];
-};
-type GetWeeklyChoresQueryVariables = { userId: number; weekStartDate: string };
-export const GET_WEEKLY_CHORES: TypedDocumentNode<
-  GetWeeklyChoresQuery,
-  GetWeeklyChoresQueryVariables
-> = gql`
+export const GET_WEEKLY_CHORES = gql`
   query GetWeeklyChores($userId: Int!, $weekStartDate: LocalDate!) {
     getWeeklyChoreCompletions(userId: $userId, weekStartDate: $weekStartDate) {
       id
@@ -102,14 +83,7 @@ export const GET_WEEKLY_CHORES: TypedDocumentNode<
   }
 `;
 
-type GetAllWeeklyChoreCompletionsQuery = {
-  getAllWeeklyCompletions: (ChoreCompletion & { __typename: 'ChoreCompletion' })[];
-};
-type GetAllWeeklyChoreCompletionsQueryVariables = { weekStartDate: string };
-export const GET_ALL_WEEKLY_COMPLETIONS: TypedDocumentNode<
-  GetAllWeeklyChoreCompletionsQuery,
-  GetAllWeeklyChoreCompletionsQueryVariables
-> = gql`
+export const GET_ALL_WEEKLY_COMPLETIONS = gql`
   query GetAllWeeklyCompletions($weekStartDate: LocalDate!) {
     getAllWeeklyCompletions(weekStartDate: $weekStartDate) {
       id
