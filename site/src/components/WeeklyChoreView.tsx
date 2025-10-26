@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@apollo/client';
-import { GET_ALL_WEEKLY_COMPLETIONS } from '../graphql/queries';
-import { User, ChoreCompletion } from '../types/chore';
+import { GET_ALL_WEEKLY_COMPLETIONS } from 'graphql/queries';
+import { User, ChoreCompletion } from 'types/chore';
 import {
   getWeekDateRange,
   formatDateForGraphQL,
   formatDateForDisplay,
   isSameDayAsString,
-} from '../utils/dateUtils';
+} from 'utils/dateUtils';
 import LoadingSpinner from './LoadingSpinner';
 import Modal from './Modal';
 import ChoreCompletionDetail from './ChoreCompletionDetail';
@@ -15,7 +15,7 @@ import WeekNavigator from './WeekNavigator';
 import DayNavigator from './DayNavigator';
 import ChoreGridHeader from './ChoreGridHeader';
 import ChoreRow from './ChoreRow';
-import { useUserChores } from '../hooks/useUserChores';
+import { useUserChores } from 'hooks/useUserChores';
 
 interface WeeklyChoreViewProps {
   user: User;
