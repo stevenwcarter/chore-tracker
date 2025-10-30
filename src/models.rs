@@ -548,7 +548,7 @@ impl ChoreCompletionNote {
         self.chore_completion_id
     }
     pub fn author_type(&self) -> AuthorType {
-        AuthorType::from(self.author_type.clone())
+        AuthorType::from(&self.author_type)
     }
     pub fn author_user_id(&self) -> Option<i32> {
         self.author_user_id
