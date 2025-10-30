@@ -52,9 +52,9 @@ export const AdminChoreManagement: React.FC<AdminChoreManagementProps> = ({ admi
     }
   };
 
-  const handleRemoveImage = async (userUuid: string) => {
+  const handleRemoveImage = async (userId: number) => {
     try {
-      const response = await fetch(`/images/remove/${userUuid}`, {
+      const response = await fetch(`/images/user/${userId}`, {
         method: 'DELETE',
       });
 

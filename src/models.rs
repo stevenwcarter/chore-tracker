@@ -6,7 +6,7 @@
 use chrono::{NaiveDate, NaiveDateTime, Utc};
 use juniper::{GraphQLEnum, GraphQLInputObject, GraphQLObject};
 use serde::Serialize;
-use tracing::info;
+use tracing::{debug, info};
 use uuid::Uuid;
 
 use crate::{
@@ -91,13 +91,11 @@ impl User {
         &self.name
     }
     pub fn image_path(&self, context: &GraphQLContext) -> Option<String> {
-        // check if image is uploaded in database, then return path like `/images/user/{user_id}`
-        // image is not stored in image_path, this is what we're telling the frontend to load
-
-        // TODO: Add check for image
         let image = UserImageSvc::get_by_user_id(context, self.id?);
         if let Ok(Some(image)) = image {
-            return Some(format!("/images/user/{}", self.id.unwrap()));
+            if let Some(image_uuid) = image.uuid {
+                return Some(format!("/images/{}", image_uuid));
+            }
         }
 
         None
@@ -120,6 +118,7 @@ impl User {
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct UserImage {
     pub id: i32,
+    pub uuid: Option<String>,
     pub user_id: i32,
     pub image_data: Vec<u8>,
     pub content_type: String,
@@ -131,6 +130,7 @@ pub struct UserImage {
 #[derive(Insertable, Debug, Clone)]
 #[diesel(table_name = user_images)]
 pub struct NewUserImage {
+    pub uuid: String,
     pub user_id: i32,
     pub image_data: Vec<u8>,
     pub content_type: String,
@@ -150,6 +150,7 @@ pub struct UserImageInput {
 impl From<UserImageInput> for NewUserImage {
     fn from(input: UserImageInput) -> Self {
         Self {
+            uuid: Uuid::now_v7().to_string(),
             user_id: input.user_id,
             image_data: input.image_data,
             content_type: input.content_type,
@@ -287,7 +288,7 @@ impl Chore {
                 .first::<User>(connection)?;
             users_vec.push(user);
         }
-        info!("Assigned users for chore {:?}", assignments);
+        debug!("Assigned users for chore {:?}", assignments);
         Ok(users_vec)
     }
 }

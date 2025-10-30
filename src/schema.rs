@@ -100,6 +100,7 @@ diesel::table! {
         content_type -> Text,
         file_size -> Integer,
         created_at -> Timestamp,
+        uuid -> Nullable<Text>,
     }
 }
 

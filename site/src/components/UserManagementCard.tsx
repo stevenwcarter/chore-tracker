@@ -5,7 +5,7 @@ import UserImage from './UserImage';
 interface UserManagementCardProps {
   user: User;
   onImageUpload: (userUuid: string, file: File) => void;
-  onRemoveImage: (userUuid: string) => void;
+  onRemoveImage: (userId: number) => void;
 }
 
 export const UserManagementCard: React.FC<UserManagementCardProps> = ({
@@ -41,7 +41,7 @@ export const UserManagementCard: React.FC<UserManagementCardProps> = ({
           </label>
           {user.imagePath && (
             <button
-              onClick={() => onRemoveImage(user.uuid)}
+              onClick={() => onRemoveImage(user.id)}
               className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded transition-colors text-sm font-medium"
             >
               <span className="hidden sm:inline">🗑️ Remove Photo</span>

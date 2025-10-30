@@ -6,6 +6,7 @@ use crate::{
 };
 use anyhow::{Context, Result};
 use diesel::prelude::*;
+use uuid::Uuid;
 
 pub struct UserImageSvc;
 
@@ -45,6 +46,17 @@ impl UserImageSvc {
 
         user_images::table
             .find(id)
+            .select(UserImage::as_select())
+            .first::<UserImage>(&mut conn)
+            .optional()
+            .context("Failed to get user image by id")
+    }
+
+    pub fn get_by_uuid(context: &GraphQLContext, image_uuid: Uuid) -> Result<Option<UserImage>> {
+        let mut conn = get_conn(context);
+
+        user_images::table
+            .filter(user_images::uuid.eq(image_uuid.to_string()))
             .select(UserImage::as_select())
             .first::<UserImage>(&mut conn)
             .optional()
@@ -445,4 +457,3 @@ mod tests {
         assert_eq!(clean_user.image_id, None);
     }
 }
-

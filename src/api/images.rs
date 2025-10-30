@@ -5,14 +5,34 @@ use crate::svc::{UserImageSvc, UserSvc};
 use axum::extract::{Multipart, Path};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use axum::routing::{get, post};
+use axum::routing::{delete, get, post};
 use axum::{Extension, Router};
+use tracing::error;
+use uuid::Uuid;
 
 pub fn image_routes() -> Router {
     Router::new()
         .route("/upload/{user_uuid}", post(upload_user_image))
         .route("/user/{user_id}", get(get_user_image))
-        .route("/id/{image_id}", get(get_image_by_id))
+        .route("/{image_uuid}", get(get_image_by_uuid))
+        .route("/user/{user_id}", delete(delete_image_by_user_id))
+}
+
+async fn delete_image_by_user_id(
+    Extension(context): Extension<GraphQLContext>,
+    Path(user_id): Path<i32>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    UserImageSvc::delete_by_user_id(&context, user_id).map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to delete image: {}", e),
+        )
+    })?;
+
+    Ok((
+        StatusCode::OK,
+        format!("Image deleted successfully for user {user_id}"),
+    ))
 }
 
 // Image upload handler
@@ -64,7 +84,10 @@ async fn upload_user_image(
                         "User ID not found".to_owned(),
                     )
                 })?;
-                let _ = UserImageSvc::delete_by_user_id(&context, user_id);
+                let delete_response = UserImageSvc::delete_by_user_id(&context, user_id);
+                if let Err(e) = delete_response {
+                    error!("Failed to delete existing image: {}", e);
+                }
 
                 // Create new image
                 let image_input = crate::models::UserImageInput {
@@ -125,12 +148,12 @@ async fn get_user_image(
         })
 }
 
-// Get image by ID handler
-async fn get_image_by_id(
+// Get image by UUID handler
+async fn get_image_by_uuid(
     Extension(context): Extension<GraphQLContext>,
-    Path(image_id): Path<i32>,
+    Path(image_uuid): Path<Uuid>,
 ) -> Result<Response, (StatusCode, String)> {
-    let image = UserImageSvc::get_by_id(&context, image_id)
+    let image = UserImageSvc::get_by_uuid(&context, image_uuid)
         .map_err(|e| {
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
