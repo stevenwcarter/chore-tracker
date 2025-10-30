@@ -47,9 +47,9 @@ pub enum AuthorType {
     Admin,
 }
 
-impl From<String> for AuthorType {
-    fn from(s: String) -> Self {
-        match s.as_str() {
+impl<T: AsRef<str>> From<T> for AuthorType {
+    fn from(value: T) -> Self {
+        match value.as_ref().to_lowercase().as_str() {
             "admin" => Self::Admin,
             _ => Self::User,
         }
@@ -631,5 +631,12 @@ mod tests {
         assert_eq!(PaymentType::from("weekly"), PaymentType::Weekly);
         assert_eq!(PaymentType::from("other"), PaymentType::Daily);
         assert_eq!(PaymentType::from("WEEkly"), PaymentType::Weekly);
+    }
+    #[test]
+    fn test_author_type_from_string() {
+        assert_eq!(AuthorType::from("user"), AuthorType::User);
+        assert_eq!(AuthorType::from("admin"), AuthorType::Admin);
+        assert_eq!(AuthorType::from("other"), AuthorType::User);
+        assert_eq!(AuthorType::from("ADmin"), AuthorType::Admin);
     }
 }
