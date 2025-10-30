@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use tracing::error;
 use uuid::Uuid;
 
-use crate::{context::GraphQLContext, get_env, svc::AdminSvc};
+use crate::{context::GraphQLContext, get_env, models::Admin, svc::AdminSvc};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
@@ -288,7 +288,7 @@ pub async fn me_handler(
 pub async fn check_admin_session(
     State(context): State<GraphQLContext>,
     jar: CookieJar,
-) -> Result<crate::models::Admin> {
+) -> Result<Admin> {
     let session_cookie = jar
         .get("admin_session")
         .ok_or_else(|| anyhow::anyhow!("No session found"))?;
