@@ -14,14 +14,14 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({ chore, onManage, onEdit })
       {/* Mobile: Stack vertically, Desktop: Side by side */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4 mb-4">
         <div className="flex-1 min-w-0">
-          <h3 className="text-base sm:text-lg font-semibold text-white break-words">
+          <h3 className="text-base sm:text-lg font-semibold text-white wrap-break-word">
             {chore.name}
           </h3>
           {chore.description && (
-            <p className="text-gray-300 text-sm mt-1 break-words">{chore.description}</p>
+            <p className="text-gray-300 text-sm mt-1 wrap-break-word">{chore.description}</p>
           )}
         </div>
-        <div className="flex-shrink-0">
+        <div className="shrink-0">
           <div className="flex flex-col sm:flex-row gap-2">
             <button
               onClick={() => onEdit(chore)}

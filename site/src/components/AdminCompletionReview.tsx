@@ -153,7 +153,7 @@ export const AdminCompletionReview: React.FC<AdminCompletionReviewProps> = ({ ad
         {pendingCompletions.length === 0 ? (
           <p className="text-gray-400">No pending completions for this week.</p>
         ) : (
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5 space-y-3">
             {pendingCompletions.map((completion) => (
               <div
                 key={completion.id}
@@ -172,7 +172,7 @@ export const AdminCompletionReview: React.FC<AdminCompletionReviewProps> = ({ ad
                       {formatCurrency(completion.amountCents)}
                     </p>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex md:flex-col gap-2">
                     <button
                       onClick={() => setSelectedCompletion(completion)}
                       className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-colors"
@@ -207,7 +207,7 @@ export const AdminCompletionReview: React.FC<AdminCompletionReviewProps> = ({ ad
         {approvedCompletions.length === 0 ? (
           <p className="text-gray-400">No approved completions for this week.</p>
         ) : (
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 space-y-3">
             {approvedCompletions.map((completion) => (
               <div
                 key={completion.id}
