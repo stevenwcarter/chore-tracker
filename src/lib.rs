@@ -21,22 +21,6 @@ pub mod svc;
 #[cfg(test)]
 pub mod test_helpers;
 
-// pub(crate) fn format_millis(millis: i64) -> String {
-//     let secs = millis / 1000;
-//     let nsecs = (millis % 1000) * 1_000_000;
-//
-//     let datetime =
-//         NaiveDateTime::from_timestamp_opt(secs, nsecs as u32).expect("Invalid timestamp");
-//
-//     let datetime: DateTime<Utc> = DateTime::<Utc>::from_utc(datetime, Utc);
-//
-//     let tz: Tz = chrono_tz::UTC;
-//
-//     let datetime = datetime.with_timezone(&tz);
-//
-//     datetime.format("%Y-%m-%d %H:%M:%S%.3f").to_string()
-// }
-
 /// Return an environment variable typed generically
 ///
 /// ```
