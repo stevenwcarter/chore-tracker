@@ -3,6 +3,7 @@
 #![allow(unused)]
 #![allow(clippy::all)]
 
+use anyhow::Context;
 use chrono::{NaiveDate, NaiveDateTime, Utc};
 use diesel::prelude::*;
 use juniper::{GraphQLEnum, GraphQLInputObject, GraphQLObject};
@@ -445,7 +446,7 @@ impl ChoreCompletion {
         let user = users::table
             .filter(users::id.eq(self.user_id))
             .first::<User>(&mut context.pool.get()?)
-            .map_err(|e| juniper::FieldError::from(anyhow::anyhow!(e)))?;
+            .context("fetching user for chore completion")?;
 
         Ok(user)
     }
@@ -454,15 +455,20 @@ impl ChoreCompletion {
         &self,
         context: &GraphQLContext,
     ) -> juniper::FieldResult<Vec<ChoreCompletionNote>> {
-        ChoreCompletionNoteSvc::list_for_completion(context, self.id.unwrap(), false)
-            .map_err(|e| juniper::FieldError::from(anyhow::anyhow!(e)))
+        Ok(
+            ChoreCompletionNoteSvc::list_for_completion(context, self.id.unwrap(), false)
+                .context("fetching chore completion notes")?,
+        )
     }
+
     pub async fn admin_notes(
         &self,
         context: &GraphQLContext,
     ) -> juniper::FieldResult<Vec<ChoreCompletionNote>> {
-        ChoreCompletionNoteSvc::list_for_completion(context, self.id.unwrap(), true)
-            .map_err(|e| juniper::FieldError::from(anyhow::anyhow!(e)))
+        Ok(
+            ChoreCompletionNoteSvc::list_for_completion(context, self.id.unwrap(), true)
+                .context("fetching admin chore completion notes")?,
+        )
     }
 }
 
