@@ -8,7 +8,7 @@ use crate::{
 };
 use anyhow::{Context, Result};
 use chrono::{NaiveDate, Utc};
-use diesel::prelude::*;
+use diesel::{dsl::sum, prelude::*};
 use uuid::Uuid;
 
 pub struct ChoreCompletionSvc {}
@@ -117,7 +117,7 @@ impl ChoreCompletionSvc {
             .group_by(users::id)
             .select((
                 User::as_select(),
-                diesel::dsl::sum(chore_completions::amount_cents).nullable(),
+                sum(chore_completions::amount_cents).nullable(),
             ))
             .load(&mut get_conn(context))
             .context("Could not load unpaid totals")?;
