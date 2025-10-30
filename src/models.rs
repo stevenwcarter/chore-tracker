@@ -4,6 +4,7 @@
 #![allow(clippy::all)]
 
 use chrono::{NaiveDate, NaiveDateTime, Utc};
+use diesel::prelude::*;
 use juniper::{GraphQLEnum, GraphQLInputObject, GraphQLObject};
 use serde::Serialize;
 use tracing::{debug, info};
@@ -14,7 +15,6 @@ use crate::{
     schema::*,
     svc::{ChoreCompletionNoteSvc, UserImageSvc},
 };
-use diesel::prelude::*;
 
 // Enums
 #[derive(Debug, Clone, PartialEq, Eq, GraphQLEnum)]
