@@ -132,7 +132,7 @@ export const AdminChoreManagement: React.FC<AdminChoreManagementProps> = ({ admi
       </div>
 
       {/* Existing Chores */}
-      <div className="grid gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
         {chores.map((chore) => (
           <ChoreCard
             key={chore.id}

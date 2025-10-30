@@ -34,7 +34,7 @@ export const AdminPayoutSystem: React.FC<AdminPayoutSystemProps> = (
   };
 
   const handleSelectAll = () => {
-    const unpaidTotals: UnpaidTotal[] = data?.unpaidTotals || [];
+    const unpaidTotals: UnpaidTotal[] = data?.getUnpaidTotals || [];
     const allUserIds = unpaidTotals
       .filter((total) => total.amountCents > 0)
       .map((total) => total.user.id);
@@ -73,7 +73,7 @@ export const AdminPayoutSystem: React.FC<AdminPayoutSystemProps> = (
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-bold text-white">Payout System</h2>
-          <p className="text-gray-600 mt-1">Manage payments for completed chores</p>
+          <p className="text-gray-300 mt-1">Manage payments for completed chores</p>
         </div>
         <div className="text-right">
           <p className="text-sm text-gray-600">Total Outstanding</p>
@@ -83,21 +83,21 @@ export const AdminPayoutSystem: React.FC<AdminPayoutSystemProps> = (
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
-          <h3 className="font-semibold text-blue-800">Users with Unpaid Chores</h3>
-          <p className="text-2xl font-bold text-blue-600">
+        <div className="bg-blue-900 p-4 rounded-lg border-l-4 border-blue-500">
+          <h3 className="font-semibold text-blue-100">Users with Unpaid Chores</h3>
+          <p className="text-2xl font-bold text-blue-100">
             {unpaidTotals.filter((total) => total.amountCents > 0).length}
           </p>
         </div>
 
-        <div className="bg-green-50 p-4 rounded-lg border-l-4 border-green-500">
-          <h3 className="font-semibold text-green-800">Total Outstanding</h3>
-          <p className="text-2xl font-bold text-green-600">{formatCurrency(totalUnpaidAmount)}</p>
+        <div className="bg-green-900 p-4 rounded-lg border-l-4 border-green-500">
+          <h3 className="font-semibold text-green-100">Total Outstanding</h3>
+          <p className="text-2xl font-bold text-green-100">{formatCurrency(totalUnpaidAmount)}</p>
         </div>
 
-        <div className="bg-purple-50 p-4 rounded-lg border-l-4 border-purple-500">
-          <h3 className="font-semibold text-purple-800">Selected for Payout</h3>
-          <p className="text-2xl font-bold text-purple-600">{formatCurrency(selectedTotal)}</p>
+        <div className="bg-purple-900 p-4 rounded-lg border-l-4 border-purple-500">
+          <h3 className="font-semibold text-purple-100">Selected for Payout</h3>
+          <p className="text-2xl font-bold text-purple-100">{formatCurrency(selectedTotal)}</p>
         </div>
       </div>
 
@@ -121,14 +121,14 @@ export const AdminPayoutSystem: React.FC<AdminPayoutSystemProps> = (
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 space-y-3">
           {unpaidTotals.map((total) => (
             <div
               key={total.user.id}
               className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${
                 selectedUsers.includes(total.user.id)
-                  ? 'bg-blue-50 border-blue-300'
-                  : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                  ? 'bg-blue-900 border-blue-600'
+                  : 'bg-gray-900 border-gray-600 hover:bg-gray-700'
               }`}
             >
               <div className="flex items-center gap-3">
@@ -137,18 +137,18 @@ export const AdminPayoutSystem: React.FC<AdminPayoutSystemProps> = (
                   checked={selectedUsers.includes(total.user.id)}
                   onChange={() => handleUserToggle(total.user.id)}
                   disabled={total.amountCents === 0}
-                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                  className="w-4 h-4 text-blue-200 rounded focus:ring-blue-300"
                 />
                 <div>
-                  <h4 className="font-medium text-gray-800">{total.user.name}</h4>
-                  <p className="text-sm text-gray-600">User ID: {total.user.id}</p>
+                  <h4 className="font-medium text-gray-200">{total.user.name}</h4>
+                  <p className="text-sm text-gray-200">User ID: {total.user.id}</p>
                 </div>
               </div>
 
               <div className="text-right">
                 <p
                   className={`text-lg font-semibold ${
-                    total.amountCents > 0 ? 'text-green-600' : 'text-gray-400'
+                    total.amountCents > 0 ? 'text-green-400' : 'text-gray-400'
                   }`}
                 >
                   {formatCurrency(total.amountCents)}
