@@ -23,9 +23,9 @@ pub enum PaymentType {
     Weekly,
 }
 
-impl From<String> for PaymentType {
-    fn from(s: String) -> Self {
-        match s.as_str() {
+impl<T: AsRef<str>> From<T> for PaymentType {
+    fn from(value: T) -> Self {
+        match value.as_ref().to_lowercase().as_str() {
             "weekly" => Self::Weekly,
             _ => Self::Daily,
         }
@@ -252,7 +252,7 @@ impl Chore {
         self.description.as_deref()
     }
     pub fn payment_type(&self) -> PaymentType {
-        PaymentType::from(self.payment_type.clone())
+        PaymentType::from(&self.payment_type)
     }
     pub fn amount_cents(&self) -> i32 {
         self.amount_cents
@@ -618,5 +618,18 @@ impl UnpaidTotal {
 impl UnpaidTotal {
     pub fn new(user: User, amount_cents: i32) -> Self {
         Self { user, amount_cents }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_payment_type_from_string() {
+        assert_eq!(PaymentType::from("daily"), PaymentType::Daily);
+        assert_eq!(PaymentType::from("weekly"), PaymentType::Weekly);
+        assert_eq!(PaymentType::from("other"), PaymentType::Daily);
+        assert_eq!(PaymentType::from("WEEkly"), PaymentType::Weekly);
     }
 }

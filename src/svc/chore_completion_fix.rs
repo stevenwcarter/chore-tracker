@@ -16,14 +16,16 @@ impl ChoreCompletionFixSvc {
     /// 1. Finds all chore completions for weekly chores
     /// 2. Recalculates the correct fractional amount for each completion
     /// 3. Updates the completion records with the corrected amounts
-    /// 
+    ///
     /// Returns the number of records updated.
     pub fn fix_weekly_completion_amounts(context: &GraphQLContext) -> Result<i32> {
         let mut conn = get_conn(context);
-        
+
         // Get all chore completions that are for weekly chores
         let weekly_completions: Vec<(ChoreCompletion, String, i32, i32)> = chore_completions::table
-            .inner_join(chores::table.on(chore_completions::chore_id.eq(chores::id.assume_not_null())))
+            .inner_join(
+                chores::table.on(chore_completions::chore_id.eq(chores::id.assume_not_null())),
+            )
             .filter(chores::payment_type.eq("weekly"))
             .select((
                 ChoreCompletion::as_select(),
@@ -33,19 +35,20 @@ impl ChoreCompletionFixSvc {
             ))
             .load(&mut conn)
             .context("Failed to load weekly chore completions")?;
-        
+
         let mut updated_count = 0;
-        
-        for (completion, payment_type_str, chore_amount_cents, required_days) in weekly_completions {
-            let payment_type = PaymentType::from(payment_type_str);
-            
+
+        for (completion, payment_type_str, chore_amount_cents, required_days) in weekly_completions
+        {
+            let payment_type = PaymentType::from(payment_type_str.as_str());
+
             // Calculate the correct fractional amount
             let correct_amount = PaymentType::calculate_completion_amount(
                 &payment_type,
                 chore_amount_cents,
                 required_days,
             );
-            
+
             // Only update if the amount is different (to avoid unnecessary updates)
             if completion.amount_cents != correct_amount {
                 diesel::update(chore_completions::table)
@@ -58,9 +61,9 @@ impl ChoreCompletionFixSvc {
                             completion.uuid, completion.amount_cents, correct_amount
                         )
                     })?;
-                
+
                 updated_count += 1;
-                
+
                 tracing::info!(
                     "Updated completion {} for chore_id {} from {} to {} cents",
                     completion.uuid,
@@ -70,25 +73,27 @@ impl ChoreCompletionFixSvc {
                 );
             }
         }
-        
+
         tracing::info!(
             "Weekly chore completion amount fix completed. Updated {} records.",
             updated_count
         );
-        
+
         Ok(updated_count)
     }
-    
+
     /// Gets a summary of weekly chore completions that need fixing.
     /// Returns a list of (chore_id, completion_count, current_total_cents, expected_total_cents)
     pub fn analyze_weekly_completion_amounts(
         context: &GraphQLContext,
     ) -> Result<Vec<(i32, i64, i64, i64)>> {
         let mut conn = get_conn(context);
-        
+
         // Get all weekly completions with their chore details
         let weekly_completions: Vec<(i32, i32, i32, i32)> = chore_completions::table
-            .inner_join(chores::table.on(chore_completions::chore_id.eq(chores::id.assume_not_null())))
+            .inner_join(
+                chores::table.on(chore_completions::chore_id.eq(chores::id.assume_not_null())),
+            )
             .filter(chores::payment_type.eq("weekly"))
             .select((
                 chore_completions::chore_id,
@@ -98,19 +103,23 @@ impl ChoreCompletionFixSvc {
             ))
             .load(&mut conn)
             .context("Failed to analyze weekly chore completions")?;
-        
+
         // Group and analyze in Rust rather than SQL to avoid complex Diesel grouping issues
         let mut analysis_map: HashMap<i32, (i64, i64, i32, i32)> = HashMap::new();
-        
+
         for (chore_id, completion_amount, chore_amount, required_days) in weekly_completions {
-            let entry = analysis_map.entry(chore_id).or_insert((0, 0, chore_amount, required_days));
+            let entry = analysis_map
+                .entry(chore_id)
+                .or_insert((0, 0, chore_amount, required_days));
             entry.0 += 1; // completion count
             entry.1 += completion_amount as i64; // current total
         }
-        
+
         let mut results = Vec::new();
-        
-        for (chore_id, (completion_count, current_total, chore_amount_cents, required_days)) in analysis_map {
+
+        for (chore_id, (completion_count, current_total, chore_amount_cents, required_days)) in
+            analysis_map
+        {
             // Calculate what the total should be
             let payment_type = PaymentType::Weekly;
             let correct_per_completion = PaymentType::calculate_completion_amount(
@@ -119,10 +128,10 @@ impl ChoreCompletionFixSvc {
                 required_days,
             );
             let expected_total = (correct_per_completion as i64) * completion_count;
-            
+
             results.push((chore_id, completion_count, current_total, expected_total));
         }
-        
+
         Ok(results)
     }
 }
@@ -133,8 +142,8 @@ mod tests {
     use crate::{
         svc::ChoreCompletionSvc,
         test_helpers::test_db::{
-            create_test_admin, create_test_chore, create_test_chore_assignment, create_test_context,
-            create_test_date, create_test_user, day_patterns,
+            create_test_admin, create_test_chore, create_test_chore_assignment,
+            create_test_context, create_test_date, create_test_user, day_patterns,
         },
     };
     use diesel::QueryDsl;
@@ -255,7 +264,7 @@ mod tests {
             admin.id.unwrap(),
         );
 
-        // Create a weekly chore  
+        // Create a weekly chore
         let weekly_chore = create_test_chore(
             &context,
             "Weekly Chore",
@@ -351,7 +360,7 @@ mod tests {
 
         let chore2 = create_test_chore(
             &context,
-            "Weekly Chore 2", 
+            "Weekly Chore 2",
             PaymentType::Weekly,
             100,
             day_patterns::weekdays(), // 5 days, expected: 25 cents each (100/5 = 20, rounds to 25)
@@ -362,7 +371,7 @@ mod tests {
         create_test_chore_assignment(&context, chore2.id.unwrap(), user.id.unwrap());
 
         // Create completions with mixed correct/incorrect amounts
-        
+
         // Chore 1 completions (expected 50 each, total should be 150 for 3 completions)
         let _completion1 = create_manual_completion(
             &context,
@@ -424,7 +433,7 @@ mod tests {
         assert_eq!(chore1_current, 225); // 150 + 50 + 25 = 225
         assert_eq!(chore1_expected, 150); // 50 * 3 = 150
 
-        // Chore 2 analysis  
+        // Chore 2 analysis
         assert_eq!(chore2_id, chore2.id.unwrap());
         assert_eq!(chore2_count, 2); // 2 completions
         assert_eq!(chore2_current, 50); // 30 + 20 = 50
@@ -473,7 +482,7 @@ mod tests {
             &context,
             "Weekly Chore",
             PaymentType::Weekly,
-            150, // Changed from 180 to 150
+            150,                         // Changed from 180 to 150
             day_patterns::mon_wed_fri(), // 3 days, expected: 50 cents each (150/3 = 50)
             admin.id.unwrap(),
         );
@@ -498,7 +507,8 @@ mod tests {
         );
 
         // Analyze before fix
-        let analysis_before = ChoreCompletionFixSvc::analyze_weekly_completion_amounts(&context).unwrap();
+        let analysis_before =
+            ChoreCompletionFixSvc::analyze_weekly_completion_amounts(&context).unwrap();
         assert_eq!(analysis_before.len(), 1);
         let (_, count_before, current_before, expected_before) = analysis_before[0];
         assert_eq!(count_before, 2);
@@ -510,7 +520,8 @@ mod tests {
         assert_eq!(updated_count, 2);
 
         // Analyze after fix
-        let analysis_after = ChoreCompletionFixSvc::analyze_weekly_completion_amounts(&context).unwrap();
+        let analysis_after =
+            ChoreCompletionFixSvc::analyze_weekly_completion_amounts(&context).unwrap();
         assert_eq!(analysis_after.len(), 1);
         let (_, count_after, current_after, expected_after) = analysis_after[0];
         assert_eq!(count_after, 2);
@@ -574,10 +585,12 @@ mod tests {
         assert_eq!(analysis.len(), 2);
 
         // Find each chore in the analysis
-        let single_day_analysis = analysis.iter()
+        let single_day_analysis = analysis
+            .iter()
             .find(|&&(chore_id, _, _, _)| chore_id == single_day_chore.id.unwrap())
             .unwrap();
-        let every_day_analysis = analysis.iter()
+        let every_day_analysis = analysis
+            .iter()
             .find(|&&(chore_id, _, _, _)| chore_id == every_day_chore.id.unwrap())
             .unwrap();
 
@@ -590,3 +603,4 @@ mod tests {
         assert_eq!(every_day_analysis.3, 25); // expected total
     }
 }
+
