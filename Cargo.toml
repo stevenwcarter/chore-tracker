@@ -73,9 +73,9 @@ base64 = "0.22.0"
 [target.'cfg(not(target_env = "msvc"))'.dependencies]
 tikv-jemallocator = "0.6"
 
-[package.metadata.lambda.deploy]
-memory = 512
-timeout = 11
-tracing = "active"
-env_file = ".env.prod"
-include = ["site/build"]
+# [package.metadata.lambda.deploy]
+# memory = 512
+# timeout = 11
+# tracing = "active"
+# env_file = ".env.prod"
+# include = ["site/build"]
