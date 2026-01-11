@@ -603,4 +603,3 @@ mod tests {
         assert_eq!(every_day_analysis.3, 25); // expected total
     }
 }
-

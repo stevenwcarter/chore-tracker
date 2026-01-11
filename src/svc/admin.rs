@@ -1,6 +1,7 @@
 use crate::{context::GraphQLContext, db::get_conn, models::Admin, schema::admins};
 use anyhow::{Context, Result};
 use diesel::prelude::*;
+use tracing::error;
 
 pub struct AdminSvc {}
 
@@ -61,7 +62,11 @@ impl AdminSvc {
     ) -> Result<Admin> {
         // First try to get existing admin
         Self::get_by_oidc_subject(context, oidc_subject).map_or_else(
-            |_| {
+            |e| {
+                error!(
+                    "Could not get admin by OIDC subject ({}): {}",
+                    oidc_subject, e
+                );
                 // Admin doesn't exist, create a new one
                 let new_admin = Admin {
                     id: None,
