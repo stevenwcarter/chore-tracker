@@ -69,7 +69,7 @@ rust-embed = { version = "8.7.2", features = [
 ] }
 mime_guess = "2.0.5"
 base64 = "0.22.0"
-ynab-api = "4.0.0"
+ynab-api = { path = "ynab-api" }
 
 [target.'cfg(not(target_env = "msvc"))'.dependencies]
 tikv-jemallocator = "0.6"

@@ -1,0 +1,28 @@
+[package]
+name = "ynab-api"
+version = "4.0.0"
+authors = ["Jesse Luehrs <doy@tozt.net>", "You Need A Budget, LLC"]
+description = "OpenAPI-generated API bindings for the YNAB API"
+repository = "https://git.tozt.net/ynab-api"
+license = "Apache-2.0"
+
+# Override this license by providing a License Object in the OpenAPI.
+edition = "2021"
+
+[dependencies]
+serde = { version = "^1.0", features = ["derive"] }
+serde_with = { version = "^3.8", default-features = false, features = [
+  "base64",
+  "std",
+  "macros",
+] }
+serde_json = "^1.0"
+serde_repr = "^0.1"
+url = "^2.5"
+uuid = { version = "^1.8", features = ["serde", "v4"] }
+reqwest = { version = "^0.12", default-features = false, features = [
+  "json",
+  "multipart",
+  "rustls-tls",
+  "rustls-tls-webpki-roots",
+] }
