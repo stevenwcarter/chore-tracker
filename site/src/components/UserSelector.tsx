@@ -3,6 +3,8 @@ import { GET_ALL_USERS } from 'graphql/queries';
 import { User } from 'types/chore';
 import LoadingSpinner from './LoadingSpinner';
 import UserImage from './UserImage';
+import { useBalances } from 'hooks/useBalances';
+import UserBalance from './UserBalance';
 
 interface UserSelectorProps {
   selectedUserId: number | null;
@@ -16,6 +18,7 @@ export default function UserSelector({
   className = '',
 }: UserSelectorProps) {
   const { data, loading, error } = useQuery(GET_ALL_USERS);
+  const { balances } = useBalances();
 
   if (loading) return <LoadingSpinner />;
   if (error) return <div className="text-red-500">Error loading users: {error.message}</div>;
@@ -40,6 +43,7 @@ export default function UserSelector({
             <UserImage user={user} />
             <div className="mt-2 text-center">
               <span className="text-sm font-medium text-white">{user.name}</span>
+              <UserBalance name={user.name} balances={balances} />
             </div>
             {selectedUserId === user.id && (
               <div className="absolute -top-1 -right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">

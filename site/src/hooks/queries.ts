@@ -1,5 +1,14 @@
 import { gql } from '@apollo/client';
 
+export const LIST_BALANCES_GQL = gql`
+  query getBalances {
+    getBalances {
+      name
+      balance
+    }
+  }
+`;
+
 // Clients
 export const LIST_CLIENTS_GQL = gql`
   query listClients($limit: Int, $offset: Int) {

@@ -1,3 +1,7 @@
+export type Balance = {
+  name: string;
+  balance: number;
+};
 export type Client = {
   uuid: string;
   name: string;
