@@ -1,6 +1,19 @@
-use crate::{context::GraphQLContext, db::get_conn, models::User, schema::users};
+use crate::{context::GraphQLContext, db::get_conn, get_env, models::User, schema::users};
 use anyhow::{Context, Result};
 use diesel::prelude::*;
+use juniper::GraphQLObject;
+use reqwest::Client;
+use serde::{Deserialize, Serialize};
+use ynab_api::{
+    apis::{categories_api::get_categories, configuration::Configuration},
+    models::CategoriesResponse,
+};
+
+#[derive(Debug, Clone, Serialize, Deserialize, GraphQLObject)]
+pub struct UserBalance {
+    pub name: String,
+    pub balance: f64,
+}
 
 pub struct UserSvc {}
 
@@ -60,6 +73,63 @@ impl UserSvc {
             .context("Could not delete user")?;
 
         Ok(())
+    }
+
+    pub async fn balances(_context: &GraphQLContext) -> Result<Vec<UserBalance>> {
+        let ynab_token = get_env("YNAB_TOKEN", "NOT_SET");
+        let client = Client::new();
+        let budget_id = "0dcd28d3-c3e8-4f3d-a64f-f63b5f12f87f";
+        let configuration = Configuration {
+            base_path: "https://api.ynab.com/v1/".to_owned(),
+            client,
+            bearer_access_token: Some(ynab_token),
+            ..Default::default()
+        };
+        let categories: CategoriesResponse = get_categories(&configuration, budget_id, None)
+            .await
+            .context("could not get categories")?;
+        let group = categories
+            .data
+            .category_groups
+            .iter()
+            .find(|g| g.name == "Kids Allowances")
+            .unwrap();
+        let aurora = group
+            .categories
+            .iter()
+            .find(|c| c.name == "Aurora Cash")
+            .unwrap()
+            .balance as f64
+            / 1000.0;
+        let madeline = group
+            .categories
+            .iter()
+            .find(|c| c.name == "Madeline Cash")
+            .unwrap()
+            .balance as f64
+            / 1000.0;
+        let aj = group
+            .categories
+            .iter()
+            .find(|c| c.name == "AJ Cash")
+            .unwrap()
+            .balance as f64
+            / 1000.0;
+        // TODO - add user balances
+        Ok(vec![
+            UserBalance {
+                name: "Aurora".to_owned(),
+                balance: aurora,
+            },
+            UserBalance {
+                name: "Madeline".to_owned(),
+                balance: madeline,
+            },
+            UserBalance {
+                name: "AJ".to_owned(),
+                balance: aj,
+            },
+        ])
     }
 }
 

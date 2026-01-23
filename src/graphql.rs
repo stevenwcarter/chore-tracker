@@ -1,6 +1,7 @@
 #![allow(clippy::too_many_arguments)]
 use chrono::NaiveDate;
 use juniper::{EmptySubscription, FieldError, FieldResult, RootNode};
+use tracing::error;
 
 use crate::{
     context::GraphQLContext,
@@ -10,7 +11,7 @@ use crate::{
     },
     svc::{
         AdminSvc, ChoreCompletionFixSvc, ChoreCompletionNoteSvc, ChoreCompletionSvc, ChoreSvc,
-        UserSvc,
+        UserSvc, user::UserBalance,
     },
 };
 
@@ -31,6 +32,10 @@ impl Query {
         let limit = limit.unwrap_or(100);
         let offset = offset.unwrap_or(0);
         graphql_translate_anyhow(UserSvc::list(context, limit, offset))
+    }
+
+    pub async fn get_balances(context: &GraphQLContext) -> FieldResult<Vec<UserBalance>> {
+        graphql_translate_anyhow(UserSvc::balances(context).await)
     }
 
     // Admins
@@ -317,6 +322,9 @@ pub fn create_schema() -> Schema {
 pub fn graphql_translate_anyhow<T>(res: anyhow::Result<T>) -> FieldResult<T> {
     match res {
         Ok(t) => Ok(t),
-        Err(e) => Err(FieldError::from(e)),
+        Err(e) => {
+            error!("GraphQL error: {:#?}", e);
+            Err(FieldError::from(e))
+        }
     }
 }
