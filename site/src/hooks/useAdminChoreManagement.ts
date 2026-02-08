@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client';
 import { useEffect, useState } from 'react';
-import { Chore, User, ChoreInput, UserInput } from '../types/chore';
+import { Chore, User, ChoreInput, UserInput } from 'types/chore';
 import {
   GET_ALL_CHORES,
   GET_ALL_USERS,
@@ -9,7 +9,7 @@ import {
   CREATE_USER,
   ASSIGN_CHORE_TO_USER,
   UNASSIGN_USER_FROM_CHORE,
-} from '../graphql/queries';
+} from 'graphql/queries';
 
 export const useAdminChoreManagement = () => {
   const [chores, setChores] = useState<Chore[]>([]);

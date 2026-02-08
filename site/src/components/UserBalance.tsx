@@ -21,7 +21,7 @@ export const UserBalance = (props: UserBalanceProps) => {
   const userBalance = balances.find((balance) => balance.name === name);
 
   if (!userBalance) {
-    return null;
+    return <div className="text-sm mt-1">&nbsp;</div>;
   }
 
   return <div className="text-sm text-white mt-1">{formatCurrency(userBalance.balance)}</div>;

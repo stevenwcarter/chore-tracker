@@ -1,13 +1,13 @@
 import { useMutation, useQuery } from '@apollo/client';
 import { useEffect, useState } from 'react';
-import { ChoreCompletion } from '../types/chore';
+import { ChoreCompletion } from 'types/chore';
 import {
   GET_ALL_WEEKLY_COMPLETIONS,
   APPROVE_CHORE_COMPLETION,
   ADD_CHORE_NOTE,
   DELETE_CHORE_COMPLETION,
-} from '../graphql/queries';
-import { formatDateForGraphQL } from '../utils/dateUtils';
+} from 'graphql/queries';
+import { formatDateForGraphQL } from 'utils/dateUtils';
 
 interface UseWeeklyCompletionsOptions {
   weekStartDate: Date;

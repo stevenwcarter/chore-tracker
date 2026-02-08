@@ -1,6 +1,6 @@
 import { useOutletContext } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
-import { User, Admin } from '../types/chore';
+import { User, Admin } from 'types/chore';
 import UserSelector from 'components/UserSelector';
 import WeeklyChoreView from 'components/WeeklyChoreView';
 import LoadingSpinner from 'components/LoadingSpinner';

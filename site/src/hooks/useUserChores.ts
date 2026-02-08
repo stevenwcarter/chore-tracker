@@ -1,8 +1,8 @@
 import { useMutation, useQuery } from '@apollo/client';
 import { useEffect, useState } from 'react';
-import { ChoreCompletion, WeeklyChoreData, Chore } from '../types/chore';
-import { GET_USER_CHORES, GET_WEEKLY_CHORES, CREATE_CHORE_COMPLETION } from '../graphql/queries';
-import { formatDateForGraphQL } from '../utils/dateUtils';
+import { ChoreCompletion, WeeklyChoreData, Chore } from 'types/chore';
+import { GET_USER_CHORES, GET_WEEKLY_CHORES, CREATE_CHORE_COMPLETION } from 'graphql/queries';
+import { formatDateForGraphQL } from 'utils/dateUtils';
 
 interface UseUserChoresOptions {
   userId: number;

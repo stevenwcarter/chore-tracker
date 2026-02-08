@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PaymentType, User, Chore } from '../types/chore';
+import { PaymentType, User, Chore } from 'types/chore';
 
 interface CreateChoreFormProps {
   users: User[];

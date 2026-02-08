@@ -1,7 +1,7 @@
 import { useOutletContext } from 'react-router-dom';
-import AdminCompletionReview from '../components/AdminCompletionReview';
-import LoadingSpinner from '../components/LoadingSpinner';
-import { Admin } from '../types/chore';
+import AdminCompletionReview from 'components/AdminCompletionReview';
+import LoadingSpinner from 'components/LoadingSpinner';
+import { Admin } from 'types/chore';
 
 interface OutletContext {
   currentAdmin: Admin | null;

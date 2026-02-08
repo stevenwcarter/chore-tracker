@@ -1,7 +1,7 @@
 import { useOutletContext } from 'react-router-dom';
-import AdminPayoutSystem from '../components/AdminPayoutSystem';
-import LoadingSpinner from '../components/LoadingSpinner';
-import { Admin } from '../types/chore';
+import AdminPayoutSystem from 'components/AdminPayoutSystem';
+import LoadingSpinner from 'components/LoadingSpinner';
+import { Admin } from 'types/chore';
 
 interface OutletContext {
   currentAdmin: Admin | null;
