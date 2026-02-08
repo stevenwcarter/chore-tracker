@@ -6,6 +6,10 @@ interface UserBalanceProps {
 }
 
 const formatCurrency = (amount: number, currency = 'USD', locale = 'en-US') => {
+  if (amount === 0) {
+    return '-';
+  }
+
   return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency,
@@ -18,11 +22,7 @@ export const UserBalance = (props: UserBalanceProps) => {
     return null;
   }
 
-  const userBalance = balances.find((balance) => balance.name === name);
-
-  if (!userBalance) {
-    return <div className="text-sm mt-1">&nbsp;</div>;
-  }
+  const userBalance = balances.find((balance) => balance.name === name) || { balance: 0 };
 
   return <div className="text-sm text-white mt-1">{formatCurrency(userBalance.balance)}</div>;
 };
