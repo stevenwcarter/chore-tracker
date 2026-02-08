@@ -9,7 +9,9 @@ interface ListallowanceResponse {
 
 export const useBalances = () => {
   const [balances, setBalances] = useState<Balance[]>([]);
-  const { data } = useQuery<ListallowanceResponse>(LIST_BALANCES_GQL);
+  const { data } = useQuery<ListallowanceResponse>(LIST_BALANCES_GQL, {
+    pollInterval: 5 * 60 * 1000,
+  });
 
   useEffect(() => {
     if (data && data.getBalances) {
