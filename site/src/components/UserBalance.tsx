@@ -5,6 +5,13 @@ interface UserBalanceProps {
   balances: Balance[];
 }
 
+const formatCurrency = (amount: number, currency = 'USD', locale = 'en-US') => {
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency,
+  }).format(amount);
+};
+
 export const UserBalance = (props: UserBalanceProps) => {
   const { name, balances } = props;
   if (!balances || balances.length === 0) {
@@ -17,7 +24,7 @@ export const UserBalance = (props: UserBalanceProps) => {
     return null;
   }
 
-  return <div className="text-sm text-white mt-1">${userBalance.balance}</div>;
+  return <div className="text-sm text-white mt-1">${formatCurrency(userBalance.balance)}</div>;
 };
 
 export default UserBalance;
