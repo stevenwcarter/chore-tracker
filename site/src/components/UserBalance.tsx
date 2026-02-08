@@ -24,7 +24,7 @@ export const UserBalance = (props: UserBalanceProps) => {
     return null;
   }
 
-  return <div className="text-sm text-white mt-1">${formatCurrency(userBalance.balance)}</div>;
+  return <div className="text-sm text-white mt-1">{formatCurrency(userBalance.balance)}</div>;
 };
 
 export default UserBalance;
