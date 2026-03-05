@@ -1,6 +1,7 @@
 import LoadingSpinner from 'components/LoadingSpinner';
 import React, { Suspense } from 'react';
-import { ApolloClient, ApolloProvider, InMemoryCache } from '@apollo/client';
+import { ApolloClient, HttpLink, InMemoryCache } from '@apollo/client';
+import { ApolloProvider } from '@apollo/client/react';
 import { ToastContainer } from 'react-toastify';
 import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 import 'react-toastify/dist/ReactToastify.css';
@@ -11,9 +12,10 @@ const AdminChoreManagementPage = React.lazy(() => import('page/AdminChoreManagem
 const AdminCompletionReviewPage = React.lazy(() => import('page/AdminCompletionReviewPage'));
 const AdminPayoutSystemPage = React.lazy(() => import('page/AdminPayoutSystemPage'));
 
+const link = new HttpLink({ uri: '/graphql' });
 const apolloClient = new ApolloClient({
-  cache: new InMemoryCache({ addTypename: false }),
-  uri: '/graphql',
+  cache: new InMemoryCache(),
+  link,
 });
 
 const App: React.FC = () => {
