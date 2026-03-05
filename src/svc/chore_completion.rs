@@ -9,7 +9,21 @@ use crate::{
 use anyhow::{Context, Result};
 use chrono::{NaiveDate, Utc};
 use diesel::{dsl::sum, prelude::*};
+use juniper::GraphQLInputObject;
 use uuid::Uuid;
+
+#[derive(Debug, Copy, Clone, Default, GraphQLInputObject)]
+pub struct ChoreCompletionFilter {
+    pub user_id: Option<i32>,
+    pub chore_id: Option<i32>,
+    pub date_from: Option<NaiveDate>,
+    pub date_to: Option<NaiveDate>,
+    pub approved_only: Option<bool>,
+    pub unpaid_only: Option<bool>,
+    pub paid_only: Option<bool>,
+    pub limit: Option<i32>,
+    pub offset: Option<i32>,
+}
 
 pub struct ChoreCompletionSvc {}
 
@@ -24,42 +38,39 @@ impl ChoreCompletionSvc {
 
     pub fn list(
         context: &GraphQLContext,
-        user_id: Option<i32>,
-        chore_id: Option<i32>,
-        date_from: Option<NaiveDate>,
-        date_to: Option<NaiveDate>,
-        approved_only: Option<bool>,
-        unpaid_only: Option<bool>,
-        limit: i32,
-        offset: i32,
+        filter: &ChoreCompletionFilter,
     ) -> Result<Vec<ChoreCompletion>> {
-        let limit: i64 = limit.into();
-        let offset: i64 = offset.into();
+        let limit: i64 = filter.limit.unwrap_or(100).into();
+        let offset: i64 = filter.offset.unwrap_or_default().into();
 
         let mut query = chore_completions::table.into_boxed();
 
-        if let Some(user_id) = user_id {
+        if let Some(user_id) = filter.user_id {
             query = query.filter(chore_completions::user_id.eq(user_id));
         }
 
-        if let Some(chore_id) = chore_id {
+        if let Some(chore_id) = filter.chore_id {
             query = query.filter(chore_completions::chore_id.eq(chore_id));
         }
 
-        if let Some(date_from) = date_from {
+        if let Some(date_from) = filter.date_from {
             query = query.filter(chore_completions::completed_date.ge(date_from));
         }
 
-        if let Some(date_to) = date_to {
+        if let Some(date_to) = filter.date_to {
             query = query.filter(chore_completions::completed_date.le(date_to));
         }
 
-        if approved_only == Some(true) {
+        if filter.approved_only == Some(true) {
             query = query.filter(chore_completions::approved.eq(true));
         }
 
-        if unpaid_only == Some(true) {
+        if filter.unpaid_only == Some(true) {
             query = query.filter(chore_completions::paid_out.eq(false));
+        }
+
+        if filter.paid_only == Some(true) {
+            query = query.filter(chore_completions::paid_out.eq(true));
         }
 
         query
@@ -503,60 +514,39 @@ mod tests {
         // Approve first completion only
         ChoreCompletionSvc::approve(&context, &completion_uuids[0], admin.id.unwrap()).unwrap();
 
+        let filter = ChoreCompletionFilter::default();
+
         // Test listing all completions
-        let all_completions =
-            ChoreCompletionSvc::list(&context, None, None, None, None, None, None, 100, 0).unwrap();
+        let all_completions = ChoreCompletionSvc::list(&context, &filter).unwrap();
         assert_eq!(all_completions.len(), 3);
 
+        let mut filter = ChoreCompletionFilter::default();
+        filter.user_id = Some(user1.id.unwrap());
+
         // Test filtering by user
-        let user1_completions = ChoreCompletionSvc::list(
-            &context,
-            Some(user1.id.unwrap()),
-            None,
-            None,
-            None,
-            None,
-            None,
-            100,
-            0,
-        )
-        .unwrap();
+        let user1_completions = ChoreCompletionSvc::list(&context, &filter).unwrap();
         assert_eq!(user1_completions.len(), 2);
 
+        let mut filter = ChoreCompletionFilter::default();
+        filter.chore_id = Some(chore1.id.unwrap());
+
         // Test filtering by chore
-        let chore1_completions = ChoreCompletionSvc::list(
-            &context,
-            None,
-            Some(chore1.id.unwrap()),
-            None,
-            None,
-            None,
-            None,
-            100,
-            0,
-        )
-        .unwrap();
+        let chore1_completions = ChoreCompletionSvc::list(&context, &filter).unwrap();
         assert_eq!(chore1_completions.len(), 2);
 
+        let mut filter = ChoreCompletionFilter::default();
+        filter.approved_only = Some(true);
+
         // Test filtering by approved only
-        let approved_completions =
-            ChoreCompletionSvc::list(&context, None, None, None, None, Some(true), None, 100, 0)
-                .unwrap();
+        let approved_completions = ChoreCompletionSvc::list(&context, &filter).unwrap();
         assert_eq!(approved_completions.len(), 1);
 
+        let mut filter = ChoreCompletionFilter::default();
+        filter.date_from = Some(create_test_date(2024, 10, 21));
+        filter.date_to = Some(create_test_date(2024, 10, 21));
+
         // Test date filtering
-        let date_filtered = ChoreCompletionSvc::list(
-            &context,
-            None,
-            None,
-            Some(create_test_date(2024, 10, 21)),
-            Some(create_test_date(2024, 10, 21)),
-            None,
-            None,
-            100,
-            0,
-        )
-        .unwrap();
+        let date_filtered = ChoreCompletionSvc::list(&context, &filter).unwrap();
         assert_eq!(date_filtered.len(), 2); // Both completions on 10/21
     }
 

@@ -11,7 +11,7 @@ use crate::{
     },
     svc::{
         AdminSvc, ChoreCompletionFixSvc, ChoreCompletionNoteSvc, ChoreCompletionSvc, ChoreSvc,
-        UserSvc, user::UserBalance,
+        UserSvc, chore_completion::ChoreCompletionFilter, user::UserBalance,
     },
 };
 
@@ -81,28 +81,9 @@ impl Query {
 
     pub fn list_chore_completions(
         context: &GraphQLContext,
-        user_id: Option<i32>,
-        chore_id: Option<i32>,
-        date_from: Option<NaiveDate>,
-        date_to: Option<NaiveDate>,
-        approved_only: Option<bool>,
-        unpaid_only: Option<bool>,
-        limit: Option<i32>,
-        offset: Option<i32>,
+        filter: ChoreCompletionFilter,
     ) -> FieldResult<Vec<ChoreCompletion>> {
-        let limit = limit.unwrap_or(100);
-        let offset = offset.unwrap_or(0);
-        graphql_translate_anyhow(ChoreCompletionSvc::list(
-            context,
-            user_id,
-            chore_id,
-            date_from,
-            date_to,
-            approved_only,
-            unpaid_only,
-            limit,
-            offset,
-        ))
+        graphql_translate_anyhow(ChoreCompletionSvc::list(context, &filter))
     }
 
     // Get weekly view for a user
