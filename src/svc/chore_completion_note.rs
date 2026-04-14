@@ -431,4 +431,3 @@ mod tests {
         assert!(visible_notes.iter().all(|note| note.visible_to_user));
     }
 }
-

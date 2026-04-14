@@ -470,32 +470,28 @@ impl ChoreCompletion {
         &self,
         context: &GraphQLContext,
     ) -> juniper::FieldResult<Vec<ChoreCompletionNote>> {
-        Ok(
-            ChoreCompletionNoteSvc::list_for_completion(
-                context,
-                self.id.ok_or_else(|| {
-                    juniper::FieldError::new("ChoreCompletion has no id", juniper::Value::null())
-                })?,
-                false,
-            )
-            .context("fetching chore completion notes")?,
+        Ok(ChoreCompletionNoteSvc::list_for_completion(
+            context,
+            self.id.ok_or_else(|| {
+                juniper::FieldError::new("ChoreCompletion has no id", juniper::Value::null())
+            })?,
+            false,
         )
+        .context("fetching chore completion notes")?)
     }
 
     pub async fn admin_notes(
         &self,
         context: &GraphQLContext,
     ) -> juniper::FieldResult<Vec<ChoreCompletionNote>> {
-        Ok(
-            ChoreCompletionNoteSvc::list_for_completion(
-                context,
-                self.id.ok_or_else(|| {
-                    juniper::FieldError::new("ChoreCompletion has no id", juniper::Value::null())
-                })?,
-                true,
-            )
-            .context("fetching admin chore completion notes")?,
+        Ok(ChoreCompletionNoteSvc::list_for_completion(
+            context,
+            self.id.ok_or_else(|| {
+                juniper::FieldError::new("ChoreCompletion has no id", juniper::Value::null())
+            })?,
+            true,
         )
+        .context("fetching admin chore completion notes")?)
     }
 }
 

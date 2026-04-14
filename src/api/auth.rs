@@ -1,8 +1,8 @@
 use crate::auth::{OidcConfig, callback_handler, login_handler, logout_handler, me_handler};
 use crate::context::GraphQLContext;
 
-use axum::routing::get;
 use axum::Router;
+use axum::routing::get;
 
 pub fn auth_routes(oidc_config: OidcConfig, context: GraphQLContext) -> Router {
     Router::new()

@@ -53,7 +53,9 @@ pub fn get_pool() -> SqlitePool {
         .expect("could not build connection pool")
 }
 
-pub(crate) fn get_conn(context: &GraphQLContext) -> anyhow::Result<PooledConnection<ConnectionMgr>> {
+pub(crate) fn get_conn(
+    context: &GraphQLContext,
+) -> anyhow::Result<PooledConnection<ConnectionMgr>> {
     context.pool.get().context("Could not get db connection")
 }
 

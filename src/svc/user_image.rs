@@ -42,7 +42,10 @@ impl UserImageSvc {
     }
 
     /// Returns the full image including binary data — use only when serving image bytes.
-    pub fn get_full_by_user_id(context: &GraphQLContext, user_id: i32) -> Result<Option<UserImage>> {
+    pub fn get_full_by_user_id(
+        context: &GraphQLContext,
+        user_id: i32,
+    ) -> Result<Option<UserImage>> {
         let mut conn = get_conn(context)?;
 
         user_images::table
