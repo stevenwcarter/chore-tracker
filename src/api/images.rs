@@ -70,7 +70,7 @@ async fn upload_user_image(
                     user_id,
                     image_data: data.to_vec(),
                     content_type,
-                    file_size: data.len() as i32,
+                    file_size: i32::try_from(data.len()).unwrap_or(0),
                 };
 
                 let user_image =

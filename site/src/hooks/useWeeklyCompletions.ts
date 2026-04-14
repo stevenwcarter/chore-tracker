@@ -17,7 +17,7 @@ export const useWeeklyCompletions = ({ weekStartDate }: UseWeeklyCompletionsOpti
   const [completions, setCompletions] = useState<ChoreCompletion[]>([]);
 
   const { data, loading, error, refetch } = useQuery(GET_ALL_WEEKLY_COMPLETIONS, {
-    fetchPolicy: 'no-cache',
+    fetchPolicy: 'cache-and-network',
     variables: {
       weekStartDate: formatDateForGraphQL(weekStartDate),
     },

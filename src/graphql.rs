@@ -283,9 +283,9 @@ impl Mutation {
                 |(chore_id, completion_count, current_total, expected_total)| {
                     vec![
                         chore_id,
-                        completion_count as i32,
-                        current_total as i32,
-                        expected_total as i32,
+                        i32::try_from(completion_count).unwrap_or(i32::MAX),
+                        i32::try_from(current_total).unwrap_or(i32::MAX),
+                        i32::try_from(expected_total).unwrap_or(i32::MAX),
                     ]
                 },
             )

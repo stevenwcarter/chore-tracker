@@ -30,7 +30,7 @@ export const useUserChores = ({ userId, weekStartDate }: UseUserChoresOptions) =
     error: weeklyError,
     refetch: refetchWeekly,
   } = useQuery(GET_WEEKLY_CHORES, {
-    fetchPolicy: 'no-cache',
+    fetchPolicy: 'cache-and-network',
     variables: {
       userId,
       weekStartDate: formatDateForGraphQL(weekStartDate),

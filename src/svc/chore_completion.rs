@@ -134,7 +134,7 @@ impl ChoreCompletionSvc {
 
         let converted_results = results
             .into_iter()
-            .map(|(user, total)| (user, total.unwrap_or(0) as i32))
+            .map(|(user, total)| (user, i32::try_from(total.unwrap_or(0)).unwrap_or(i32::MAX)))
             .collect();
 
         Ok(converted_results)

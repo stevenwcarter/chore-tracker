@@ -65,9 +65,8 @@ pub async fn app(context: GraphQLContext) -> Router {
     }
 
     let cors = CorsLayer::new()
-        .allow_methods([Method::GET])
-        .allow_headers(Any)
         .allow_methods(Any)
+        .allow_headers(Any)
         .allow_origin(Any);
 
     let middleware = ServiceBuilder::new()

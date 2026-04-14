@@ -298,7 +298,7 @@ impl Chore {
             .load::<ChoreAssignment>(connection)?;
 
         let mut users_vec = Vec::new();
-        for assignment in assignments.clone() {
+        for assignment in &assignments {
             let user = users_dsl::users
                 .filter(users_dsl::id.eq(assignment.user_id))
                 .first::<User>(connection)?;
@@ -510,7 +510,8 @@ impl PaymentType {
 
     /// Rounds an amount to the nearest quarter (25 cents)
     pub(crate) fn round_to_nearest_quarter(amount: f64) -> i32 {
-        (amount / 25.0).round() as i32 * 25
+        let quarters = (amount / 25.0).round() as i64;
+        i32::try_from(quarters * 25).unwrap_or(i32::MAX)
     }
 
     /// Calculates the payment amount for a single chore completion

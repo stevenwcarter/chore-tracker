@@ -6,7 +6,6 @@ import {
   getWeekDateRange,
   formatDateForGraphQL,
   formatDateForDisplay,
-  isSameDayAsString,
 } from 'utils/dateUtils';
 import LoadingSpinner from './LoadingSpinner';
 import Modal from './Modal';
@@ -99,15 +98,17 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
     setSelectedCompletion(null);
   };
 
-  // Helper function to check if a chore is completed by anyone on a given date
-  const isChoreCompletedByAnyone = (choreId: number, date: Date): boolean => {
-    if (!allCompletionsData?.getAllWeeklyCompletions) return false;
-
-    return allCompletionsData.getAllWeeklyCompletions.some((completion: ChoreCompletion) => {
-      const isSameChore = completion.choreId === choreId;
-      const isSameDate = isSameDayAsString(date, completion.completedDate);
-      return isSameChore && isSameDate;
+  // Build a Set keyed by "choreId-YYYY-MM-DD" for O(1) per-cell lookup
+  const completionLookup = useMemo(() => {
+    const set = new Set<string>();
+    allCompletionsData?.getAllWeeklyCompletions?.forEach((c: ChoreCompletion) => {
+      set.add(`${c.choreId}-${c.completedDate}`);
     });
+    return set;
+  }, [allCompletionsData]);
+
+  const isChoreCompletedByAnyone = (choreId: number, date: Date): boolean => {
+    return completionLookup.has(`${choreId}-${formatDateForGraphQL(date)}`);
   };
 
   const handleWeekChange = (newWeekStart: Date) => {
