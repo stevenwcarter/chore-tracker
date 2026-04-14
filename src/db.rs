@@ -1,5 +1,6 @@
 use std::error::Error;
 
+use anyhow::Context as _;
 use diesel::prelude::*;
 use diesel::r2d2::{self, ConnectionManager, CustomizeConnection, Pool, PooledConnection};
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
@@ -52,8 +53,8 @@ pub fn get_pool() -> SqlitePool {
         .expect("could not build connection pool")
 }
 
-pub(crate) fn get_conn(context: &GraphQLContext) -> PooledConnection<ConnectionMgr> {
-    context.pool.get().expect("Could not get db connection")
+pub(crate) fn get_conn(context: &GraphQLContext) -> anyhow::Result<PooledConnection<ConnectionMgr>> {
+    context.pool.get().context("Could not get db connection")
 }
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();

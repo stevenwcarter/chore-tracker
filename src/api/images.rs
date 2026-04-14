@@ -93,7 +93,7 @@ async fn get_user_image(
     Extension(context): Extension<GraphQLContext>,
     Path(user_id): Path<i32>,
 ) -> Result<Response, AppError> {
-    let image = UserImageSvc::get_by_user_id(&context, user_id)
+    let image = UserImageSvc::get_full_by_user_id(&context, user_id)
         .context("fetching user image")?
         .context("grabbing image")?;
 

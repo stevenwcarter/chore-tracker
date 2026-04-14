@@ -127,6 +127,19 @@ pub struct UserImage {
     pub created_at: NaiveDateTime,
 }
 
+// Lightweight struct for metadata queries — does not load image_data blob
+#[derive(Queryable, Debug, Clone, Selectable)]
+#[diesel(table_name = user_images)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+pub struct UserImageMeta {
+    pub id: i32,
+    pub uuid: Option<String>,
+    pub user_id: i32,
+    pub content_type: String,
+    pub file_size: i32,
+    pub created_at: NaiveDateTime,
+}
+
 // Struct for inserting new user images (without id)
 #[derive(Insertable, Debug, Clone)]
 #[diesel(table_name = user_images)]
@@ -279,7 +292,9 @@ impl Chore {
 
         let connection = &mut context.pool.get()?;
         let assignments = chore_assignments
-            .filter(chore_id.eq(self.id.unwrap()))
+            .filter(chore_id.eq(self.id.ok_or_else(|| {
+                juniper::FieldError::new("Chore has no id", juniper::Value::null())
+            })?))
             .load::<ChoreAssignment>(connection)?;
 
         let mut users_vec = Vec::new();
@@ -456,8 +471,14 @@ impl ChoreCompletion {
         context: &GraphQLContext,
     ) -> juniper::FieldResult<Vec<ChoreCompletionNote>> {
         Ok(
-            ChoreCompletionNoteSvc::list_for_completion(context, self.id.unwrap(), false)
-                .context("fetching chore completion notes")?,
+            ChoreCompletionNoteSvc::list_for_completion(
+                context,
+                self.id.ok_or_else(|| {
+                    juniper::FieldError::new("ChoreCompletion has no id", juniper::Value::null())
+                })?,
+                false,
+            )
+            .context("fetching chore completion notes")?,
         )
     }
 
@@ -466,8 +487,14 @@ impl ChoreCompletion {
         context: &GraphQLContext,
     ) -> juniper::FieldResult<Vec<ChoreCompletionNote>> {
         Ok(
-            ChoreCompletionNoteSvc::list_for_completion(context, self.id.unwrap(), true)
-                .context("fetching admin chore completion notes")?,
+            ChoreCompletionNoteSvc::list_for_completion(
+                context,
+                self.id.ok_or_else(|| {
+                    juniper::FieldError::new("ChoreCompletion has no id", juniper::Value::null())
+                })?,
+                true,
+            )
+            .context("fetching admin chore completion notes")?,
         )
     }
 }

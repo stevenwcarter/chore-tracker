@@ -22,7 +22,7 @@ impl UserSvc {
         users::table
             .filter(users::uuid.eq(user_uuid))
             .select(User::as_select())
-            .first(&mut get_conn(context))
+            .first(&mut get_conn(context)?)
             .context("Could not find user")
     }
 
@@ -30,7 +30,7 @@ impl UserSvc {
         users::table
             .filter(users::id.eq(user_id))
             .select(User::as_select())
-            .first(&mut get_conn(context))
+            .first(&mut get_conn(context)?)
             .context("Could not find user")
     }
 
@@ -43,14 +43,14 @@ impl UserSvc {
             .order_by(users::name.asc())
             .limit(limit)
             .offset(offset)
-            .load::<User>(&mut get_conn(context))
+            .load::<User>(&mut get_conn(context)?)
             .context("Could not load users")
     }
 
     pub fn create(context: &GraphQLContext, user: &User) -> Result<User> {
         diesel::insert_into(users::table)
             .values(user)
-            .execute(&mut get_conn(context))
+            .execute(&mut get_conn(context)?)
             .context("Could not create user")?;
 
         Self::get(context, &user.uuid)
@@ -60,7 +60,7 @@ impl UserSvc {
         diesel::update(users::table)
             .filter(users::uuid.eq(&user.uuid))
             .set(user)
-            .execute(&mut get_conn(context))
+            .execute(&mut get_conn(context)?)
             .context("Could not update user")?;
 
         Self::get(context, &user.uuid)
@@ -69,7 +69,7 @@ impl UserSvc {
     pub fn delete(context: &GraphQLContext, user_uuid: &str) -> Result<()> {
         diesel::delete(users::table)
             .filter(users::uuid.eq(user_uuid))
-            .execute(&mut get_conn(context))
+            .execute(&mut get_conn(context)?)
             .context("Could not delete user")?;
 
         Ok(())
@@ -93,26 +93,26 @@ impl UserSvc {
             .category_groups
             .iter()
             .find(|g| g.name == "Kids Allowances")
-            .unwrap();
+            .ok_or_else(|| anyhow::anyhow!("YNAB group 'Kids Allowances' not found"))?;
         let aurora = group
             .categories
             .iter()
             .find(|c| c.name == "Aurora Cash")
-            .unwrap()
+            .ok_or_else(|| anyhow::anyhow!("YNAB category 'Aurora Cash' not found"))?
             .balance as f64
             / 1000.0;
         let madeline = group
             .categories
             .iter()
             .find(|c| c.name == "Madeline Cash")
-            .unwrap()
+            .ok_or_else(|| anyhow::anyhow!("YNAB category 'Madeline Cash' not found"))?
             .balance as f64
             / 1000.0;
         let aj = group
             .categories
             .iter()
             .find(|c| c.name == "AJ Cash")
-            .unwrap()
+            .ok_or_else(|| anyhow::anyhow!("YNAB category 'AJ Cash' not found"))?
             .balance as f64
             / 1000.0;
         // TODO - add user balances

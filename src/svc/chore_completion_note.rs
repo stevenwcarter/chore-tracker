@@ -12,7 +12,7 @@ impl ChoreCompletionNoteSvc {
         chore_completion_notes::table
             .filter(chore_completion_notes::uuid.eq(note_uuid))
             .select(ChoreCompletionNote::as_select())
-            .first(&mut get_conn(context))
+            .first(&mut get_conn(context)?)
             .context("Could not find chore completion note")
     }
 
@@ -32,7 +32,7 @@ impl ChoreCompletionNoteSvc {
         query
             .select(ChoreCompletionNote::as_select())
             .order_by(chore_completion_notes::created_at.asc())
-            .load::<ChoreCompletionNote>(&mut get_conn(context))
+            .load::<ChoreCompletionNote>(&mut get_conn(context)?)
             .context("Could not load chore completion notes")
     }
 
@@ -42,7 +42,7 @@ impl ChoreCompletionNoteSvc {
     ) -> Result<ChoreCompletionNote> {
         diesel::insert_into(chore_completion_notes::table)
             .values(note)
-            .execute(&mut get_conn(context))
+            .execute(&mut get_conn(context)?)
             .context("Could not create chore completion note")?;
 
         Self::get(context, &note.uuid)
@@ -55,7 +55,7 @@ impl ChoreCompletionNoteSvc {
         diesel::update(chore_completion_notes::table)
             .filter(chore_completion_notes::uuid.eq(&note.uuid))
             .set(note)
-            .execute(&mut get_conn(context))
+            .execute(&mut get_conn(context)?)
             .context("Could not update chore completion note")?;
 
         Self::get(context, &note.uuid)
@@ -64,7 +64,7 @@ impl ChoreCompletionNoteSvc {
     pub fn delete(context: &GraphQLContext, note_uuid: &str) -> Result<()> {
         diesel::delete(chore_completion_notes::table)
             .filter(chore_completion_notes::uuid.eq(note_uuid))
-            .execute(&mut get_conn(context))
+            .execute(&mut get_conn(context)?)
             .context("Could not delete chore completion note")?;
 
         Ok(())

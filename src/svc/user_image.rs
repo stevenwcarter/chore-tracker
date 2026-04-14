@@ -1,7 +1,7 @@
 use crate::{
     context::GraphQLContext,
     db::get_conn,
-    models::{NewUserImage, UserImage, UserImageInput},
+    models::{NewUserImage, UserImage, UserImageInput, UserImageMeta},
     schema::user_images,
 };
 use anyhow::{Context, Result};
@@ -12,7 +12,7 @@ pub struct UserImageSvc;
 
 impl UserImageSvc {
     pub fn create(context: &GraphQLContext, input: UserImageInput) -> Result<UserImage> {
-        let mut conn = get_conn(context);
+        let mut conn = get_conn(context)?;
         let new_user_image: NewUserImage = input.into();
 
         diesel::insert_into(user_images::table)
@@ -29,8 +29,21 @@ impl UserImageSvc {
             .context("Failed to retrieve created user image")
     }
 
-    pub fn get_by_user_id(context: &GraphQLContext, user_id: i32) -> Result<Option<UserImage>> {
-        let mut conn = get_conn(context);
+    pub fn get_by_user_id(context: &GraphQLContext, user_id: i32) -> Result<Option<UserImageMeta>> {
+        let mut conn = get_conn(context)?;
+
+        user_images::table
+            .filter(user_images::user_id.eq(user_id))
+            .order(user_images::created_at.desc())
+            .select(UserImageMeta::as_select())
+            .first::<UserImageMeta>(&mut conn)
+            .optional()
+            .context("Failed to get user image")
+    }
+
+    /// Returns the full image including binary data — use only when serving image bytes.
+    pub fn get_full_by_user_id(context: &GraphQLContext, user_id: i32) -> Result<Option<UserImage>> {
+        let mut conn = get_conn(context)?;
 
         user_images::table
             .filter(user_images::user_id.eq(user_id))
@@ -38,11 +51,11 @@ impl UserImageSvc {
             .select(UserImage::as_select())
             .first::<UserImage>(&mut conn)
             .optional()
-            .context("Failed to get user image")
+            .context("Failed to get full user image")
     }
 
     pub fn get_by_id(context: &GraphQLContext, id: i32) -> Result<Option<UserImage>> {
-        let mut conn = get_conn(context);
+        let mut conn = get_conn(context)?;
 
         user_images::table
             .find(id)
@@ -53,7 +66,7 @@ impl UserImageSvc {
     }
 
     pub fn get_by_uuid(context: &GraphQLContext, image_uuid: Uuid) -> Result<Option<UserImage>> {
-        let mut conn = get_conn(context);
+        let mut conn = get_conn(context)?;
 
         user_images::table
             .filter(user_images::uuid.eq(image_uuid.to_string()))
@@ -64,7 +77,7 @@ impl UserImageSvc {
     }
 
     pub fn delete_by_user_id(context: &GraphQLContext, user_id: i32) -> Result<usize> {
-        let mut conn = get_conn(context);
+        let mut conn = get_conn(context)?;
 
         diesel::delete(user_images::table.filter(user_images::user_id.eq(user_id)))
             .execute(&mut conn)
@@ -77,7 +90,7 @@ impl UserImageSvc {
         image_id: Option<i32>,
     ) -> Result<()> {
         use crate::schema::users;
-        let mut conn = get_conn(context);
+        let mut conn = get_conn(context)?;
 
         diesel::update(users::table.filter(users::id.eq(user_id)))
             .set(users::image_id.eq(image_id))
@@ -202,7 +215,6 @@ mod tests {
         assert!(latest_image.is_some());
         let latest_image = latest_image.unwrap();
         assert_eq!(latest_image.id, second_image.id);
-        assert_eq!(latest_image.image_data, vec![5, 6, 7, 8]);
         assert_eq!(latest_image.content_type, "image/png");
     }
 

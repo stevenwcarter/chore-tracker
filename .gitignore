@@ -18,3 +18,5 @@ aws.keys
 .secrets
 node_modules
 .env
+.claude/code-health.md
+.claude/code-health-archive-*.md

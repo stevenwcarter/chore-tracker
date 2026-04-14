@@ -14,7 +14,7 @@ impl ChoreSvc {
         chores::table
             .filter(chores::uuid.eq(chore_uuid))
             .select(Chore::as_select())
-            .first(&mut get_conn(context))
+            .first(&mut get_conn(context)?)
             .context("Could not find chore")
     }
 
@@ -22,7 +22,7 @@ impl ChoreSvc {
         chores::table
             .filter(chores::id.eq(chore_id))
             .select(Chore::as_select())
-            .first(&mut get_conn(context))
+            .first(&mut get_conn(context)?)
             .context("Could not find chore by ID")
     }
 
@@ -50,7 +50,7 @@ impl ChoreSvc {
                     .order_by(chores::name.asc())
                     .limit(limit)
                     .offset(offset)
-                    .load::<Chore>(&mut get_conn(context))
+                    .load::<Chore>(&mut get_conn(context)?)
                     .context("Could not load chores")
             },
             |user_id| {
@@ -69,7 +69,7 @@ impl ChoreSvc {
                     .order_by(chores::name.asc())
                     .limit(limit)
                     .offset(offset)
-                    .load::<Chore>(&mut get_conn(context))
+                    .load::<Chore>(&mut get_conn(context)?)
                     .context("Could not load chores for user")
             },
         )
@@ -78,7 +78,7 @@ impl ChoreSvc {
     pub fn create(context: &GraphQLContext, chore: &Chore) -> Result<Chore> {
         diesel::insert_into(chores::table)
             .values(chore)
-            .execute(&mut get_conn(context))
+            .execute(&mut get_conn(context)?)
             .context("Could not create chore")?;
 
         Self::get(context, &chore.uuid)
@@ -88,7 +88,7 @@ impl ChoreSvc {
         diesel::update(chores::table)
             .filter(chores::uuid.eq(&chore.uuid))
             .set(chore)
-            .execute(&mut get_conn(context))
+            .execute(&mut get_conn(context)?)
             .context("Could not update chore")?;
 
         Self::get(context, &chore.uuid)
@@ -97,7 +97,7 @@ impl ChoreSvc {
     pub fn delete(context: &GraphQLContext, chore_uuid: &str) -> Result<()> {
         diesel::delete(chores::table)
             .filter(chores::uuid.eq(chore_uuid))
-            .execute(&mut get_conn(context))
+            .execute(&mut get_conn(context)?)
             .context("Could not delete chore")?;
 
         Ok(())
@@ -111,7 +111,7 @@ impl ChoreSvc {
                     .eq(chore_id)
                     .and(chore_assignments::user_id.eq(user_id)),
             )
-            .first::<ChoreAssignment>(&mut get_conn(context))
+            .first::<ChoreAssignment>(&mut get_conn(context)?)
             .optional()
             .context("Could not check existing assignment")?;
 
@@ -129,7 +129,7 @@ impl ChoreSvc {
 
         diesel::insert_into(chore_assignments::table)
             .values(&assignment)
-            .execute(&mut get_conn(context))
+            .execute(&mut get_conn(context)?)
             .context("Could not assign user to chore")?;
 
         Ok(())
@@ -142,7 +142,7 @@ impl ChoreSvc {
                     .eq(chore_id)
                     .and(chore_assignments::user_id.eq(user_id)),
             )
-            .execute(&mut get_conn(context))
+            .execute(&mut get_conn(context)?)
             .context("Could not unassign user from chore")?;
 
         Ok(())
@@ -156,7 +156,7 @@ impl ChoreSvc {
             .inner_join(users::table)
             .filter(chore_assignments::chore_id.eq(chore_id))
             .select(crate::models::User::as_select())
-            .load(&mut get_conn(context))
+            .load(&mut get_conn(context)?)
             .context("Could not load assigned users")
     }
 }

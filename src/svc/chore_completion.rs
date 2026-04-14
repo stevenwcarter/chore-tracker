@@ -32,7 +32,7 @@ impl ChoreCompletionSvc {
         chore_completions::table
             .filter(chore_completions::uuid.eq(completion_uuid))
             .select(ChoreCompletion::as_select())
-            .first(&mut get_conn(context))
+            .first(&mut get_conn(context)?)
             .context("Could not find chore completion")
     }
 
@@ -78,7 +78,7 @@ impl ChoreCompletionSvc {
             .order_by(chore_completions::completed_date.desc())
             .limit(limit)
             .offset(offset)
-            .load::<ChoreCompletion>(&mut get_conn(context))
+            .load::<ChoreCompletion>(&mut get_conn(context)?)
             .context("Could not load chore completions")
     }
 
@@ -94,7 +94,7 @@ impl ChoreCompletionSvc {
             .filter(chore_completions::completed_date.between(week_start_date, week_end_date))
             .select(ChoreCompletion::as_select())
             .order_by(chore_completions::completed_date.asc())
-            .load(&mut get_conn(context))
+            .load(&mut get_conn(context)?)
             .context("Could not load weekly chore completions")
     }
 
@@ -108,7 +108,7 @@ impl ChoreCompletionSvc {
             .filter(chore_completions::completed_date.between(week_start_date, week_end_date))
             .select(ChoreCompletion::as_select())
             .order_by(chore_completions::completed_date.asc())
-            .load(&mut get_conn(context))
+            .load(&mut get_conn(context)?)
             .context("Could not load all weekly chore completions")
     }
 
@@ -116,21 +116,20 @@ impl ChoreCompletionSvc {
         let results: Vec<(User, Option<i64>)> = users::table
             .left_join(chore_completions::table)
             .filter(
-                chore_completions::approved
-                    .eq(true)
-                    .or(chore_completions::approved.is_null()),
-            )
-            .filter(
-                chore_completions::paid_out
-                    .eq(false)
-                    .or(chore_completions::paid_out.is_null()),
+                // Include users with no completions (LEFT JOIN null case, detected via id),
+                // or users who have at least one approved, unpaid completion.
+                chore_completions::id
+                    .is_null()
+                    .or(chore_completions::approved
+                        .eq(true)
+                        .and(chore_completions::paid_out.eq(false))),
             )
             .group_by(users::id)
             .select((
                 User::as_select(),
                 sum(chore_completions::amount_cents).nullable(),
             ))
-            .load(&mut get_conn(context))
+            .load(&mut get_conn(context)?)
             .context("Could not load unpaid totals")?;
 
         let converted_results = results
@@ -178,7 +177,7 @@ impl ChoreCompletionSvc {
 
         diesel::insert_into(chore_completions::table)
             .values(&completion)
-            .execute(&mut get_conn(context))
+            .execute(&mut get_conn(context)?)
             .context("Could not create chore completion")?;
 
         Self::get(context, &completion.uuid)
@@ -196,7 +195,7 @@ impl ChoreCompletionSvc {
                 chore_completions::approved_by_admin_id.eq(admin_id),
                 chore_completions::approved_at.eq(Utc::now().naive_utc()),
             ))
-            .execute(&mut get_conn(context))
+            .execute(&mut get_conn(context)?)
             .context("Could not approve chore completion")?;
 
         Self::get(context, completion_uuid)
@@ -218,7 +217,7 @@ impl ChoreCompletionSvc {
                 chore_completions::paid_out.eq(true),
                 chore_completions::paid_out_at.eq(Utc::now().naive_utc()),
             ))
-            .execute(&mut get_conn(context))
+            .execute(&mut get_conn(context)?)
             .context("Could not mark completions as paid")?;
 
         Ok(())
@@ -227,7 +226,7 @@ impl ChoreCompletionSvc {
     pub fn delete(context: &GraphQLContext, completion_uuid: &str) -> Result<()> {
         diesel::delete(chore_completions::table)
             .filter(chore_completions::uuid.eq(completion_uuid))
-            .execute(&mut get_conn(context))
+            .execute(&mut get_conn(context)?)
             .context("Could not delete chore completion")?;
 
         Ok(())

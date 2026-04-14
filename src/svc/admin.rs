@@ -10,7 +10,7 @@ impl AdminSvc {
         admins::table
             .filter(admins::uuid.eq(admin_uuid))
             .select(Admin::as_select())
-            .first(&mut get_conn(context))
+            .first(&mut get_conn(context)?)
             .context("Could not find admin")
     }
 
@@ -18,7 +18,7 @@ impl AdminSvc {
         admins::table
             .filter(admins::oidc_subject.eq(oidc_subject))
             .select(Admin::as_select())
-            .first(&mut get_conn(context))
+            .first(&mut get_conn(context)?)
             .context("Could not find admin by OIDC subject")
     }
 
@@ -31,14 +31,14 @@ impl AdminSvc {
             .order_by(admins::name.asc())
             .limit(limit)
             .offset(offset)
-            .load::<Admin>(&mut get_conn(context))
+            .load::<Admin>(&mut get_conn(context)?)
             .context("Could not load admins")
     }
 
     pub fn create(context: &GraphQLContext, admin: &Admin) -> Result<Admin> {
         diesel::insert_into(admins::table)
             .values(admin)
-            .execute(&mut get_conn(context))
+            .execute(&mut get_conn(context)?)
             .context("Could not create admin")?;
 
         Self::get(context, &admin.uuid)
@@ -48,7 +48,7 @@ impl AdminSvc {
         diesel::update(admins::table)
             .filter(admins::uuid.eq(&admin.uuid))
             .set(admin)
-            .execute(&mut get_conn(context))
+            .execute(&mut get_conn(context)?)
             .context("Could not update admin")?;
 
         Self::get(context, &admin.uuid)
@@ -87,7 +87,7 @@ impl AdminSvc {
     pub fn delete(context: &GraphQLContext, admin_uuid: &str) -> Result<()> {
         diesel::delete(admins::table)
             .filter(admins::uuid.eq(admin_uuid))
-            .execute(&mut get_conn(context))
+            .execute(&mut get_conn(context)?)
             .context("Could not delete admin")?;
 
         Ok(())

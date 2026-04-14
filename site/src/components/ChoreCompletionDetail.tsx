@@ -116,7 +116,7 @@ export const ChoreCompletionDetail: React.FC<ChoreCompletionDetailProps> = ({
       {completion.chore && (
         <div>
           <p className="text-sm text-gray-400">Chore:</p>
-          <p className="font-medium text-white">{completion.chore.name || completion.chore.name}</p>
+          <p className="font-medium text-white">{completion.chore.name || 'Unknown Chore'}</p>
         </div>
       )}
 

@@ -19,7 +19,7 @@ impl ChoreCompletionFixSvc {
     ///
     /// Returns the number of records updated.
     pub fn fix_weekly_completion_amounts(context: &GraphQLContext) -> Result<i32> {
-        let mut conn = get_conn(context);
+        let mut conn = get_conn(context)?;
 
         // Get all chore completions that are for weekly chores
         let weekly_completions: Vec<(ChoreCompletion, String, i32, i32)> = chore_completions::table
@@ -87,7 +87,7 @@ impl ChoreCompletionFixSvc {
     pub fn analyze_weekly_completion_amounts(
         context: &GraphQLContext,
     ) -> Result<Vec<(i32, i64, i64, i64)>> {
-        let mut conn = get_conn(context);
+        let mut conn = get_conn(context)?;
 
         // Get all weekly completions with their chore details
         let weekly_completions: Vec<(i32, i32, i32, i32)> = chore_completions::table
