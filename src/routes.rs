@@ -9,7 +9,7 @@ use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use axum::{Extension, Router};
-use reqwest::{Method, header};
+use reqwest::header;
 use rust_embed::RustEmbed;
 use std::sync::Arc;
 use tower::ServiceBuilder;
