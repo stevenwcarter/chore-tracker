@@ -8,7 +8,7 @@ use crate::{
 };
 use anyhow::{Context, Result};
 use chrono::{NaiveDate, Utc};
-use diesel::{dsl::sum, prelude::*};
+use diesel::prelude::*;
 use juniper::GraphQLInputObject;
 use uuid::Uuid;
 
@@ -127,7 +127,7 @@ impl ChoreCompletionSvc {
             .group_by(users::id)
             .select((
                 User::as_select(),
-                sum(chore_completions::amount_cents).nullable(),
+                diesel::dsl::sum(chore_completions::amount_cents).nullable(),
             ))
             .load(&mut get_conn(context)?)
             .context("Could not load unpaid totals")?;
