@@ -5,7 +5,7 @@ use axum::{
 };
 use axum_extra::extract::cookie::{Cookie, CookieJar};
 use serde::{Deserialize, Serialize};
-use tracing::error;
+use tracing::{debug, error, info};
 use uuid::Uuid;
 
 use crate::{context::GraphQLContext, get_env, models::Admin, svc::AdminSvc};
@@ -195,12 +195,20 @@ pub struct AuthCallback {
 // OIDC handlers with real implementation
 pub async fn login_handler(
     State((oidc_config, _context)): State<(OidcConfig, GraphQLContext)>,
+    jar: CookieJar,
 ) -> impl IntoResponse {
     let state = Uuid::new_v4().to_string();
 
     oidc_config.get_authorization_url(&state).map_or_else(
         |_| Redirect::to("/?error=oidc_config_error").into_response(),
-        |auth_url| Redirect::to(&auth_url).into_response(),
+        |auth_url| {
+            let state_cookie = Cookie::build(("oidc_state", state))
+                .path("/")
+                .http_only(true)
+                .secure(false) // Set to true in production with HTTPS
+                .build();
+            (jar.add(state_cookie), Redirect::to(&auth_url)).into_response()
+        },
     )
 }
 
@@ -209,26 +217,28 @@ pub async fn callback_handler(
     Query(params): Query<AuthCallback>,
     jar: CookieJar,
 ) -> impl IntoResponse {
-    println!(
-        "OIDC Callback received - code: {}, state: {}",
-        params.code, params.state
-    );
+    debug!("OIDC callback received");
+
+    // Verify CSRF state matches what was set in login_handler
+    let stored_state = match jar.get("oidc_state").map(|c| c.value().to_owned()) {
+        Some(s) => s,
+        None => return Redirect::to("/?error=missing_state").into_response(),
+    };
+    let jar = jar.remove("oidc_state");
+    if stored_state != params.state {
+        error!("OIDC state mismatch - possible CSRF attack");
+        return (jar, Redirect::to("/?error=state_mismatch")).into_response();
+    }
 
     // Exchange authorization code for access token
     match oidc_config.exchange_code_for_token(&params.code).await {
         Ok(token) => {
-            println!(
-                "Token exchange successful - access_token length: {}",
-                token.access_token.len()
-            );
+            debug!("Token exchange successful");
 
             // Get user info from the OIDC provider
             match oidc_config.get_user_info(&token.access_token).await {
                 Ok(user_info) => {
-                    println!(
-                        "User info retrieved - sub: {}, email: {:?}",
-                        user_info.sub, user_info.email
-                    );
+                    debug!("User info retrieved");
 
                     // Get or create admin user automatically since OIDC access is restricted
                     let name = user_info
@@ -240,7 +250,7 @@ pub async fn callback_handler(
 
                     match AdminSvc::get_or_create_by_oidc(&context, &user_info.sub, name, email) {
                         Ok(admin) => {
-                            println!("Admin authenticated: {}", admin.uuid);
+                            info!("Admin authenticated: {}", admin.uuid);
                             // Create admin session
                             let session_cookie = Cookie::build(("admin_session", admin.uuid))
                                 .path("/")
@@ -252,19 +262,19 @@ pub async fn callback_handler(
                             (jar, Redirect::to("/admin")).into_response()
                         }
                         Err(e) => {
-                            println!("Failed to get or create admin - error: {}", e);
+                            error!("Failed to get or create admin: {}", e);
                             Redirect::to("/?error=admin_creation_failed").into_response()
                         }
                     }
                 }
                 Err(e) => {
-                    println!("UserInfo request failed: {}", e);
+                    error!("UserInfo request failed: {}", e);
                     Redirect::to("/?error=userinfo_failed").into_response()
                 }
             }
         }
         Err(e) => {
-            println!("Token exchange failed: {}", e);
+            error!("Token exchange failed: {}", e);
             Redirect::to("/?error=token_exchange_failed").into_response()
         }
     }

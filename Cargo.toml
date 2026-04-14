@@ -26,6 +26,7 @@ diesel = { version = "2.1.6", features = [
   "chrono",
   "serde_json",
   "numeric",
+  "returning_clauses_for_sqlite_3_35",
 ] }
 dotenvy = "0.15.7"
 juniper_axum = { version = "0.3.0", features = ["subscriptions"] }

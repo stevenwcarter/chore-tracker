@@ -2,7 +2,7 @@
 
 use chore_tracker::{context::GraphQLContext, routes::app};
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use chore_tracker::db::get_pool;
 use chore_tracker::get_env_typed;
 use tracing::{error, info};
@@ -41,7 +41,7 @@ async fn main() -> Result<()> {
     let port = get_env_typed::<u16>("PORT", 7007);
     let listener = tokio::net::TcpListener::bind(format!("{listen_address}:{port}"))
         .await
-        .unwrap();
+        .with_context(|| format!("Failed to bind to {listen_address}:{port}"))?;
     info!("listener set up at {listen_address}:{port}");
     axum::serve(listener, app)
         .with_graceful_shutdown(async move {

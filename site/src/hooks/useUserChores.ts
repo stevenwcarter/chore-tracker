@@ -63,7 +63,7 @@ export const useUserChores = ({ userId, weekStartDate }: UseUserChoresOptions) =
       });
 
       // Transform user chores into WeeklyChoreData format
-      const transformedData: WeeklyChoreData[] = userChores.map((backendChore: any) => {
+      const transformedData: WeeklyChoreData[] = userChores.map((backendChore: Chore) => {
         const chore: Chore = {
           id: backendChore.id,
           uuid: backendChore.uuid,

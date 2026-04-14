@@ -12,6 +12,9 @@ use axum::{Extension, Router};
 use tracing::error;
 use uuid::Uuid;
 
+const MAX_IMAGE_SIZE: usize = 5 * 1024 * 1024;
+const IMAGE_CACHE_CONTROL: &str = "public, max-age=86400";
+
 pub fn image_routes() -> Router {
     Router::new()
         .route("/upload/{user_uuid}", post(upload_user_image))
@@ -53,8 +56,8 @@ async fn upload_user_image(
 
                 let data = field.bytes().await.context("could not read image data")?;
 
-                // Check file size (max 5MB)
-                if data.len() > 5 * 1024 * 1024 {
+                // Check file size
+                if data.len() > MAX_IMAGE_SIZE {
                     return Err(AppError(anyhow!("Image too large (max 5MB)")));
                 }
 
@@ -100,7 +103,7 @@ async fn get_user_image(
     Ok(Response::builder()
         .header("Content-Type", image.content_type)
         .header("Content-Length", image.file_size.to_string())
-        .header("Cache-Control", "public, max-age=86400")
+        .header("Cache-Control", IMAGE_CACHE_CONTROL)
         .body(image.image_data.into())
         .context("building response")?)
 }
@@ -117,7 +120,7 @@ async fn get_image_by_uuid(
     Ok(Response::builder()
         .header("Content-Type", image.content_type)
         .header("Content-Length", image.file_size.to_string())
-        .header("Cache-Control", "public, max-age=86400")
+        .header("Cache-Control", IMAGE_CACHE_CONTROL)
         .body(image.image_data.into())
         .context("building response")?)
 }

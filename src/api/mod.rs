@@ -20,11 +20,10 @@ pub async fn test(_headers: HeaderMap) -> Result<impl IntoResponse, AppError> {
 }
 
 pub fn err_wrapper<T: Serialize>(result: anyhow::Result<T>) -> impl IntoResponse {
-    Json(
-        result
-            .map_err(|err| (StatusCode::NOT_FOUND, err.to_string()))
-            .unwrap(),
-    )
+    match result {
+        Ok(val) => (StatusCode::OK, Json(val)).into_response(),
+        Err(err) => (StatusCode::NOT_FOUND, err.to_string()).into_response(),
+    }
 }
 
 // Make our own error that wraps `anyhow::Error`.

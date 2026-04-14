@@ -15,15 +15,14 @@ impl UserImageSvc {
         let mut conn = get_conn(context)?;
         let new_user_image: NewUserImage = input.into();
 
-        diesel::insert_into(user_images::table)
+        let id: i32 = diesel::insert_into(user_images::table)
             .values(&new_user_image)
-            .execute(&mut conn)
+            .returning(user_images::id)
+            .get_result(&mut conn)
             .context("Failed to create user image")?;
 
-        // Get the inserted record by querying the most recent one for this user
         user_images::table
-            .filter(user_images::user_id.eq(new_user_image.user_id))
-            .order(user_images::created_at.desc())
+            .find(id)
             .select(UserImage::as_select())
             .first::<UserImage>(&mut conn)
             .context("Failed to retrieve created user image")

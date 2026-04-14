@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client';
 import { useEffect, useState } from 'react';
-import { ChoreCompletion } from 'types/chore';
+import { ChoreCompletion, ChoreCompletionNoteInput } from 'types/chore';
 import {
   GET_ALL_WEEKLY_COMPLETIONS,
   APPROVE_CHORE_COMPLETION,
@@ -75,7 +75,7 @@ export const useWeeklyCompletions = ({ weekStartDate }: UseWeeklyCompletionsOpti
     }
   };
 
-  const addNote = async (noteData: any) => {
+  const addNote = async (noteData: ChoreCompletionNoteInput) => {
     try {
       await addChoreNote({
         variables: {
