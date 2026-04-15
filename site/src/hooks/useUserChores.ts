@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client';
 import { useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
 import { ChoreCompletion, WeeklyChoreData, Chore } from 'types/chore';
 import { GET_USER_CHORES, GET_WEEKLY_CHORES, CREATE_CHORE_COMPLETION } from 'graphql/queries';
 import { formatDateForGraphQL } from 'utils/dateUtils';
@@ -102,7 +103,7 @@ export const useUserChores = ({ userId, weekStartDate }: UseUserChoresOptions) =
         },
       });
     } catch (err) {
-      console.error('Error completing chore:', err);
+      toast.error('Error completing chore');
       throw err;
     }
   };

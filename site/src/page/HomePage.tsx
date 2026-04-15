@@ -11,6 +11,8 @@ interface OutletContext {
   isCheckingAuth: boolean;
 }
 
+const USER_AUTO_DESELECT_MS = 5 * 60 * 1000; // 5 minutes
+
 export const HomePage = () => {
   const { currentAdmin, isCheckingAuth } = useOutletContext<OutletContext>();
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -30,12 +32,9 @@ export const HomePage = () => {
 
     // If a user is selected, start a new timer
     if (selectedUser) {
-      deselectTimer.current = setTimeout(
-        () => {
-          setSelectedUser(null);
-        },
-        5 * 60 * 1000,
-      ); // 5 minutes
+      deselectTimer.current = setTimeout(() => {
+        setSelectedUser(null);
+      }, USER_AUTO_DESELECT_MS);
     }
 
     // Cleanup on unmount

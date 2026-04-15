@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client';
 import { useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
 import { Chore, User, ChoreInput, UserInput } from 'types/chore';
 import {
   GET_ALL_CHORES,
@@ -78,14 +79,13 @@ export const useAdminChoreManagement = () => {
       });
 
       if (selectedUserIds.length > 0 && response.data?.createChore) {
-        for (const userId of selectedUserIds) {
-          await assignChoreToUser({
-            variables: { choreId: response.data.createChore.id, userId },
-          });
-        }
+        const choreId = response.data.createChore.id;
+        await Promise.all(
+          selectedUserIds.map((userId) => assignChoreToUser({ variables: { choreId, userId } })),
+        );
       }
     } catch (error) {
-      console.error('Error creating chore:', error);
+      toast.error('Error creating chore');
       throw error;
     }
   };
@@ -113,22 +113,15 @@ export const useAdminChoreManagement = () => {
         // Find users to unassign (in currentUserIds but not in selectedUserIds)
         const usersToUnassign = currentUserIds.filter((id) => !selectedUserIds.includes(id));
 
-        // Assign new users
-        for (const userId of usersToAssign) {
-          await assignChoreToUser({
-            variables: { choreId, userId },
-          });
-        }
-
-        // Unassign removed users
-        for (const userId of usersToUnassign) {
-          await unassignUserFromChore({
-            variables: { choreId, userId },
-          });
-        }
+        await Promise.all([
+          ...usersToAssign.map((userId) => assignChoreToUser({ variables: { choreId, userId } })),
+          ...usersToUnassign.map((userId) =>
+            unassignUserFromChore({ variables: { choreId, userId } }),
+          ),
+        ]);
       }
     } catch (error) {
-      console.error('Error updating chore:', error);
+      toast.error('Error updating chore');
       throw error;
     }
   };
@@ -139,7 +132,7 @@ export const useAdminChoreManagement = () => {
         variables: { user: userData },
       });
     } catch (error) {
-      console.error('Error creating user:', error);
+      toast.error('Error creating user');
       throw error;
     }
   };
@@ -150,7 +143,7 @@ export const useAdminChoreManagement = () => {
         variables: { choreId, userId },
       });
     } catch (error) {
-      console.error('Error assigning user to chore:', error);
+      toast.error('Error assigning user to chore');
       throw error;
     }
   };
@@ -161,7 +154,7 @@ export const useAdminChoreManagement = () => {
         variables: { choreId, userId },
       });
     } catch (error) {
-      console.error('Error unassigning user from chore:', error);
+      toast.error('Error unassigning user from chore');
       throw error;
     }
   };

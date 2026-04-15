@@ -496,13 +496,7 @@ impl ChoreCompletion {
 impl PaymentType {
     /// Calculates the number of days a chore is assigned for based on the requiredDays bitmask
     pub(crate) fn get_assigned_days_count(required_days: i32) -> i32 {
-        let mut count = 0;
-        for i in 0..7 {
-            if (required_days >> i) & 1 == 1 {
-                count += 1;
-            }
-        }
-        count
+        required_days.count_ones() as i32
     }
 
     /// Rounds an amount to the nearest quarter (25 cents)

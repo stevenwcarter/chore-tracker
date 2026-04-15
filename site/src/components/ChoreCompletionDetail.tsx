@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useMutation } from '@apollo/client';
+import { toast } from 'react-toastify';
 import { ChoreCompletion, AuthorType } from '../types/chore';
 import { formatCurrency } from '../utils/dateUtils';
 import {
@@ -67,7 +68,7 @@ export const ChoreCompletionDetail: React.FC<ChoreCompletionDetailProps> = ({
         },
       });
     } catch (err) {
-      console.error('Error adding note:', err);
+      toast.error('Error adding note');
     }
   };
 
@@ -82,7 +83,7 @@ export const ChoreCompletionDetail: React.FC<ChoreCompletionDetailProps> = ({
         },
       });
     } catch (err) {
-      console.error('Error approving completion:', err);
+      toast.error('Error approving completion');
     }
   };
 
@@ -100,7 +101,7 @@ export const ChoreCompletionDetail: React.FC<ChoreCompletionDetailProps> = ({
         },
       });
     } catch (err) {
-      console.error('Error rejecting completion:', err);
+      toast.error('Error rejecting completion');
     }
   };
 

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'react-toastify';
 import { Chore, ChoreInput, UserInput } from '../types/chore';
 import LoadingSpinner from './LoadingSpinner';
 import Modal from './Modal';
@@ -45,10 +46,10 @@ export const AdminChoreManagement: React.FC<AdminChoreManagementProps> = ({ admi
       if (response.ok) {
         await refetchUsers();
       } else {
-        console.error('Failed to upload image');
+        toast.error('Failed to upload image');
       }
     } catch (err) {
-      console.error('Error uploading image:', err);
+      toast.error('Error uploading image');
     }
   };
 
@@ -61,10 +62,10 @@ export const AdminChoreManagement: React.FC<AdminChoreManagementProps> = ({ admi
       if (response.ok) {
         await refetchUsers();
       } else {
-        console.error('Failed to remove image');
+        toast.error('Failed to remove image');
       }
     } catch (err) {
-      console.error('Error removing image:', err);
+      toast.error('Error removing image');
     }
   };
 
@@ -72,7 +73,7 @@ export const AdminChoreManagement: React.FC<AdminChoreManagementProps> = ({ admi
     try {
       await assignUser(choreId, userId);
     } catch (err) {
-      console.error('Error assigning chore to user:', err);
+      toast.error('Error assigning chore to user');
     }
   };
 
@@ -80,7 +81,7 @@ export const AdminChoreManagement: React.FC<AdminChoreManagementProps> = ({ admi
     try {
       await unassignUser(choreId, userId);
     } catch (err) {
-      console.error('Error unassigning chore to user:', err);
+      toast.error('Error unassigning chore from user');
     }
   };
 

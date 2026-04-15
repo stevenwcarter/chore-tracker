@@ -36,11 +36,17 @@ impl ChoreCompletionSvc {
             .context("Could not find chore completion")
     }
 
+    const MAX_COMPLETION_LIMIT: i32 = 1000;
+
     pub fn list(
         context: &GraphQLContext,
         filter: &ChoreCompletionFilter,
     ) -> Result<Vec<ChoreCompletion>> {
-        let limit: i64 = filter.limit.unwrap_or(100).into();
+        let limit: i64 = filter
+            .limit
+            .unwrap_or(100)
+            .min(Self::MAX_COMPLETION_LIMIT)
+            .into();
         let offset: i64 = filter.offset.unwrap_or_default().into();
 
         let mut query = chore_completions::table.into_boxed();
@@ -82,34 +88,44 @@ impl ChoreCompletionSvc {
             .context("Could not load chore completions")
     }
 
+    /// Shared loader for weekly completion queries; pass `user_id = Some(id)` to
+    /// filter to a single user, or `None` to load all users' completions for the week.
+    fn load_weekly(
+        context: &GraphQLContext,
+        week_start_date: NaiveDate,
+        user_id: Option<i32>,
+    ) -> Result<Vec<ChoreCompletion>> {
+        let week_end_date = week_start_date + chrono::Duration::days(6);
+        let mut conn = get_conn(context)?;
+
+        let mut query = chore_completions::table
+            .filter(chore_completions::completed_date.between(week_start_date, week_end_date))
+            .select(ChoreCompletion::as_select())
+            .order_by(chore_completions::completed_date.asc())
+            .into_boxed();
+
+        if let Some(uid) = user_id {
+            query = query.filter(chore_completions::user_id.eq(uid));
+        }
+
+        query
+            .load(&mut conn)
+            .context("Could not load weekly chore completions")
+    }
+
     pub fn get_weekly_view(
         context: &GraphQLContext,
         user_id: i32,
         week_start_date: NaiveDate,
     ) -> Result<Vec<ChoreCompletion>> {
-        let week_end_date = week_start_date + chrono::Duration::days(6);
-
-        chore_completions::table
-            .filter(chore_completions::user_id.eq(user_id))
-            .filter(chore_completions::completed_date.between(week_start_date, week_end_date))
-            .select(ChoreCompletion::as_select())
-            .order_by(chore_completions::completed_date.asc())
-            .load(&mut get_conn(context)?)
-            .context("Could not load weekly chore completions")
+        Self::load_weekly(context, week_start_date, Some(user_id))
     }
 
     pub fn get_all_weekly_completions(
         context: &GraphQLContext,
         week_start_date: NaiveDate,
     ) -> Result<Vec<ChoreCompletion>> {
-        let week_end_date = week_start_date + chrono::Duration::days(6);
-
-        chore_completions::table
-            .filter(chore_completions::completed_date.between(week_start_date, week_end_date))
-            .select(ChoreCompletion::as_select())
-            .order_by(chore_completions::completed_date.asc())
-            .load(&mut get_conn(context)?)
-            .context("Could not load all weekly chore completions")
+        Self::load_weekly(context, week_start_date, None)
     }
 
     pub fn get_unpaid_totals(context: &GraphQLContext) -> Result<Vec<(User, i32)>> {
@@ -213,6 +229,22 @@ impl ChoreCompletionSvc {
         }
 
         query
+            .set((
+                chore_completions::paid_out.eq(true),
+                chore_completions::paid_out_at.eq(Utc::now().naive_utc()),
+            ))
+            .execute(&mut get_conn(context)?)
+            .context("Could not mark completions as paid")?;
+
+        Ok(())
+    }
+
+    /// Marks all approved, unpaid completions for the given users as paid in a single query.
+    pub fn mark_as_paid_batch(context: &GraphQLContext, user_ids: &[i32]) -> Result<()> {
+        diesel::update(chore_completions::table)
+            .filter(chore_completions::approved.eq(true))
+            .filter(chore_completions::paid_out.eq(false))
+            .filter(chore_completions::user_id.eq_any(user_ids))
             .set((
                 chore_completions::paid_out.eq(true),
                 chore_completions::paid_out_at.eq(Utc::now().naive_utc()),

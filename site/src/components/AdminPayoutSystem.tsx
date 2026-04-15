@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
+import { toast } from 'react-toastify';
 import { GET_UNPAID_TOTALS, MARK_COMPLETIONS_AS_PAID } from '../graphql/queries';
 import { UnpaidTotal } from '../types/chore';
 import { formatCurrency } from '../utils/dateUtils';
@@ -54,7 +55,7 @@ export const AdminPayoutSystem: React.FC<AdminPayoutSystemProps> = (
         variables: { userIds: selectedUsers },
       });
     } catch (e) {
-      console.error('Error processing payout:', e);
+      toast.error('Error processing payout');
       setIsProcessingPayout(false);
     }
   };

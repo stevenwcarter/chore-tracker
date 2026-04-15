@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'react-toastify';
 import { UserInput } from '../types/chore';
 
 interface CreateUserFormProps {
@@ -21,7 +22,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({ onSubmit, onCanc
       await onSubmit(userForm);
       setUserForm({ name: '' });
     } catch (error) {
-      console.error('Error creating user:', error);
+      toast.error('Error creating user');
     } finally {
       setIsSubmitting(false);
     }

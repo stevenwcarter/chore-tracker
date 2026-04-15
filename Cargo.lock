@@ -353,7 +353,6 @@ dependencies = [
  "juniper",
  "juniper_axum",
  "juniper_graphql_ws",
- "lazy_static",
  "mime_guess",
  "reqwest",
  "rust-embed",

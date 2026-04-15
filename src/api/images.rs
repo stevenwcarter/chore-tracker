@@ -68,12 +68,14 @@ async fn upload_user_image(
                     error!("Failed to delete existing image: {}", e);
                 }
 
-                // Create new image
+                // Create new image; compute file_size first so `data` isn't
+                // retained alongside its Vec copy, halving peak memory usage.
+                let file_size = i32::try_from(data.len()).unwrap_or(0);
                 let image_input = crate::models::UserImageInput {
                     user_id,
                     image_data: data.to_vec(),
                     content_type,
-                    file_size: i32::try_from(data.len()).unwrap_or(0),
+                    file_size,
                 };
 
                 let user_image =

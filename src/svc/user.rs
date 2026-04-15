@@ -4,6 +4,7 @@ use diesel::prelude::*;
 use juniper::GraphQLObject;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
+use std::sync::OnceLock;
 use ynab_api::{
     apis::{categories_api::get_categories, configuration::Configuration},
     models::CategoriesResponse,
@@ -14,6 +15,8 @@ pub struct UserBalance {
     pub name: String,
     pub balance: f64,
 }
+
+static REQWEST_CLIENT: OnceLock<Client> = OnceLock::new();
 
 pub struct UserSvc {}
 
@@ -77,7 +80,8 @@ impl UserSvc {
 
     pub async fn balances(_context: &GraphQLContext) -> Result<Vec<UserBalance>> {
         let ynab_token = get_env("YNAB_TOKEN", "NOT_SET");
-        let client = Client::new();
+        // Reuse a single client across calls (reqwest::Client pools connections internally).
+        let client = REQWEST_CLIENT.get_or_init(Client::new).clone();
         let budget_id = "0dcd28d3-c3e8-4f3d-a64f-f63b5f12f87f";
         let configuration = Configuration {
             base_path: "https://api.ynab.com/v1/".to_owned(),
@@ -94,28 +98,23 @@ impl UserSvc {
             .iter()
             .find(|g| g.name == "Kids Allowances")
             .ok_or_else(|| anyhow::anyhow!("YNAB group 'Kids Allowances' not found"))?;
-        let aurora = group
-            .categories
-            .iter()
-            .find(|c| c.name == "Aurora Cash")
-            .ok_or_else(|| anyhow::anyhow!("YNAB category 'Aurora Cash' not found"))?
-            .balance as f64
-            / 1000.0;
-        let madeline = group
-            .categories
-            .iter()
-            .find(|c| c.name == "Madeline Cash")
-            .ok_or_else(|| anyhow::anyhow!("YNAB category 'Madeline Cash' not found"))?
-            .balance as f64
-            / 1000.0;
-        let aj = group
-            .categories
-            .iter()
-            .find(|c| c.name == "AJ Cash")
-            .ok_or_else(|| anyhow::anyhow!("YNAB category 'AJ Cash' not found"))?
-            .balance as f64
-            / 1000.0;
-        // TODO - add user balances
+        // Single pass over categories instead of three separate linear scans.
+        let mut aurora_bal = None;
+        let mut madeline_bal = None;
+        let mut aj_bal = None;
+        for c in &group.categories {
+            match c.name.as_str() {
+                "Aurora Cash" => aurora_bal = Some(c.balance as f64 / 1000.0),
+                "Madeline Cash" => madeline_bal = Some(c.balance as f64 / 1000.0),
+                "AJ Cash" => aj_bal = Some(c.balance as f64 / 1000.0),
+                _ => {}
+            }
+        }
+        let aurora =
+            aurora_bal.ok_or_else(|| anyhow::anyhow!("YNAB category 'Aurora Cash' not found"))?;
+        let madeline = madeline_bal
+            .ok_or_else(|| anyhow::anyhow!("YNAB category 'Madeline Cash' not found"))?;
+        let aj = aj_bal.ok_or_else(|| anyhow::anyhow!("YNAB category 'AJ Cash' not found"))?;
         Ok(vec![
             UserBalance {
                 name: "Aurora".to_owned(),

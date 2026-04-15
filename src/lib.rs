@@ -1,4 +1,3 @@
-#![allow(deprecated)]
 #![warn(clippy::str_to_string)]
 #![warn(clippy::perf, clippy::nursery)]
 #![allow(clippy::missing_const_for_fn)]
@@ -71,6 +70,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(deprecated)] // std::env::set_var deprecated in Rust 1.85; safe in single-threaded tests
     fn it_gets_typed_env_variables() {
         unsafe {
             std::env::set_var("FOO", "77");

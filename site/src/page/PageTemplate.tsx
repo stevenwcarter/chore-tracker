@@ -2,6 +2,7 @@ import Footer from 'components/Footer';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { Admin } from '../types/chore';
+import { toast } from 'react-toastify';
 
 // Real admin session check that calls the backend
 const checkAdminSession = async (): Promise<Admin | null> => {
@@ -18,7 +19,7 @@ const checkAdminSession = async (): Promise<Admin | null> => {
       return null;
     }
   } catch (error) {
-    console.error('Error checking admin session:', error);
+    toast.error('Error checking admin session');
     return null;
   }
 };

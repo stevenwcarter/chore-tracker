@@ -105,7 +105,8 @@ const completionWithLongChoreName: ChoreCompletion = {
   chore: {
     ...mockChore,
     name: 'Deep clean the entire house including all bathrooms, kitchen, living areas, and bedrooms',
-    description: 'This is a comprehensive cleaning task that involves multiple rooms and detailed work',
+    description:
+      'This is a comprehensive cleaning task that involves multiple rooms and detailed work',
   },
   user: {
     ...mockUser,

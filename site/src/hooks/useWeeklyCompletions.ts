@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client';
 import { useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
 import { ChoreCompletion, ChoreCompletionNoteInput } from 'types/chore';
 import {
   GET_ALL_WEEKLY_COMPLETIONS,
@@ -57,7 +58,7 @@ export const useWeeklyCompletions = ({ weekStartDate }: UseWeeklyCompletionsOpti
         },
       });
     } catch (err) {
-      console.error('Error approving completion:', err);
+      toast.error('Error approving completion');
       throw err;
     }
   };
@@ -70,7 +71,7 @@ export const useWeeklyCompletions = ({ weekStartDate }: UseWeeklyCompletionsOpti
         },
       });
     } catch (err) {
-      console.error('Error deleting completion:', err);
+      toast.error('Error deleting completion');
       throw err;
     }
   };
@@ -83,7 +84,7 @@ export const useWeeklyCompletions = ({ weekStartDate }: UseWeeklyCompletionsOpti
         },
       });
     } catch (err) {
-      console.error('Error adding note:', err);
+      toast.error('Error adding note');
       throw err;
     }
   };

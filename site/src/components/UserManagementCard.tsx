@@ -20,8 +20,6 @@ export const UserManagementCard: React.FC<UserManagementCardProps> = ({
     }
   };
 
-  console.log(user);
-
   return (
     <div className="bg-gray-700 p-4 rounded-lg border border-gray-600">
       {/* Mobile: Stack vertically, Desktop: Side by side */}

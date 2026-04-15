@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { ReactNode } from 'react';
 import clsx from 'clsx';
 import { ButtonTypes } from './ButtonTypes';
 
@@ -7,7 +7,7 @@ export interface ButtonProps {
   type?: ButtonTypes;
   disabled?: boolean;
   nomargin?: boolean;
-  children: any;
+  children: ReactNode;
   size?: 'sm' | 'lg';
   onClick?: (e: React.MouseEvent<HTMLElement>) => void;
   block?: boolean;

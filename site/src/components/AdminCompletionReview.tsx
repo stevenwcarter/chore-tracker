@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
+import { toast } from 'react-toastify';
 import {
   GET_ALL_WEEKLY_COMPLETIONS,
   APPROVE_CHORE_COMPLETION,
@@ -57,7 +58,7 @@ export const AdminCompletionReview: React.FC<AdminCompletionReviewProps> = ({ ad
         },
       });
     } catch (err) {
-      console.error('Error approving completion:', err);
+      toast.error('Error approving completion');
     }
   };
 
@@ -73,7 +74,7 @@ export const AdminCompletionReview: React.FC<AdminCompletionReviewProps> = ({ ad
         },
       });
     } catch (err) {
-      console.error('Error rejecting completion:', err);
+      toast.error('Error rejecting completion');
     }
   };
 

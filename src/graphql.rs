@@ -15,6 +15,9 @@ use crate::{
     },
 };
 
+const DEFAULT_LIST_LIMIT: i32 = 100;
+const DEFAULT_LIST_OFFSET: i32 = 0;
+
 pub struct Query;
 
 #[juniper::graphql_object(context = GraphQLContext)]
@@ -29,8 +32,8 @@ impl Query {
         limit: Option<i32>,
         offset: Option<i32>,
     ) -> FieldResult<Vec<User>> {
-        let limit = limit.unwrap_or(100);
-        let offset = offset.unwrap_or(0);
+        let limit = limit.unwrap_or(DEFAULT_LIST_LIMIT);
+        let offset = offset.unwrap_or(DEFAULT_LIST_OFFSET);
         graphql_translate_anyhow(UserSvc::list(context, limit, offset))
     }
 
@@ -48,8 +51,8 @@ impl Query {
         limit: Option<i32>,
         offset: Option<i32>,
     ) -> FieldResult<Vec<Admin>> {
-        let limit = limit.unwrap_or(100);
-        let offset = offset.unwrap_or(0);
+        let limit = limit.unwrap_or(DEFAULT_LIST_LIMIT);
+        let offset = offset.unwrap_or(DEFAULT_LIST_OFFSET);
         graphql_translate_anyhow(AdminSvc::list(context, limit, offset))
     }
 
@@ -65,8 +68,8 @@ impl Query {
         limit: Option<i32>,
         offset: Option<i32>,
     ) -> FieldResult<Vec<Chore>> {
-        let limit = limit.unwrap_or(100);
-        let offset = offset.unwrap_or(0);
+        let limit = limit.unwrap_or(DEFAULT_LIST_LIMIT);
+        let offset = offset.unwrap_or(DEFAULT_LIST_OFFSET);
         let active_only = active_only.unwrap_or(true);
         graphql_translate_anyhow(ChoreSvc::list(context, user_id, active_only, limit, offset))
     }
@@ -220,8 +223,8 @@ impl Mutation {
         context: &GraphQLContext,
         user_ids: Vec<i32>, // Support multiple user IDs
     ) -> FieldResult<bool> {
-        for user_id in user_ids {
-            graphql_translate_anyhow(ChoreCompletionSvc::mark_as_paid(context, Some(user_id)))?;
+        if !user_ids.is_empty() {
+            graphql_translate_anyhow(ChoreCompletionSvc::mark_as_paid_batch(context, &user_ids))?;
         }
         Ok(true)
     }

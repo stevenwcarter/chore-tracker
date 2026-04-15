@@ -18,37 +18,37 @@ const apolloClient = new ApolloClient({
   link,
 });
 
-const App: React.FC = () => {
-  const router = createBrowserRouter([
-    {
-      path: '/',
-      element: <PageTemplate />,
-      children: [
-        {
-          index: true,
-          element: <HomePage />,
-        },
-        {
-          path: 'admin',
-          children: [
-            {
-              path: 'chores',
-              element: <AdminChoreManagementPage />,
-            },
-            {
-              path: 'reviews',
-              element: <AdminCompletionReviewPage />,
-            },
-            {
-              path: 'payouts',
-              element: <AdminPayoutSystemPage />,
-            },
-          ],
-        },
-      ],
-    },
-  ]);
+const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <PageTemplate />,
+    children: [
+      {
+        index: true,
+        element: <HomePage />,
+      },
+      {
+        path: 'admin',
+        children: [
+          {
+            path: 'chores',
+            element: <AdminChoreManagementPage />,
+          },
+          {
+            path: 'reviews',
+            element: <AdminCompletionReviewPage />,
+          },
+          {
+            path: 'payouts',
+            element: <AdminPayoutSystemPage />,
+          },
+        ],
+      },
+    ],
+  },
+]);
 
+const App: React.FC = () => {
   return (
     <React.StrictMode>
       <ApolloProvider client={apolloClient}>

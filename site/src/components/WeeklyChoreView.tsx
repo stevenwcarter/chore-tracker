@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@apollo/client';
+import { toast } from 'react-toastify';
 import { GET_ALL_WEEKLY_COMPLETIONS } from 'graphql/queries';
 import { User, ChoreCompletion } from 'types/chore';
 import { getWeekDateRange, formatDateForGraphQL, formatDateForDisplay } from 'utils/dateUtils';
@@ -84,7 +85,7 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
       await completeChore(choreId, completionDate);
       refetchAllCompletions();
     } catch (err) {
-      console.error('Error completing chore:', err);
+      toast.error('Error completing chore');
     }
   };
 

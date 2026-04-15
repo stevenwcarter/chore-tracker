@@ -65,9 +65,10 @@ const CreateChoreForm: React.FC<CreateChoreFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Selected Days:', selectedDays);
-    const requiredDays = selectedDays.reduce((acc, day) => acc + DAYS[day], 0);
-    console.log('Required Days Bitmask:', requiredDays);
+    const requiredDays = selectedDays.reduce(
+      (acc, day) => acc + (DAYS[day as keyof typeof DAYS] ?? 0),
+      0,
+    );
     if (title.trim()) {
       const choreData = {
         uuid: initialChore?.uuid, // Include UUID for updates

@@ -8,14 +8,28 @@ import eslintConfigPrettier from "eslint-config-prettier";
 import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";
 
 export default tseslint.config(
-  { ignores: ["dist"] },
+  {
+    ignores: [
+      "dist/**",
+      "build/**",
+      "node_modules/**",
+      "storybook-static/**",
+      ".storybook/**",
+      ".vite/**",
+    ],
+  },
   eslintConfigPrettier,
   eslintPluginPrettierRecommended,
   jsxA11y.flatConfigs.recommended,
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ["**/*.{ts,tsx}"],
-    ignores: ["src/stories/**"],
+    // ignores: [
+    //   "src/stories/**",
+    //   "node_modules/**",
+    //   "build/**",
+    //   "storybook-static/**",
+    // ],
     languageOptions: {
       parserOptions: {
         ecmaFeatures: {
