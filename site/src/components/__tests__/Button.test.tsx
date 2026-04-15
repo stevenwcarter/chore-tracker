@@ -20,7 +20,6 @@ describe('SearchBuilder', () => {
     expect(button).toHaveClass('m-2');
     expect(button).not.toHaveClass('px-2');
     expect(button).toHaveClass('px-6');
-    // TODO - add spy on result
     await user.click(button);
   });
 

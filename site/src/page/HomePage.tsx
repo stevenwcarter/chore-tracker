@@ -17,7 +17,7 @@ export const HomePage = () => {
   const { currentAdmin, isCheckingAuth } = useOutletContext<OutletContext>();
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
-  const deselectTimer = useRef<number | undefined>(null);
+  const deselectTimer = useRef<number | null>(null);
 
   const handleUserSelect = (user: User) => {
     setSelectedUser(user);

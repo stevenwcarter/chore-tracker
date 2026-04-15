@@ -10,9 +10,7 @@ interface AdminPayoutSystemProps {
   adminId: number;
 }
 
-export const AdminPayoutSystem: React.FC<AdminPayoutSystemProps> = (
-  _props: AdminPayoutSystemProps,
-) => {
+export const AdminPayoutSystem: React.FC<AdminPayoutSystemProps> = () => {
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   const [isProcessingPayout, setIsProcessingPayout] = useState(false);
 
