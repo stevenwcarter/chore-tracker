@@ -2,11 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@apollo/client';
 import { GET_ALL_WEEKLY_COMPLETIONS } from 'graphql/queries';
 import { User, ChoreCompletion } from 'types/chore';
-import {
-  getWeekDateRange,
-  formatDateForGraphQL,
-  formatDateForDisplay,
-} from 'utils/dateUtils';
+import { getWeekDateRange, formatDateForGraphQL, formatDateForDisplay } from 'utils/dateUtils';
 import LoadingSpinner from './LoadingSpinner';
 import Modal from './Modal';
 import ChoreCompletionDetail from './ChoreCompletionDetail';
