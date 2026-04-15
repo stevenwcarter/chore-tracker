@@ -51,8 +51,11 @@ impl ChoreCompletionFixSvc {
 
             // Only update if the amount is different (to avoid unnecessary updates)
             if completion.amount_cents != correct_amount {
+                let completion_id = completion
+                    .id
+                    .ok_or_else(|| anyhow::anyhow!("completion {} has no id", completion.uuid))?;
                 diesel::update(chore_completions::table)
-                    .filter(chore_completions::id.eq(completion.id))
+                    .filter(chore_completions::id.eq(completion_id))
                     .set(chore_completions::amount_cents.eq(correct_amount))
                     .execute(&mut conn)
                     .with_context(|| {

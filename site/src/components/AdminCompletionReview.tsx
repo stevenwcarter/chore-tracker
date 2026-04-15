@@ -3,10 +3,9 @@ import { useQuery, useMutation } from '@apollo/client';
 import {
   GET_ALL_WEEKLY_COMPLETIONS,
   APPROVE_CHORE_COMPLETION,
-  ADD_CHORE_NOTE,
   DELETE_CHORE_COMPLETION,
 } from '../graphql/queries';
-import { ChoreCompletion, AuthorType } from '../types/chore';
+import { ChoreCompletion } from '../types/chore';
 import {
   getWeekDateRange,
   formatDateForGraphQL,
@@ -16,6 +15,8 @@ import {
   getPreviousWeek,
 } from '../utils/dateUtils';
 import LoadingSpinner from './LoadingSpinner';
+import Modal from './Modal';
+import ChoreCompletionDetail from './ChoreCompletionDetail';
 
 interface AdminCompletionReviewProps {
   adminId: number;
@@ -24,9 +25,6 @@ interface AdminCompletionReviewProps {
 export const AdminCompletionReview: React.FC<AdminCompletionReviewProps> = ({ adminId }) => {
   const [currentWeekStart, setCurrentWeekStart] = useState(getWeekDateRange().start);
   const [selectedCompletion, setSelectedCompletion] = useState<ChoreCompletion | null>(null);
-  const [noteText, setNoteText] = useState('');
-  const [isAddingNote, setIsAddingNote] = useState(false);
-  const [noteVisibleToUser, setNoteVisibleToUser] = useState(true);
 
   const weekRange = getWeekDateRange(currentWeekStart);
 
@@ -39,15 +37,6 @@ export const AdminCompletionReview: React.FC<AdminCompletionReviewProps> = ({ ad
   const [approveChoreCompletion] = useMutation(APPROVE_CHORE_COMPLETION, {
     onCompleted: () => {
       refetch();
-      setSelectedCompletion(null);
-    },
-  });
-
-  const [addChoreNote] = useMutation(ADD_CHORE_NOTE, {
-    onCompleted: () => {
-      refetch();
-      setNoteText('');
-      setIsAddingNote(false);
       setSelectedCompletion(null);
     },
   });
@@ -85,26 +74,6 @@ export const AdminCompletionReview: React.FC<AdminCompletionReviewProps> = ({ ad
       });
     } catch (err) {
       console.error('Error rejecting completion:', err);
-    }
-  };
-
-  const handleAddNote = async () => {
-    if (!selectedCompletion || !noteText.trim()) return;
-
-    try {
-      await addChoreNote({
-        variables: {
-          note: {
-            choreCompletionId: selectedCompletion.id,
-            noteText: noteText.trim(),
-            authorType: AuthorType.Admin,
-            authorAdminId: adminId,
-            visibleToUser: noteVisibleToUser,
-          },
-        },
-      });
-    } catch (err) {
-      console.error('Error adding note:', err);
     }
   };
 
@@ -245,155 +214,25 @@ export const AdminCompletionReview: React.FC<AdminCompletionReviewProps> = ({ ad
       </div>
 
       {/* Completion Detail Modal */}
-      {selectedCompletion && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 text-white p-6 rounded-lg max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4 text-white">Completion Details</h3>
-
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-gray-400">Chore:</p>
-                <p className="font-medium text-white">
-                  {selectedCompletion.chore?.name || 'Unknown Chore'}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-sm text-gray-400">User:</p>
-                <p className="font-medium text-white">
-                  {selectedCompletion.user?.name || 'Unknown User'}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-sm text-gray-400">Completed Date:</p>
-                <p className="font-medium text-white">
-                  {selectedCompletion.completedDate || selectedCompletion.createdAt}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-sm text-gray-400">Status:</p>
-                <p
-                  className={`font-medium ${
-                    selectedCompletion.approved ? 'text-green-400' : 'text-yellow-400'
-                  }`}
-                >
-                  {selectedCompletion.approved ? 'Approved' : 'Pending Approval'}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-sm text-gray-400">Amount:</p>
-                <p className="font-medium text-green-400">
-                  {formatCurrency(selectedCompletion.amountCents)}
-                </p>
-              </div>
-
-              {/* Approval controls for pending completions */}
-              {!selectedCompletion.approved && (
-                <div>
-                  <p className="text-sm text-gray-400 mb-2">Admin Actions:</p>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleApproveCompletion(selectedCompletion)}
-                      className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm transition-colors"
-                    >
-                      ✓ Approve
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Notes */}
-              {selectedCompletion.notes && selectedCompletion.notes.length > 0 && (
-                <div>
-                  <p className="text-sm text-gray-400 mb-2">Notes:</p>
-                  <div className="space-y-2 max-h-32 overflow-y-auto">
-                    {selectedCompletion.notes.map((note) => (
-                      <div key={note.id} className="bg-gray-700 p-2 rounded text-sm">
-                        <div className="flex justify-between items-start mb-1">
-                          <p className="text-white">{note.noteText}</p>
-                          {!note.visibleToUser && (
-                            <span className="text-xs bg-red-600 text-white px-1 rounded">
-                              Admin Only
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-gray-400">
-                          {note.authorType === AuthorType.Admin ? 'Admin' : 'User'} •{' '}
-                          {new Date(note.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Add Note */}
-              <div>
-                <button
-                  onClick={() => setIsAddingNote(!isAddingNote)}
-                  className="text-blue-400 hover:text-blue-300 text-sm"
-                >
-                  + Add Admin Note
-                </button>
-
-                {isAddingNote && (
-                  <div className="mt-2 space-y-2">
-                    <textarea
-                      value={noteText}
-                      onChange={(e) => setNoteText(e.target.value)}
-                      placeholder="Add an admin note..."
-                      className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white text-sm"
-                      rows={3}
-                    />
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id="noteVisibility"
-                        checked={noteVisibleToUser}
-                        onChange={(e) => setNoteVisibleToUser(e.target.checked)}
-                        className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
-                      />
-                      <label htmlFor="noteVisibility" className="text-sm text-gray-300">
-                        Visible to user
-                      </label>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={handleAddNote}
-                        className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-                      >
-                        Save
-                      </button>
-                      <button
-                        onClick={() => {
-                          setIsAddingNote(false);
-                          setNoteText('');
-                          setNoteVisibleToUser(true);
-                        }}
-                        className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="flex justify-end mt-6">
-              <button
-                onClick={() => setSelectedCompletion(null)}
-                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded transition-colors"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal
+        isOpen={!!selectedCompletion}
+        onClose={() => setSelectedCompletion(null)}
+        title="Completion Details"
+        maxWidth="md"
+      >
+        {selectedCompletion && (
+          <ChoreCompletionDetail
+            completion={selectedCompletion}
+            isAdmin={true}
+            adminId={adminId}
+            onClose={() => setSelectedCompletion(null)}
+            onUpdate={() => {
+              refetch();
+              setSelectedCompletion(null);
+            }}
+          />
+        )}
+      </Modal>
     </div>
   );
 };

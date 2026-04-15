@@ -91,6 +91,11 @@ export const useAdminChoreManagement = () => {
   };
 
   const updateExistingChore = async (choreData: ChoreInput, selectedUserIds: number[] = []) => {
+    // Capture current assignments synchronously before the mutation to avoid
+    // reading stale state after the refetch triggered by onCompleted.
+    const preUpdateChore = choreData.uuid ? chores.find((c) => c.uuid === choreData.uuid) : null;
+    const previousUserIds = preUpdateChore?.assignedUsers?.map((u) => u.id) ?? [];
+
     try {
       const response = await updateChore({
         variables: { chore: choreData },
@@ -99,9 +104,8 @@ export const useAdminChoreManagement = () => {
       if (response.data?.updateChore) {
         const choreId = response.data.updateChore.id;
 
-        // Get current assignments
-        const currentChore = chores.find((c) => c.id === choreId);
-        const currentUserIds = currentChore?.assignedUsers?.map((u) => u.id) || [];
+        // Diff against pre-mutation snapshot, not stale post-refetch state
+        const currentUserIds = previousUserIds;
 
         // Find users to assign (in selectedUserIds but not in currentUserIds)
         const usersToAssign = selectedUserIds.filter((id) => !currentUserIds.includes(id));

@@ -297,13 +297,10 @@ impl Chore {
             })?))
             .load::<ChoreAssignment>(connection)?;
 
-        let mut users_vec = Vec::new();
-        for assignment in &assignments {
-            let user = users_dsl::users
-                .filter(users_dsl::id.eq(assignment.user_id))
-                .first::<User>(connection)?;
-            users_vec.push(user);
-        }
+        let user_ids: Vec<i32> = assignments.iter().map(|a| a.user_id).collect();
+        let users_vec = users_dsl::users
+            .filter(users_dsl::id.eq_any(&user_ids))
+            .load::<User>(connection)?;
         debug!("Assigned users for chore {:?}", assignments);
         Ok(users_vec)
     }
