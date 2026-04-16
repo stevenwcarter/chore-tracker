@@ -1,4 +1,5 @@
 import React from 'react';
+import confetti from 'canvas-confetti';
 import { WeeklyChoreData, ChoreCompletion, PaymentType } from '../types/chore';
 import { formatCurrency, isSameDayAsString } from '../utils/dateUtils';
 import clsx from 'clsx';
@@ -6,7 +7,7 @@ import clsx from 'clsx';
 interface ChoreRowProps {
   choreData: WeeklyChoreData;
   dates: Date[];
-  onCompleteChore: (choreId: number, date: Date) => void;
+  onCompleteChore: (choreId: number, date: Date) => Promise<void>;
   onSelectCompletion: (completion: ChoreCompletion) => void;
   isChoreCompletedByAnyone: (choreId: number, date: Date) => boolean;
   currentDate?: Date; // For mobile single-day view
@@ -90,9 +91,14 @@ export const ChoreRow: React.FC<ChoreRowProps> = ({
       !isFutureDate ? 'hover:bg-blue-600' : 'hover:bg-red-700 cursor-not-allowed',
     );
 
+    const handleComplete = async () => {
+      await onCompleteChore(choreData.chore.id, date);
+      confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+    };
+
     return (
       <button
-        onClick={() => onCompleteChore(choreData.chore.id, date)}
+        onClick={handleComplete}
         disabled={isFutureDate}
         className={displayClasses}
         title="Mark as completed"
