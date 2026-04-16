@@ -4,7 +4,7 @@ use crate::{
     db::get_conn,
     models::{ChoreCompletion, ChoreCompletionInput, PaymentType, User},
     schema::{chore_completions, users},
-    svc::ChoreSvc,
+    svc::{BadgeSvc, ChoreSvc},
 };
 use anyhow::{Context, Result};
 use chrono::{NaiveDate, Utc};
@@ -223,7 +223,9 @@ impl ChoreCompletionSvc {
             .execute(&mut get_conn(context)?)
             .context("Could not approve chore completion")?;
 
-        Self::get(context, completion_uuid)
+        let completion = Self::get(context, completion_uuid)?;
+        BadgeSvc::check_and_award(context, completion.user_id);
+        Ok(completion)
     }
 
     pub fn mark_as_paid(context: &GraphQLContext, user_id: Option<i32>) -> Result<()> {

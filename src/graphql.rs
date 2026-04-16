@@ -7,7 +7,7 @@ use crate::{
     context::GraphQLContext,
     models::{
         Admin, AdminInput, Chore, ChoreCompletion, ChoreCompletionInput, ChoreCompletionNote,
-        ChoreCompletionNoteInput, ChoreInput, UnpaidTotal, User, UserInput,
+        ChoreCompletionNoteInput, ChoreInput, UnpaidTotal, User, UserBadge, UserInput,
     },
     svc::{
         AdminSvc, ChoreCompletionFixSvc, ChoreCompletionNoteSvc, ChoreCompletionSvc, ChoreSvc,
@@ -142,6 +142,24 @@ impl Query {
             completion_id,
             visible_to_user_only,
         ))
+    }
+
+    // Badges
+    pub fn user_badges(context: &GraphQLContext, user_id: i32) -> FieldResult<Vec<UserBadge>> {
+        use crate::schema::user_badges::dsl;
+        use diesel::prelude::*;
+        graphql_translate_anyhow(
+            context
+                .pool
+                .get()
+                .map_err(anyhow::Error::from)
+                .and_then(|mut conn| {
+                    dsl::user_badges
+                        .filter(dsl::user_id.eq(user_id))
+                        .load::<UserBadge>(&mut conn)
+                        .map_err(anyhow::Error::from)
+                }),
+        )
     }
 }
 
