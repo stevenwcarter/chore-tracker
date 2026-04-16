@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { MockedProvider } from '@apollo/client/testing';
 import { WeeklyChoreView } from 'components/WeeklyChoreView';
 import { User, ChoreCompletion, PaymentType, AuthorType } from 'types/chore';
-import { GET_ALL_WEEKLY_COMPLETIONS, GET_USER_CHORES, GET_WEEKLY_CHORES } from 'graphql/queries';
+import { GET_ALL_WEEKLY_COMPLETIONS, GET_USER_BADGES, GET_USER_CHORES, GET_WEEKLY_CHORES } from 'graphql/queries';
 
 const testDate = new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(); // 4 hours ago
 
@@ -34,6 +34,36 @@ const mockUser: User = {
   name: 'Alice',
   imagePath: '/images/alice.jpg',
   createdAt: '2023-01-01T00:00:00Z',
+};
+
+const mockBadges = [
+  { id: 1, userId: 1, badgeType: 'first_chore', earnedAt: '2024-10-21T10:00:00Z' },
+  { id: 2, userId: 1, badgeType: 'ten_dollars_earned', earnedAt: '2024-10-22T11:00:00Z' },
+  { id: 3, userId: 1, badgeType: 'five_day_streak', earnedAt: '2024-10-25T09:00:00Z' },
+  { id: 4, userId: 1, badgeType: 'perfect_week', earnedAt: '2024-10-27T18:00:00Z' },
+  { id: 5, userId: 1, badgeType: 'fifty_dollars_earned', earnedAt: '2024-11-01T14:00:00Z' },
+];
+
+const mockBadgeResponse = {
+  request: {
+    query: GET_USER_BADGES,
+    variables: { userId: 1 },
+  },
+  result: {
+    data: { userBadges: mockBadges },
+  },
+  newData: () => ({ data: { userBadges: mockBadges } }),
+};
+
+const mockNoBadgeResponse = {
+  request: {
+    query: GET_USER_BADGES,
+    variables: { userId: 1 },
+  },
+  result: {
+    data: { userBadges: [] },
+  },
+  newData: () => ({ data: { userBadges: [] } }),
 };
 
 const mockChores = [
@@ -231,6 +261,7 @@ const mockWithData = [
       },
     }),
   },
+  mockBadgeResponse,
 ];
 
 const mockNoCompletions = [
@@ -289,6 +320,7 @@ const mockNoCompletions = [
       },
     }),
   },
+  mockNoBadgeResponse,
 ];
 
 const mockNoChores = [
@@ -347,6 +379,7 @@ const mockNoChores = [
       },
     }),
   },
+  mockNoBadgeResponse,
 ];
 
 const mockLoading = [
@@ -408,6 +441,7 @@ const mockLoading = [
       },
     }),
   },
+  mockNoBadgeResponse,
 ];
 
 const meta = {
@@ -537,6 +571,31 @@ export const MobileView: Story = {
     docs: {
       description: {
         story: 'Mobile layout showing day navigation and card-based chore display.',
+      },
+    },
+  },
+};
+
+export const MobileWithBadges: Story = {
+  args: {
+    user: mockUser,
+    isAdmin: false,
+  },
+  decorators: [
+    (Story) => (
+      <MockedProvider mocks={mockWithData} addTypename={false}>
+        <Story />
+      </MockedProvider>
+    ),
+  ],
+  parameters: {
+    viewport: {
+      defaultViewport: 'mobile1',
+    },
+    docs: {
+      description: {
+        story:
+          'Mobile layout with all 5 achievement badges — verifies wrapping layout below the header without horizontal overflow.',
       },
     },
   },

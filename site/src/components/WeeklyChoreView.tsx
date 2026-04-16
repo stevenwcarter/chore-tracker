@@ -150,7 +150,7 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
             </button>
           )}
           <UserImage user={user} />
-          <div>
+          <div className="min-w-0">
             <h2 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-white`}>
               {user.name}'s Chores
             </h2>
@@ -160,7 +160,7 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
                 {formatDateForDisplay(weekRange.end)}
               </p>
             )}
-            {badges.length > 0 && (
+            {!isMobile && badges.length > 0 && (
               <div className="flex flex-row gap-2 overflow-x-auto pb-1 mt-2">
                 {badges.map((badge) => {
                   const display = BADGE_DISPLAY[badge.badgeType];
@@ -178,6 +178,23 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
             )}
           </div>
         </div>
+
+        {isMobile && badges.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            {badges.map((badge) => {
+              const display = BADGE_DISPLAY[badge.badgeType];
+              if (!display) return null;
+              return (
+                <span
+                  key={badge.id}
+                  className="flex items-center gap-1 px-3 py-1 bg-purple-500/20 border border-purple-500/40 rounded-full text-sm"
+                >
+                  {display.emoji} {display.label}
+                </span>
+              );
+            })}
+          </div>
+        )}
 
         <WeekNavigator
           currentWeekStart={currentWeekStart}
