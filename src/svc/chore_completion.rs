@@ -162,6 +162,15 @@ impl ChoreCompletionSvc {
     ) -> Result<ChoreCompletion> {
         // Get the chore to calculate the correct payment amount
         let chore = ChoreSvc::get_by_id(context, completion_input.chore_id)?;
+
+        // Guard: if this is a bonus chore with max_claims, check the cap
+        if chore.bonus_date.is_some() {
+            if !ChoreSvc::can_claim_bonus(context, completion_input.chore_id)? {
+                return Err(anyhow::anyhow!(
+                    "This bonus chore has already reached its claim limit"
+                ));
+            }
+        }
         let payment_type = PaymentType::from(chore.payment_type);
 
         // Calculate the appropriate amount based on chore payment type
@@ -682,6 +691,67 @@ mod tests {
         assert_eq!(
             no_days_amount, 100,
             "No assigned days should fallback to full amount"
+        );
+    }
+
+    #[test]
+    fn test_create_completion_blocked_when_bonus_cap_reached() {
+        use crate::models::{Chore, ChoreInput, PaymentType};
+        use crate::svc::ChoreSvc;
+        use chrono::NaiveDate;
+
+        let context = create_test_context();
+        let admin = create_test_admin(&context, "Test Admin", "admin@test.com");
+        let user1 = create_test_user(&context, "User 1");
+        let user2 = create_test_user(&context, "User 2");
+
+        let today = NaiveDate::from_ymd_opt(2026, 4, 15).unwrap();
+
+        // Create a bonus chore with max_claims = 1
+        let chore_input = ChoreInput {
+            uuid: None,
+            name: "Single-claim bonus".to_string(),
+            description: None,
+            payment_type: PaymentType::Daily,
+            amount_cents: 300,
+            required_days: 0,
+            active: Some(true),
+            created_by_admin_id: admin.id.unwrap(),
+            bonus_date: Some(today),
+            max_claims: Some(1),
+        };
+        let chore_raw = Chore::from(chore_input);
+        let chore = ChoreSvc::create(&context, &chore_raw).unwrap();
+        let chore_id = chore.id.unwrap();
+
+        // Assign both users to the chore
+        ChoreSvc::assign_user(&context, chore_id, user1.id.unwrap()).unwrap();
+        ChoreSvc::assign_user(&context, chore_id, user2.id.unwrap()).unwrap();
+
+        // First user claims it — should succeed
+        let input1 = ChoreCompletionInput {
+            uuid: None,
+            chore_id,
+            user_id: user1.id.unwrap(),
+            completed_date: today,
+        };
+        let result1 = ChoreCompletionSvc::create(&context, &input1);
+        assert!(result1.is_ok(), "First claim should succeed");
+
+        // Second user tries to claim — should fail
+        let input2 = ChoreCompletionInput {
+            uuid: None,
+            chore_id,
+            user_id: user2.id.unwrap(),
+            completed_date: today,
+        };
+        let result2 = ChoreCompletionSvc::create(&context, &input2);
+        assert!(result2.is_err(), "Second claim should be blocked by cap");
+        let err_msg = result2.unwrap_err().to_string();
+        assert!(
+            err_msg.contains("claim limit"),
+            "Error should mention claim limit, got: {}",
+            err_msg
         );
     }
 
