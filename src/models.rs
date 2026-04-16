@@ -288,8 +288,8 @@ impl Chore {
     pub fn updated_at(&self) -> Option<NaiveDateTime> {
         self.updated_at
     }
-    pub fn bonus_date(&self) -> Option<String> {
-        self.bonus_date.map(|d| d.to_string())
+    pub fn bonus_date(&self) -> Option<NaiveDate> {
+        self.bonus_date
     }
     pub fn max_claims(&self) -> Option<i32> {
         self.max_claims
@@ -324,7 +324,7 @@ pub struct ChoreInput {
     pub required_days: i32,
     pub active: Option<bool>,
     pub created_by_admin_id: i32,
-    pub bonus_date: Option<String>,  // ISO 8601 date string from GraphQL input
+    pub bonus_date: Option<NaiveDate>,
     pub max_claims: Option<i32>,
 }
 
@@ -342,7 +342,7 @@ impl From<ChoreInput> for Chore {
             created_by_admin_id: input.created_by_admin_id,
             created_at: None,
             updated_at: None,
-            bonus_date: input.bonus_date.as_deref().and_then(|s| s.parse().ok()),
+            bonus_date: input.bonus_date,
             max_claims: input.max_claims,
         }
     }
