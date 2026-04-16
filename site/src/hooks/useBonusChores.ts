@@ -23,11 +23,7 @@ interface UseBonusChoresResult {
 }
 
 export const useBonusChores = (date: string): UseBonusChoresResult => {
-  const {
-    data,
-    loading,
-    refetch,
-  } = useQuery<{ listBonusChores: Chore[] }>(LIST_BONUS_CHORES, {
+  const { data, loading, refetch } = useQuery<{ listBonusChores: Chore[] }>(LIST_BONUS_CHORES, {
     variables: { date },
     onError: () => toast.error('Error loading bonus chores'),
   });

@@ -13,6 +13,7 @@ import ChoreGridHeader from './ChoreGridHeader';
 import ChoreRow from './ChoreRow';
 import { useUserChores } from 'hooks/useUserChores';
 import UserImage from './UserImage';
+import BonusChoreSection from './BonusChoreSection';
 
 interface WeeklyChoreViewProps {
   user: User;
@@ -202,6 +203,14 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
           </table>
         </div>
       )}
+
+      {/* Bonus chores */}
+      <BonusChoreSection
+        userId={user.id}
+        today={formatDateForGraphQL(currentDate)}
+        onClaimChore={handleCompleteChore}
+        isChoreCompletedByAnyone={isChoreCompletedByAnyone}
+      />
 
       {/* Completion detail modal */}
       <Modal
