@@ -249,6 +249,8 @@ pub struct Chore {
     pub created_by_admin_id: i32,
     pub created_at: Option<NaiveDateTime>,
     pub updated_at: Option<NaiveDateTime>,
+    pub bonus_date: Option<NaiveDate>,
+    pub max_claims: Option<i32>,
 }
 
 #[juniper::graphql_object(context = GraphQLContext)]
@@ -286,6 +288,12 @@ impl Chore {
     pub fn updated_at(&self) -> Option<NaiveDateTime> {
         self.updated_at
     }
+    pub fn bonus_date(&self) -> Option<String> {
+        self.bonus_date.map(|d| d.to_string())
+    }
+    pub fn max_claims(&self) -> Option<i32> {
+        self.max_claims
+    }
     pub fn assigned_users(&self, context: &GraphQLContext) -> juniper::FieldResult<Vec<User>> {
         use crate::schema::chore_assignments::dsl::*;
         use crate::schema::users::dsl as users_dsl;
@@ -316,6 +324,8 @@ pub struct ChoreInput {
     pub required_days: i32,
     pub active: Option<bool>,
     pub created_by_admin_id: i32,
+    pub bonus_date: Option<String>,  // ISO 8601 date string from GraphQL input
+    pub max_claims: Option<i32>,
 }
 
 impl From<ChoreInput> for Chore {
@@ -332,6 +342,8 @@ impl From<ChoreInput> for Chore {
             created_by_admin_id: input.created_by_admin_id,
             created_at: None,
             updated_at: None,
+            bonus_date: input.bonus_date.as_deref().and_then(|s| s.parse().ok()),
+            max_claims: input.max_claims,
         }
     }
 }
