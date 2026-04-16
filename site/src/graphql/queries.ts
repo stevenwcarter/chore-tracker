@@ -259,7 +259,7 @@ export const MARK_COMPLETIONS_AS_PAID = gql`
 `;
 
 export const LIST_BONUS_CHORES = gql`
-  query ListBonusChores($date: NaiveDate!) {
+  query ListBonusChores($date: LocalDate!) {
     listBonusChores(date: $date) {
       id
       uuid
