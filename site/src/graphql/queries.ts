@@ -284,3 +284,14 @@ export const CREATE_BONUS_CHORE = gql`
     }
   }
 `;
+
+export const GET_USER_BADGES = gql`
+  query GetUserBadges($userId: Int!) {
+    userBadges(userId: $userId) {
+      id
+      userId
+      badgeType
+      earnedAt
+    }
+  }
+`;

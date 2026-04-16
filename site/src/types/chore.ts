@@ -145,3 +145,18 @@ export interface WeekDateRange {
   end: Date;
   dates: Date[];
 }
+
+export interface UserBadge {
+  id: number;
+  userId: number;
+  badgeType: string;
+  earnedAt: string; // ISO timestamp string
+}
+
+export const BADGE_DISPLAY: Record<string, { emoji: string; label: string }> = {
+  first_chore: { emoji: '🌟', label: 'First Chore!' },
+  ten_dollars_earned: { emoji: '💰', label: 'Earned $10' },
+  fifty_dollars_earned: { emoji: '🏆', label: 'Earned $50' },
+  perfect_week: { emoji: '✨', label: 'Perfect Week' },
+  five_day_streak: { emoji: '🔥', label: '5-Day Streak' },
+};
