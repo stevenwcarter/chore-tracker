@@ -29,6 +29,7 @@ export const useBonusChores = (date: string): UseBonusChoresResult => {
     refetch,
   } = useQuery<{ listBonusChores: Chore[] }>(LIST_BONUS_CHORES, {
     variables: { date },
+    onError: () => toast.error('Error loading bonus chores'),
   });
 
   const [createMutation, { loading: creating }] = useMutation(CREATE_BONUS_CHORE, {
