@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@apollo/client';
 import { toast } from 'react-toastify';
 import { GET_ALL_WEEKLY_COMPLETIONS } from 'graphql/queries';
-import { User, ChoreCompletion } from 'types/chore';
+import { User, ChoreCompletion, BADGE_DISPLAY } from 'types/chore';
 import { getWeekDateRange, formatDateForGraphQL, formatDateForDisplay } from 'utils/dateUtils';
 import LoadingSpinner from './LoadingSpinner';
 import Modal from './Modal';
@@ -12,6 +12,7 @@ import DayNavigator from './DayNavigator';
 import ChoreGridHeader from './ChoreGridHeader';
 import ChoreRow from './ChoreRow';
 import { useUserChores } from 'hooks/useUserChores';
+import { useUserBadges } from 'hooks/useUserBadges';
 import UserImage from './UserImage';
 import BonusChoreSection from './BonusChoreSection';
 
@@ -70,6 +71,8 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
     userId: user.id,
     weekStartDate: weekRange.start,
   });
+
+  const { badges } = useUserBadges(user.id);
 
   // Query to get all completions for the week (to check if chores are completed by anyone)
   const { data: allCompletionsData, refetch: refetchAllCompletions } = useQuery(
@@ -145,6 +148,22 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
                 Week of {formatDateForDisplay(weekRange.start)} -{' '}
                 {formatDateForDisplay(weekRange.end)}
               </p>
+            )}
+            {badges.length > 0 && (
+              <div className="flex flex-row gap-2 overflow-x-auto pb-1 mt-2">
+                {badges.map((badge) => {
+                  const display = BADGE_DISPLAY[badge.badgeType];
+                  if (!display) return null;
+                  return (
+                    <span
+                      key={badge.id}
+                      className="flex items-center gap-1 px-3 py-1 bg-purple-500/20 border border-purple-500/40 rounded-full text-sm whitespace-nowrap"
+                    >
+                      {display.emoji} {display.label}
+                    </span>
+                  );
+                })}
+              </div>
             )}
           </div>
         </div>
