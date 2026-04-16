@@ -5,6 +5,7 @@ import LoadingSpinner from './LoadingSpinner';
 import Modal from './Modal';
 import ChoreCard from './ChoreCard';
 import CreateChoreForm from './CreateChoreForm';
+import CreateBonusChoreForm from './CreateBonusChoreForm';
 import CreateUserForm from './CreateUserForm';
 import UserManagementCard from './UserManagementCard';
 import { useAdminChoreManagement } from '../hooks/useAdminChoreManagement';
@@ -15,6 +16,7 @@ interface AdminChoreManagementProps {
 
 export const AdminChoreManagement: React.FC<AdminChoreManagementProps> = ({ adminId }) => {
   const [isCreatingChore, setIsCreatingChore] = useState(false);
+  const [isCreatingBonusChore, setIsCreatingBonusChore] = useState(false);
   const [editingChore, setEditingChore] = useState<Chore | null>(null);
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [isManagingUsers, setIsManagingUsers] = useState(false);
@@ -129,6 +131,12 @@ export const AdminChoreManagement: React.FC<AdminChoreManagementProps> = ({ admi
           >
             + Create New Chore
           </button>
+          <button
+            onClick={() => setIsCreatingBonusChore(true)}
+            className="w-full lg:w-auto px-4 py-3 lg:py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors text-sm lg:text-base font-medium"
+          >
+            + Create Bonus Chore
+          </button>
         </div>
       </div>
 
@@ -156,6 +164,19 @@ export const AdminChoreManagement: React.FC<AdminChoreManagementProps> = ({ admi
           adminId={adminId}
           onSubmit={handleCreateChore}
           onCancel={() => setIsCreatingChore(false)}
+        />
+      </Modal>
+
+      {/* Create Bonus Chore Modal */}
+      <Modal
+        isOpen={isCreatingBonusChore}
+        onClose={() => setIsCreatingBonusChore(false)}
+        title="Create Bonus Chore"
+        maxWidth="sm"
+      >
+        <CreateBonusChoreForm
+          currentAdminId={adminId}
+          onSuccess={() => setIsCreatingBonusChore(false)}
         />
       </Modal>
 
