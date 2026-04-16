@@ -4,7 +4,7 @@ use diesel::prelude::*;
 
 use crate::context::GraphQLContext;
 use crate::db::get_conn;
-use crate::models::{BadgeType, UserBadge};
+use crate::models::BadgeType;
 
 pub struct BadgeSvc;
 
@@ -131,7 +131,7 @@ impl BadgeSvc {
         Ok(false)
     }
 
-    pub(crate) fn check_five_day_streak(context: &GraphQLContext, user_id: i32) -> Result<bool> {
+    fn check_five_day_streak(context: &GraphQLContext, user_id: i32) -> Result<bool> {
         use crate::schema::chore_completions;
 
         let mut dates: Vec<NaiveDate> = chore_completions::table
@@ -174,6 +174,7 @@ impl BadgeSvc {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::models::UserBadge;
     use crate::{
         models::{ChoreCompletionInput, PaymentType},
         test_helpers::test_db::{
