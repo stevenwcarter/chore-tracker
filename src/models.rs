@@ -631,6 +631,77 @@ impl From<ChoreCompletionNoteInput> for ChoreCompletionNote {
     }
 }
 
+// BadgeType enum
+#[derive(Debug, Clone, PartialEq)]
+pub enum BadgeType {
+    FirstChore,
+    TenDollarsEarned,
+    FiftyDollarsEarned,
+    PerfectWeek,
+    FiveDayStreak,
+}
+
+impl BadgeType {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            BadgeType::FirstChore => "first_chore",
+            BadgeType::TenDollarsEarned => "ten_dollars_earned",
+            BadgeType::FiftyDollarsEarned => "fifty_dollars_earned",
+            BadgeType::PerfectWeek => "perfect_week",
+            BadgeType::FiveDayStreak => "five_day_streak",
+        }
+    }
+
+    pub fn from_str(s: &str) -> Option<BadgeType> {
+        match s {
+            "first_chore" => Some(BadgeType::FirstChore),
+            "ten_dollars_earned" => Some(BadgeType::TenDollarsEarned),
+            "fifty_dollars_earned" => Some(BadgeType::FiftyDollarsEarned),
+            "perfect_week" => Some(BadgeType::PerfectWeek),
+            "five_day_streak" => Some(BadgeType::FiveDayStreak),
+            _ => None,
+        }
+    }
+
+    pub fn all() -> Vec<BadgeType> {
+        vec![
+            BadgeType::FirstChore,
+            BadgeType::TenDollarsEarned,
+            BadgeType::FiftyDollarsEarned,
+            BadgeType::PerfectWeek,
+            BadgeType::FiveDayStreak,
+        ]
+    }
+}
+
+// UserBadge model
+#[derive(Queryable, Debug)]
+pub struct UserBadge {
+    pub id: i32,
+    pub user_id: i32,
+    pub badge_type: String,
+    pub earned_at: NaiveDateTime,
+}
+
+#[juniper::graphql_object(context = GraphQLContext)]
+impl UserBadge {
+    pub fn id(&self) -> i32 {
+        self.id
+    }
+
+    pub fn user_id(&self) -> i32 {
+        self.user_id
+    }
+
+    pub fn badge_type(&self) -> &str {
+        &self.badge_type
+    }
+
+    pub fn earned_at(&self) -> NaiveDateTime {
+        self.earned_at
+    }
+}
+
 // Helper GraphQL object for unpaid totals
 #[derive(Debug, Clone)]
 pub struct UnpaidTotal {
