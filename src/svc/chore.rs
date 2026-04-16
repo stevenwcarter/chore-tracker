@@ -2,9 +2,10 @@ use crate::{
     context::GraphQLContext,
     db::get_conn,
     models::{Chore, ChoreAssignment},
-    schema::{chore_assignments, chores, users},
+    schema::{chore_assignments, chore_completions, chores, users},
 };
 use anyhow::{Context, Result};
+use chrono::NaiveDate;
 use diesel::prelude::*;
 
 pub struct ChoreSvc {}
@@ -159,6 +160,31 @@ impl ChoreSvc {
             .load(&mut get_conn(context)?)
             .context("Could not load assigned users")
     }
+
+    pub fn list_bonus_chores(context: &GraphQLContext, date: NaiveDate) -> Result<Vec<Chore>> {
+        chores::table
+            .filter(chores::bonus_date.eq(date))
+            .filter(chores::active.eq(true))
+            .select(Chore::as_select())
+            .load(&mut get_conn(context)?)
+            .context("Could not load bonus chores")
+    }
+
+    pub fn can_claim_bonus(context: &GraphQLContext, chore_id_val: i32) -> Result<bool> {
+        let chore = Self::get_by_id(context, chore_id_val)?;
+
+        match chore.max_claims {
+            None => Ok(true), // unlimited
+            Some(cap) => {
+                let count: i64 = chore_completions::table
+                    .filter(chore_completions::chore_id.eq(chore_id_val))
+                    .count()
+                    .get_result(&mut get_conn(context)?)
+                    .context("Could not count chore completions")?;
+                Ok(count < cap as i64)
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -171,6 +197,7 @@ mod tests {
             day_patterns,
         },
     };
+    use chrono::NaiveDate;
 
     #[test]
     fn test_chore_crud_operations() {
@@ -410,6 +437,146 @@ mod tests {
         let no_chores =
             ChoreSvc::list(&context, Some(user_no_chores.id.unwrap()), false, 100, 0).unwrap();
         assert_eq!(no_chores.len(), 0);
+    }
+
+    #[test]
+    fn test_list_bonus_chores_returns_matching_date() {
+        let context = create_test_context();
+        let admin = create_test_admin(&context, "Test Admin", "admin@test.com");
+        let target_date = NaiveDate::from_ymd_opt(2026, 4, 15).unwrap();
+        let other_date = NaiveDate::from_ymd_opt(2026, 4, 16).unwrap();
+
+        // Create a bonus chore for target_date
+        let bonus_input = ChoreInput {
+            uuid: None,
+            name: "Bonus task".to_owned(),
+            description: None,
+            payment_type: PaymentType::Daily,
+            amount_cents: 200,
+            required_days: 0,
+            active: Some(true),
+            created_by_admin_id: admin.id.unwrap(),
+            bonus_date: Some(target_date),
+            max_claims: None,
+        };
+        let bonus_chore_raw = Chore::from(bonus_input);
+        let bonus_chore = ChoreSvc::create(&context, &bonus_chore_raw).unwrap();
+
+        // Create a regular chore (no bonus_date)
+        let _regular = create_test_chore(
+            &context,
+            "Regular Chore",
+            PaymentType::Daily,
+            100,
+            day_patterns::weekdays(),
+            admin.id.unwrap(),
+        );
+
+        // Create a bonus chore for a different date
+        let other_input = ChoreInput {
+            uuid: None,
+            name: "Other bonus".to_owned(),
+            description: None,
+            payment_type: PaymentType::Daily,
+            amount_cents: 100,
+            required_days: 0,
+            active: Some(true),
+            created_by_admin_id: admin.id.unwrap(),
+            bonus_date: Some(other_date),
+            max_claims: None,
+        };
+        let other_raw = Chore::from(other_input);
+        ChoreSvc::create(&context, &other_raw).unwrap();
+
+        let results = ChoreSvc::list_bonus_chores(&context, target_date).unwrap();
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].id, bonus_chore.id);
+    }
+
+    #[test]
+    fn test_can_claim_bonus_unlimited() {
+        let context = create_test_context();
+        let admin = create_test_admin(&context, "Test Admin", "admin@test.com");
+
+        let input = ChoreInput {
+            uuid: None,
+            name: "Unlimited bonus".to_owned(),
+            description: None,
+            payment_type: PaymentType::Daily,
+            amount_cents: 200,
+            required_days: 0,
+            active: Some(true),
+            created_by_admin_id: admin.id.unwrap(),
+            bonus_date: Some(NaiveDate::from_ymd_opt(2026, 4, 15).unwrap()),
+            max_claims: None,
+        };
+        let chore_raw = Chore::from(input);
+        let chore = ChoreSvc::create(&context, &chore_raw).unwrap();
+
+        // With no max_claims, should always be claimable
+        assert!(ChoreSvc::can_claim_bonus(&context, chore.id.unwrap()).unwrap());
+    }
+
+    #[test]
+    fn test_can_claim_bonus_cap_not_reached() {
+        let context = create_test_context();
+        let admin = create_test_admin(&context, "Test Admin", "admin@test.com");
+
+        let input = ChoreInput {
+            uuid: None,
+            name: "Capped bonus".to_owned(),
+            description: None,
+            payment_type: PaymentType::Daily,
+            amount_cents: 200,
+            required_days: 0,
+            active: Some(true),
+            created_by_admin_id: admin.id.unwrap(),
+            bonus_date: Some(NaiveDate::from_ymd_opt(2026, 4, 15).unwrap()),
+            max_claims: Some(2),
+        };
+        let chore_raw = Chore::from(input);
+        let chore = ChoreSvc::create(&context, &chore_raw).unwrap();
+
+        // Zero completions, cap is 2 → claimable
+        assert!(ChoreSvc::can_claim_bonus(&context, chore.id.unwrap()).unwrap());
+    }
+
+    #[test]
+    fn test_can_claim_bonus_cap_reached() {
+        use crate::models::ChoreCompletionInput;
+        use crate::svc::ChoreCompletionSvc;
+
+        let context = create_test_context();
+        let admin = create_test_admin(&context, "Test Admin", "admin@test.com");
+        let user = create_test_user(&context, "Test User");
+
+        let input = ChoreInput {
+            uuid: None,
+            name: "Single-claim bonus".to_owned(),
+            description: None,
+            payment_type: PaymentType::Daily,
+            amount_cents: 200,
+            required_days: 0,
+            active: Some(true),
+            created_by_admin_id: admin.id.unwrap(),
+            bonus_date: Some(NaiveDate::from_ymd_opt(2026, 4, 15).unwrap()),
+            max_claims: Some(1),
+        };
+        let chore_raw = Chore::from(input);
+        let chore = ChoreSvc::create(&context, &chore_raw).unwrap();
+        let chore_id = chore.id.unwrap();
+
+        // Insert one completion via ChoreCompletionSvc
+        let completion_input = ChoreCompletionInput {
+            uuid: None,
+            chore_id,
+            user_id: user.id.unwrap(),
+            completed_date: NaiveDate::from_ymd_opt(2026, 4, 15).unwrap(),
+        };
+        ChoreCompletionSvc::create(&context, &completion_input).unwrap();
+
+        // Now at cap → not claimable
+        assert!(!ChoreSvc::can_claim_bonus(&context, chore_id).unwrap());
     }
 
     #[test]
