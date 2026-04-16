@@ -1,0 +1,2 @@
+ALTER TABLE chores ADD COLUMN bonus_date DATE;
+ALTER TABLE chores ADD COLUMN max_claims INTEGER;

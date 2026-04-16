@@ -67,6 +67,8 @@ diesel::table! {
         created_by_admin_id -> Integer,
         created_at -> Nullable<Timestamp>,
         updated_at -> Nullable<Timestamp>,
+        bonus_date -> Nullable<Date>,
+        max_claims -> Nullable<Integer>,
     }
 }
 
