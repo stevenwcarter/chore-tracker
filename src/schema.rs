@@ -95,6 +95,15 @@ diesel::table! {
 }
 
 diesel::table! {
+    user_badges (id) {
+        id -> Integer,
+        user_id -> Integer,
+        badge_type -> Text,
+        earned_at -> Timestamp,
+    }
+}
+
+diesel::table! {
     user_images (id) {
         id -> Integer,
         user_id -> Integer,
@@ -127,6 +136,7 @@ diesel::joinable!(chore_completions -> admins (approved_by_admin_id));
 diesel::joinable!(chore_completions -> chores (chore_id));
 diesel::joinable!(chore_completions -> users (user_id));
 diesel::joinable!(chores -> admins (created_by_admin_id));
+diesel::joinable!(user_badges -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     admins,
@@ -136,6 +146,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     chores,
     keys,
     limit_usage,
+    user_badges,
     user_images,
     users,
 );
