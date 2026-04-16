@@ -92,8 +92,12 @@ export const ChoreRow: React.FC<ChoreRowProps> = ({
     );
 
     const handleComplete = async () => {
-      await onCompleteChore(choreData.chore.id, date);
-      confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+      try {
+        await onCompleteChore(choreData.chore.id, date);
+        confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+      } catch {
+        // Error already handled and toasted by parent; just prevent confetti
+      }
     };
 
     return (
