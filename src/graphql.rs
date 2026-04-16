@@ -74,6 +74,13 @@ impl Query {
         graphql_translate_anyhow(ChoreSvc::list(context, user_id, active_only, limit, offset))
     }
 
+    pub fn list_bonus_chores(
+        context: &GraphQLContext,
+        date: NaiveDate,
+    ) -> FieldResult<Vec<Chore>> {
+        graphql_translate_anyhow(ChoreSvc::list_bonus_chores(context, date))
+    }
+
     // Chore Completions
     pub async fn get_chore_completion(
         context: &GraphQLContext,
@@ -167,6 +174,13 @@ impl Mutation {
 
     // Chores
     pub async fn create_chore(context: &GraphQLContext, chore: ChoreInput) -> FieldResult<Chore> {
+        graphql_translate_anyhow(ChoreSvc::create(context, &chore.into()))
+    }
+
+    pub async fn create_bonus_chore(
+        context: &GraphQLContext,
+        chore: ChoreInput,
+    ) -> FieldResult<Chore> {
         graphql_translate_anyhow(ChoreSvc::create(context, &chore.into()))
     }
 
