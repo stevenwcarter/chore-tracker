@@ -9,13 +9,15 @@ interface BonusChoreSectionProps {
   today: string; // ISO 8601 YYYY-MM-DD
   onClaimChore: (choreId: number, date: Date) => Promise<void>;
   isChoreCompletedByAnyone: (choreId: number, date: Date) => boolean;
+  isChoreCompletedByUser: (choreId: number, userId: number, date: Date) => boolean;
 }
 
 export const BonusChoreSection: React.FC<BonusChoreSectionProps> = ({
-  userId: _userId,
+  userId,
   today,
   onClaimChore,
   isChoreCompletedByAnyone,
+  isChoreCompletedByUser,
 }) => {
   const { bonusChores, loading } = useBonusChores(today);
 
@@ -40,7 +42,8 @@ export const BonusChoreSection: React.FC<BonusChoreSectionProps> = ({
       <div className="flex flex-wrap gap-4">
         {bonusChores.map((chore) => {
           const alreadyClaimed =
-            chore.maxClaims != null && isChoreCompletedByAnyone(chore.id, todayDate);
+            isChoreCompletedByUser(chore.id, userId, todayDate) ||
+            (chore.maxClaims != null && isChoreCompletedByAnyone(chore.id, todayDate));
 
           const handleClaim = async () => {
             if (alreadyClaimed) return;

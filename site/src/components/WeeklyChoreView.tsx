@@ -112,6 +112,17 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
     return completionLookup.has(`${choreId}-${formatDateForGraphQL(date)}`);
   };
 
+  const isChoreCompletedByUser = (choreId: number, userId: number, date: Date): boolean => {
+    return (
+      allCompletionsData?.getAllWeeklyCompletions?.some(
+        (c: ChoreCompletion) =>
+          c.choreId === choreId &&
+          c.userId === userId &&
+          c.completedDate === formatDateForGraphQL(date),
+      ) ?? false
+    );
+  };
+
   const handleWeekChange = (newWeekStart: Date) => {
     setCurrentWeekStart(newWeekStart);
     if (isMobile) {
@@ -229,6 +240,7 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
         today={formatDateForGraphQL(currentDate)}
         onClaimChore={handleCompleteChore}
         isChoreCompletedByAnyone={isChoreCompletedByAnyone}
+        isChoreCompletedByUser={isChoreCompletedByUser}
       />
 
       {/* Completion detail modal */}
