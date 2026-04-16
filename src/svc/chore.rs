@@ -170,14 +170,14 @@ impl ChoreSvc {
             .context("Could not load bonus chores")
     }
 
-    pub fn can_claim_bonus(context: &GraphQLContext, chore_id_val: i32) -> Result<bool> {
-        let chore = Self::get_by_id(context, chore_id_val)?;
+    pub fn can_claim_bonus(context: &GraphQLContext, chore_id: i32) -> Result<bool> {
+        let chore = Self::get_by_id(context, chore_id)?;
 
         match chore.max_claims {
             None => Ok(true), // unlimited
             Some(cap) => {
                 let count: i64 = chore_completions::table
-                    .filter(chore_completions::chore_id.eq(chore_id_val))
+                    .filter(chore_completions::chore_id.eq(chore_id))
                     .count()
                     .get_result(&mut get_conn(context)?)
                     .context("Could not count chore completions")?;
@@ -577,6 +577,32 @@ mod tests {
 
         // Now at cap → not claimable
         assert!(!ChoreSvc::can_claim_bonus(&context, chore_id).unwrap());
+    }
+
+    #[test]
+    fn test_list_bonus_chores_excludes_inactive() {
+        let context = create_test_context();
+        let admin = create_test_admin(&context, "Test Admin", "admin@test.com");
+        let target_date = NaiveDate::from_ymd_opt(2026, 4, 15).unwrap();
+
+        // Create an inactive bonus chore for target_date
+        let input = ChoreInput {
+            uuid: None,
+            name: "Inactive bonus".to_owned(),
+            description: None,
+            payment_type: PaymentType::Daily,
+            amount_cents: 200,
+            required_days: 0,
+            active: Some(false),
+            created_by_admin_id: admin.id.unwrap(),
+            bonus_date: Some(target_date),
+            max_claims: None,
+        };
+        let chore_raw = Chore::from(input);
+        ChoreSvc::create(&context, &chore_raw).unwrap();
+
+        let results = ChoreSvc::list_bonus_chores(&context, target_date).unwrap();
+        assert_eq!(results.len(), 0, "Inactive bonus chores should not be listed");
     }
 
     #[test]
