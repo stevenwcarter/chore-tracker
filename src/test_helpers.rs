@@ -109,6 +109,8 @@ pub mod test_db {
             required_days,
             active: Some(true),
             created_by_admin_id: admin_id,
+            bonus_date: None,
+            max_claims: None,
         };
 
         let chore = Chore::from(chore_input);

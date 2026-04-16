@@ -215,6 +215,8 @@ mod tests {
             created_by_admin_id: chore.created_by_admin_id,
             created_at: chore.created_at,
             updated_at: chore.updated_at,
+            bonus_date: None,
+            max_claims: None,
         };
 
         let result = ChoreSvc::update(&context, &updated_chore).unwrap();
@@ -252,6 +254,8 @@ mod tests {
             required_days: day_patterns::weekdays(),
             active: Some(false), // Inactive
             created_by_admin_id: admin.id.unwrap(),
+            bonus_date: None,
+            max_claims: None,
         };
         let chore2 = Chore::from(chore2_input);
         let _chore2 = ChoreSvc::create(&context, &chore2).unwrap();
@@ -371,6 +375,8 @@ mod tests {
             required_days: day_patterns::monday_only(),
             active: Some(false), // Inactive
             created_by_admin_id: admin.id.unwrap(),
+            bonus_date: None,
+            max_claims: None,
         };
         let chore3 = Chore::from(chore3_input);
         let chore3 = ChoreSvc::create(&context, &chore3).unwrap();
