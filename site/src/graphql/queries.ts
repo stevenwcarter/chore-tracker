@@ -257,3 +257,30 @@ export const MARK_COMPLETIONS_AS_PAID = gql`
     markCompletionsAsPaid(userIds: $userIds)
   }
 `;
+
+export const LIST_BONUS_CHORES = gql`
+  query ListBonusChores($date: NaiveDate!) {
+    listBonusChores(date: $date) {
+      id
+      uuid
+      name
+      description
+      paymentType
+      amountCents
+      bonusDate
+      maxClaims
+    }
+  }
+`;
+
+export const CREATE_BONUS_CHORE = gql`
+  mutation CreateBonusChore($input: ChoreInput!) {
+    createBonusChore(input: $input) {
+      id
+      uuid
+      name
+      bonusDate
+      maxClaims
+    }
+  }
+`;

@@ -26,6 +26,8 @@ export interface Chore {
   createdAt: string;
   createdByAdminId: number;
   assignedUsers?: User[];
+  bonusDate?: string | null; // ISO 8601 date, null for regular chores
+  maxClaims?: number | null; // null for unlimited
 }
 
 export interface ChoreCompletion {
