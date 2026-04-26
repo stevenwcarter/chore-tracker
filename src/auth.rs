@@ -270,6 +270,7 @@ pub async fn login_handler(
                 .http_only(true)
                 .secure(!cfg!(debug_assertions))
                 .same_site(axum_extra::extract::cookie::SameSite::Lax)
+                .max_age(time::Duration::minutes(10))
                 .build();
             (jar.add(state_cookie), Redirect::to(&auth_url)).into_response()
         },
@@ -305,14 +306,19 @@ pub async fn callback_handler(
         Ok(token) => {
             debug!("Token exchange successful");
 
-            // Verify id_token if present
-            if let Some(ref id_token_str) = token.id_token {
-                match oidc_config.verify_id_token(id_token_str, &stored_nonce).await {
-                    Ok(()) => debug!("id_token verified successfully"),
-                    Err(e) => {
-                        error!("id_token verification failed: {}", e);
-                        return Redirect::to("/?error=token_verification_failed").into_response();
-                    }
+            // id_token is required — fail hard if absent
+            let id_token_str = match token.id_token.as_deref() {
+                Some(s) => s.to_owned(),
+                None => {
+                    error!("OIDC provider did not return an id_token");
+                    return Redirect::to("/?error=missing_id_token").into_response();
+                }
+            };
+            match oidc_config.verify_id_token(&id_token_str, &stored_nonce).await {
+                Ok(()) => debug!("id_token verified successfully"),
+                Err(e) => {
+                    error!("id_token verification failed: {}", e);
+                    return Redirect::to("/?error=token_verification_failed").into_response();
                 }
             }
 
