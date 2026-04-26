@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useMutation, useQuery } from '@apollo/client';
 import { toast } from 'react-toastify';
 import { Chore } from 'types/chore';
@@ -23,10 +24,14 @@ interface UseBonusChoresResult {
 }
 
 export const useBonusChores = (date: string): UseBonusChoresResult => {
-  const { data, loading, refetch } = useQuery<{ listBonusChores: Chore[] }>(LIST_BONUS_CHORES, {
-    variables: { date },
-    onError: () => toast.error('Error loading bonus chores'),
-  });
+  const { data, loading, error, refetch } = useQuery<{ listBonusChores: Chore[] }>(
+    LIST_BONUS_CHORES,
+    { variables: { date } },
+  );
+
+  useEffect(() => {
+    if (error) toast.error('Error loading bonus chores');
+  }, [error]);
 
   const [createMutation, { loading: creating }] = useMutation(CREATE_BONUS_CHORE, {
     onCompleted: () => {
@@ -37,9 +42,9 @@ export const useBonusChores = (date: string): UseBonusChoresResult => {
   const createBonusChore = async (input: CreateBonusChoreInput): Promise<void> => {
     try {
       await createMutation({ variables: { input } });
-    } catch (error) {
+    } catch (err) {
       toast.error('Error creating bonus chore');
-      throw error;
+      throw err;
     }
   };
 

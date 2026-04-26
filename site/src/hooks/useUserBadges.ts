@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useQuery } from '@apollo/client';
 import { toast } from 'react-toastify';
 import { UserBadge } from 'types/chore';
@@ -9,10 +10,13 @@ interface UseUserBadgesResult {
 }
 
 export const useUserBadges = (userId: number): UseUserBadgesResult => {
-  const { data, loading } = useQuery<{ userBadges: UserBadge[] }>(GET_USER_BADGES, {
+  const { data, loading, error } = useQuery<{ userBadges: UserBadge[] }>(GET_USER_BADGES, {
     variables: { userId },
-    onError: () => toast.error('Error loading badges'),
   });
+
+  useEffect(() => {
+    if (error) toast.error('Error loading badges');
+  }, [error]);
 
   return {
     badges: data?.userBadges ?? [],
