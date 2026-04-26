@@ -32,11 +32,12 @@ pub struct AppError(anyhow::Error);
 // Tell axum how to convert `AppError` into a response.
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Something went wrong: {:?}", self.0),
-        )
-            .into_response()
+        let status = if self.0.to_string().starts_with("Unauthorized") {
+            StatusCode::UNAUTHORIZED
+        } else {
+            StatusCode::NOT_FOUND
+        };
+        (status, format!("Error: {}", self.0)).into_response()
     }
 }
 

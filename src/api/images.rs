@@ -1,7 +1,7 @@
 #![allow(clippy::collapsible_if)]
 use crate::api::AppError;
 use crate::context::GraphQLContext;
-use crate::svc::{UserImageSvc, UserSvc};
+use crate::svc::{AdminSvc, UserImageSvc, UserSvc};
 
 use anyhow::{Context, anyhow};
 use axum::extract::{Multipart, Path};
@@ -9,11 +9,24 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::routing::{delete, get, post};
 use axum::{Extension, Router};
+use axum_extra::extract::CookieJar;
 use tracing::error;
 use uuid::Uuid;
 
 const MAX_IMAGE_SIZE: usize = 5 * 1024 * 1024;
 const IMAGE_CACHE_CONTROL: &str = "public, max-age=86400";
+
+fn require_admin_cookie(context: &GraphQLContext, jar: &CookieJar) -> Result<i32, AppError> {
+    let token = jar
+        .get("admin_session")
+        .ok_or_else(|| AppError(anyhow::anyhow!("Unauthorized")))?
+        .value()
+        .to_owned();
+    AdminSvc::get_session(context, &token)
+        .map_err(AppError)?
+        .and_then(|a| a.id)
+        .ok_or_else(|| AppError(anyhow::anyhow!("Unauthorized")))
+}
 
 pub fn image_routes() -> Router {
     Router::new()
@@ -25,8 +38,10 @@ pub fn image_routes() -> Router {
 
 async fn delete_image_by_user_id(
     Extension(context): Extension<GraphQLContext>,
+    jar: CookieJar,
     Path(user_id): Path<i32>,
 ) -> Result<impl IntoResponse, AppError> {
+    require_admin_cookie(&context, &jar)?;
     UserImageSvc::delete_by_user_id(&context, user_id).context("failed to delete image")?;
 
     Ok((
@@ -38,9 +53,11 @@ async fn delete_image_by_user_id(
 // Image upload handler
 async fn upload_user_image(
     Extension(context): Extension<GraphQLContext>,
+    jar: CookieJar,
     Path(user_uuid): Path<String>,
     mut multipart: Multipart,
 ) -> Result<impl IntoResponse, AppError> {
+    require_admin_cookie(&context, &jar)?;
     // Get the user to verify they exist
     let user = UserSvc::get(&context, &user_uuid).context("fetching user")?;
 

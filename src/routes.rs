@@ -80,7 +80,9 @@ pub async fn app(context: GraphQLContext) -> Router {
 
     let auth_routes = auth::auth_routes(oidc_config.clone(), context.clone());
 
-    let image_routes = images::image_routes().layer(Extension(context.clone()));
+    let image_routes = images::image_routes()
+        .layer(Extension(context.clone()))
+        .layer(tower_http::limit::RequestBodyLimitLayer::new(6 * 1024 * 1024));
 
     Router::new()
         .route("/assets/{*uri}", get(static_handler))
