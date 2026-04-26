@@ -166,8 +166,8 @@ export const CREATE_CHORE_COMPLETION = gql`
 `;
 
 export const APPROVE_CHORE_COMPLETION = gql`
-  mutation ApproveChoreCompletion($completionUuid: String!, $adminId: Int!) {
-    approveChoreCompletion(completionUuid: $completionUuid, adminId: $adminId) {
+  mutation ApproveChoreCompletion($completionUuid: String!) {
+    approveChoreCompletion(completionUuid: $completionUuid) {
       id
       uuid
       approved

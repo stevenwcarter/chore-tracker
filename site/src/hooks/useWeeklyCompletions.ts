@@ -42,12 +42,11 @@ export const useWeeklyCompletions = ({ weekStartDate }: UseWeeklyCompletionsOpti
 
   const completions: ChoreCompletion[] = data?.getAllWeeklyCompletions ?? [];
 
-  const approveCompletion = async (completionUuid: string, adminId: number) => {
+  const approveCompletion = async (completionUuid: string) => {
     try {
       await approveChoreCompletion({
         variables: {
           completionUuid,
-          adminId: adminId,
         },
       });
     } catch (err) {

@@ -12,7 +12,7 @@ const AdminChoreManagementPage = React.lazy(() => import('page/AdminChoreManagem
 const AdminCompletionReviewPage = React.lazy(() => import('page/AdminCompletionReviewPage'));
 const AdminPayoutSystemPage = React.lazy(() => import('page/AdminPayoutSystemPage'));
 
-const link = new HttpLink({ uri: '/graphql' });
+const link = new HttpLink({ uri: '/graphql', credentials: 'include' });
 const apolloClient = new ApolloClient({
   cache: new InMemoryCache(),
   link,
