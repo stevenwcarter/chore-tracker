@@ -54,7 +54,6 @@ export const AdminCompletionReview: React.FC<AdminCompletionReviewProps> = ({ ad
       await approveChoreCompletion({
         variables: {
           completionUuid: completion.uuid,
-          adminId: adminId,
         },
       });
     } catch (err) {
