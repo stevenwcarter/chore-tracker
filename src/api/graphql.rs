@@ -49,7 +49,21 @@ async fn custom_subscriptions(
 async fn custom_graphql(
     Extension(schema): Extension<Arc<Schema>>,
     Extension(context): Extension<GraphQLContext>,
+    jar: axum_extra::extract::CookieJar,
     JuniperRequest(request): JuniperRequest,
 ) -> JuniperResponse {
-    JuniperResponse(request.execute(&*schema, &context).await)
+    use crate::svc::AdminSvc;
+    let admin_id = jar
+        .get("admin_session")
+        .and_then(|c| {
+            AdminSvc::get_session(&context, c.value())
+                .ok()
+                .flatten()
+                .and_then(|a| a.id)
+        });
+    let authed_context = crate::context::GraphQLContext {
+        pool: context.pool.clone(),
+        admin_id,
+    };
+    JuniperResponse(request.execute(&*schema, &authed_context).await)
 }

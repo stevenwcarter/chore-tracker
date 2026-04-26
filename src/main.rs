@@ -26,7 +26,7 @@ async fn main() -> Result<()> {
         )
         .init();
 
-    let context = GraphQLContext { pool: get_pool() };
+    let context = GraphQLContext { pool: get_pool(), admin_id: None };
 
     let mut conn = context
         .pool
