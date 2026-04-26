@@ -1,5 +1,4 @@
 import { useMutation, useQuery } from '@apollo/client';
-import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { Chore, User, ChoreInput, UserInput } from 'types/chore';
 import {
@@ -13,9 +12,6 @@ import {
 } from 'graphql/queries';
 
 export const useAdminChoreManagement = () => {
-  const [chores, setChores] = useState<Chore[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-
   const {
     data: choresData,
     loading: choresLoading,
@@ -60,17 +56,8 @@ export const useAdminChoreManagement = () => {
     },
   });
 
-  useEffect(() => {
-    if (choresData?.listChores) {
-      setChores(choresData.listChores);
-    }
-  }, [choresData]);
-
-  useEffect(() => {
-    if (usersData?.listUsers) {
-      setUsers(usersData.listUsers);
-    }
-  }, [usersData]);
+  const chores: Chore[] = choresData?.listChores ?? [];
+  const users: User[] = usersData?.listUsers ?? [];
 
   const createNewChore = async (choreData: ChoreInput, selectedUserIds: number[] = []) => {
     try {

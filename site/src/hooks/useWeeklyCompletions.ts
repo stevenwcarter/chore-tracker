@@ -1,5 +1,4 @@
 import { useMutation, useQuery } from '@apollo/client';
-import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { ChoreCompletion, ChoreCompletionNoteInput } from 'types/chore';
 import {
@@ -15,8 +14,6 @@ interface UseWeeklyCompletionsOptions {
 }
 
 export const useWeeklyCompletions = ({ weekStartDate }: UseWeeklyCompletionsOptions) => {
-  const [completions, setCompletions] = useState<ChoreCompletion[]>([]);
-
   const { data, loading, error, refetch } = useQuery(GET_ALL_WEEKLY_COMPLETIONS, {
     fetchPolicy: 'cache-and-network',
     variables: {
@@ -43,11 +40,7 @@ export const useWeeklyCompletions = ({ weekStartDate }: UseWeeklyCompletionsOpti
     },
   });
 
-  useEffect(() => {
-    if (data && data.getAllWeeklyCompletions) {
-      setCompletions(data.getAllWeeklyCompletions);
-    }
-  }, [data]);
+  const completions: ChoreCompletion[] = data?.getAllWeeklyCompletions ?? [];
 
   const approveCompletion = async (completionUuid: string, adminId: number) => {
     try {
