@@ -106,7 +106,7 @@ impl AdminSvc {
             created_at: now,
             expires_at: expires,
         };
-        let mut conn = crate::db::get_conn(context)?;
+        let mut conn = get_conn(context)?;
         diesel::insert_into(admin_sessions::table)
             .values(&session)
             .execute(&mut conn)
@@ -115,7 +115,7 @@ impl AdminSvc {
     }
 
     pub fn get_session(context: &GraphQLContext, token: &str) -> anyhow::Result<Option<Admin>> {
-        let mut conn = crate::db::get_conn(context)?;
+        let mut conn = get_conn(context)?;
         let now = Utc::now().naive_utc();
         let result: Option<AdminSession> = admin_sessions::table
             .filter(admin_sessions::session_token.eq(token))
@@ -126,8 +126,8 @@ impl AdminSvc {
         match result {
             None => Ok(None),
             Some(session) => {
-                let admin: Option<Admin> = crate::schema::admins::table
-                    .filter(crate::schema::admins::id.eq(session.admin_id))
+                let admin: Option<Admin> = admins::table
+                    .filter(admins::id.eq(session.admin_id))
                     .first(&mut conn)
                     .optional()
                     .context("fetching admin for session")?;
@@ -137,7 +137,7 @@ impl AdminSvc {
     }
 
     pub fn delete_session(context: &GraphQLContext, token: &str) -> anyhow::Result<()> {
-        let mut conn = crate::db::get_conn(context)?;
+        let mut conn = get_conn(context)?;
         diesel::delete(admin_sessions::table.filter(admin_sessions::session_token.eq(token)))
             .execute(&mut conn)
             .context("deleting admin session")?;
