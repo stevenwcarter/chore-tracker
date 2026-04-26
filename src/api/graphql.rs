@@ -10,6 +10,7 @@ use juniper_axum::response::JuniperResponse;
 use juniper_axum::{graphiql, playground, subscriptions};
 use juniper_graphql_ws::ConnectionConfig;
 use std::sync::Arc;
+use tracing::warn;
 
 pub fn graphql_routes() -> Router {
     Router::new()
@@ -33,6 +34,7 @@ async fn root() -> &'static str {
     "Hello world!"
 }
 
+// Subscriptions use the base context (admin_id: None) — no subscription currently requires admin auth.
 async fn custom_subscriptions(
     Extension(schema): Extension<Arc<Schema>>,
     Extension(context): Extension<GraphQLContext>,
@@ -53,14 +55,15 @@ async fn custom_graphql(
     JuniperRequest(request): JuniperRequest,
 ) -> JuniperResponse {
     use crate::svc::AdminSvc;
-    let admin_id = jar
-        .get("admin_session")
-        .and_then(|c| {
-            AdminSvc::get_session(&context, c.value())
-                .ok()
-                .flatten()
-                .and_then(|a| a.id)
-        });
+    let admin_id = jar.get("admin_session").and_then(|c| {
+        match AdminSvc::get_session(&context, c.value()) {
+            Ok(maybe_admin) => maybe_admin.and_then(|a| a.id),
+            Err(e) => {
+                warn!("session lookup failed: {}", e);
+                None
+            }
+        }
+    });
     let authed_context = crate::context::GraphQLContext {
         pool: context.pool.clone(),
         admin_id,
