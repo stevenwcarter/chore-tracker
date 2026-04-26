@@ -21,3 +21,4 @@ node_modules
 .claude/code-health.md
 .claude/code-health-archive-*.md
 *.local.json
+.worktrees/
