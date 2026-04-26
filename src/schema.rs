@@ -1,6 +1,16 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
+    admin_sessions (id) {
+        id -> Nullable<Integer>,
+        session_token -> Text,
+        admin_id -> Integer,
+        created_at -> Timestamp,
+        expires_at -> Timestamp,
+    }
+}
+
+diesel::table! {
     admins (id) {
         id -> Nullable<Integer>,
         uuid -> Text,
@@ -73,28 +83,6 @@ diesel::table! {
 }
 
 diesel::table! {
-    keys (uuid) {
-        uuid -> Text,
-        name -> Text,
-        email -> Text,
-        blocked -> Bool,
-        expiration -> Integer,
-        limits -> Text,
-        notes -> Text,
-    }
-}
-
-diesel::table! {
-    limit_usage (uuid, window, duration) {
-        uuid -> Text,
-        window -> Integer,
-        duration -> Integer,
-        usage -> Integer,
-        usage_limit -> Integer,
-    }
-}
-
-diesel::table! {
     user_badges (id) {
         id -> Integer,
         user_id -> Integer,
@@ -127,6 +115,7 @@ diesel::table! {
     }
 }
 
+diesel::joinable!(admin_sessions -> admins (admin_id));
 diesel::joinable!(chore_assignments -> chores (chore_id));
 diesel::joinable!(chore_assignments -> users (user_id));
 diesel::joinable!(chore_completion_notes -> admins (author_admin_id));
@@ -139,13 +128,12 @@ diesel::joinable!(chores -> admins (created_by_admin_id));
 diesel::joinable!(user_badges -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
+    admin_sessions,
     admins,
     chore_assignments,
     chore_completion_notes,
     chore_completions,
     chores,
-    keys,
-    limit_usage,
     user_badges,
     user_images,
     users,
