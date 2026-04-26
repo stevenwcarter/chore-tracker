@@ -233,6 +233,20 @@ impl From<AdminInput> for Admin {
     }
 }
 
+// AdminSession model
+#[derive(
+    Queryable, Debug, Identifiable, Insertable, Selectable, AsChangeset,
+)]
+#[diesel(primary_key(id))]
+#[diesel(table_name = admin_sessions)]
+pub struct AdminSession {
+    pub id: Option<i32>,
+    pub session_token: String,
+    pub admin_id: i32,
+    pub created_at: NaiveDateTime,
+    pub expires_at: NaiveDateTime,
+}
+
 // Chore model
 #[derive(Queryable, Debug, Identifiable, Insertable, Selectable, AsChangeset)]
 #[diesel(primary_key(id))]
@@ -629,20 +643,6 @@ impl From<ChoreCompletionNoteInput> for ChoreCompletionNote {
             updated_at: None,
         }
     }
-}
-
-// AdminSession model
-#[derive(
-    Queryable, Debug, Identifiable, Insertable, Selectable, AsChangeset,
-)]
-#[diesel(primary_key(id))]
-#[diesel(table_name = admin_sessions)]
-pub struct AdminSession {
-    pub id: Option<i32>,
-    pub session_token: String,
-    pub admin_id: i32,
-    pub created_at: NaiveDateTime,
-    pub expires_at: NaiveDateTime,
 }
 
 // BadgeType enum
