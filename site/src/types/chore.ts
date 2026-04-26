@@ -116,7 +116,7 @@ export interface ChoreCompletionInput {
 
 export interface ChoreCompletionNoteInput {
   choreCompletionId: number;
-  note: string;
+  noteText: string;
   authorType: AuthorType;
   authorUserId?: number;
   authorAdminId?: number;
