@@ -15,7 +15,7 @@ use std::sync::Arc;
 use tower::ServiceBuilder;
 use tower_http::compression::CompressionLayer;
 use tower_http::cors::{Any, CorsLayer};
-use tracing::{debug, info, warn};
+use tracing::{debug, warn};
 
 #[derive(RustEmbed, Clone)]
 #[folder = "site/build/"]
