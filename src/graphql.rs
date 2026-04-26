@@ -10,7 +10,7 @@ use crate::{
         ChoreCompletionNoteInput, ChoreInput, UnpaidTotal, User, UserBadge, UserInput,
     },
     svc::{
-        AdminSvc, ChoreCompletionFixSvc, ChoreCompletionNoteSvc, ChoreCompletionSvc, ChoreSvc,
+        AdminSvc, ChoreCompletionNoteSvc, ChoreCompletionSvc, ChoreSvc,
         UserSvc, chore_completion::ChoreCompletionFilter, user::UserBalance,
     },
 };
@@ -169,29 +169,35 @@ pub struct Mutation;
 impl Mutation {
     // Users
     pub async fn create_user(context: &GraphQLContext, user: UserInput) -> FieldResult<User> {
+        context.require_admin()?;
         graphql_translate_anyhow(UserSvc::create(context, &user.into()))
     }
 
     pub async fn update_user(context: &GraphQLContext, user: UserInput) -> FieldResult<User> {
+        context.require_admin()?;
         graphql_translate_anyhow(UserSvc::update(context, &user.into()))
     }
 
     pub async fn delete_user(context: &GraphQLContext, user_uuid: String) -> FieldResult<bool> {
+        context.require_admin()?;
         graphql_translate_anyhow(UserSvc::delete(context, &user_uuid))?;
         Ok(true)
     }
 
     // Admins
     pub async fn create_admin(context: &GraphQLContext, admin: AdminInput) -> FieldResult<Admin> {
+        context.require_admin()?;
         graphql_translate_anyhow(AdminSvc::create(context, &admin.into()))
     }
 
     pub async fn update_admin(context: &GraphQLContext, admin: AdminInput) -> FieldResult<Admin> {
+        context.require_admin()?;
         graphql_translate_anyhow(AdminSvc::update(context, &admin.into()))
     }
 
     // Chores
     pub async fn create_chore(context: &GraphQLContext, chore: ChoreInput) -> FieldResult<Chore> {
+        context.require_admin()?;
         graphql_translate_anyhow(ChoreSvc::create(context, &chore.into()))
     }
 
@@ -199,14 +205,17 @@ impl Mutation {
         context: &GraphQLContext,
         chore: ChoreInput,
     ) -> FieldResult<Chore> {
+        context.require_admin()?;
         graphql_translate_anyhow(ChoreSvc::create(context, &chore.into()))
     }
 
     pub async fn update_chore(context: &GraphQLContext, chore: ChoreInput) -> FieldResult<Chore> {
+        context.require_admin()?;
         graphql_translate_anyhow(ChoreSvc::update(context, &chore.into()))
     }
 
     pub async fn delete_chore(context: &GraphQLContext, chore_uuid: String) -> FieldResult<bool> {
+        context.require_admin()?;
         graphql_translate_anyhow(ChoreSvc::delete(context, &chore_uuid))?;
         Ok(true)
     }
@@ -217,6 +226,7 @@ impl Mutation {
         chore_id: i32,
         user_id: i32,
     ) -> FieldResult<bool> {
+        context.require_admin()?;
         graphql_translate_anyhow(ChoreSvc::assign_user(context, chore_id, user_id))?;
         Ok(true)
     }
@@ -227,6 +237,7 @@ impl Mutation {
         chore_id: i32,
         user_id: i32,
     ) -> FieldResult<bool> {
+        context.require_admin()?;
         graphql_translate_anyhow(ChoreSvc::unassign_user(context, chore_id, user_id))?;
         Ok(true)
     }
@@ -242,8 +253,8 @@ impl Mutation {
     pub async fn approve_chore_completion(
         context: &GraphQLContext,
         completion_uuid: String,
-        admin_id: i32,
     ) -> FieldResult<ChoreCompletion> {
+        let admin_id = context.require_admin()?;
         graphql_translate_anyhow(ChoreCompletionSvc::approve(
             context,
             &completion_uuid,
@@ -255,6 +266,7 @@ impl Mutation {
         context: &GraphQLContext,
         user_ids: Vec<i32>, // Support multiple user IDs
     ) -> FieldResult<bool> {
+        context.require_admin()?;
         if !user_ids.is_empty() {
             graphql_translate_anyhow(ChoreCompletionSvc::mark_as_paid_batch(context, &user_ids))?;
         }
@@ -265,6 +277,7 @@ impl Mutation {
         context: &GraphQLContext,
         completion_uuid: String,
     ) -> FieldResult<bool> {
+        context.require_admin()?;
         graphql_translate_anyhow(ChoreCompletionSvc::delete(context, &completion_uuid))?;
         Ok(true)
     }
@@ -274,6 +287,7 @@ impl Mutation {
         context: &GraphQLContext,
         note: ChoreCompletionNoteInput,
     ) -> FieldResult<ChoreCompletionNote> {
+        context.require_admin()?;
         graphql_translate_anyhow(ChoreCompletionNoteSvc::create(context, &note.into()))
     }
 
@@ -281,6 +295,7 @@ impl Mutation {
         context: &GraphQLContext,
         note: ChoreCompletionNoteInput,
     ) -> FieldResult<ChoreCompletionNote> {
+        context.require_admin()?;
         graphql_translate_anyhow(ChoreCompletionNoteSvc::update(context, &note.into()))
     }
 
@@ -288,45 +303,9 @@ impl Mutation {
         context: &GraphQLContext,
         note_uuid: String,
     ) -> FieldResult<bool> {
+        context.require_admin()?;
         graphql_translate_anyhow(ChoreCompletionNoteSvc::delete(context, &note_uuid))?;
         Ok(true)
-    }
-
-    // Chore Completion Fix utilities
-    /// Fixes all weekly chore completions to use correct fractional payment amounts.
-    /// Returns the number of records updated.
-    /// WARNING: This mutation will modify existing data. Use with caution.
-    pub async fn fix_weekly_completion_amounts(context: &GraphQLContext) -> FieldResult<i32> {
-        graphql_translate_anyhow(ChoreCompletionFixSvc::fix_weekly_completion_amounts(
-            context,
-        ))
-    }
-
-    /// Analyzes weekly chore completions to show which ones need fixing.
-    /// Returns a list of [chore_id, completion_count, current_total_cents, expected_total_cents].
-    pub async fn analyze_weekly_completion_amounts(
-        context: &GraphQLContext,
-    ) -> FieldResult<Vec<Vec<i32>>> {
-        let analysis = graphql_translate_anyhow(
-            ChoreCompletionFixSvc::analyze_weekly_completion_amounts(context),
-        )?;
-
-        // Convert the tuples to vectors for GraphQL compatibility
-        let result: Vec<Vec<i32>> = analysis
-            .into_iter()
-            .map(
-                |(chore_id, completion_count, current_total, expected_total)| {
-                    vec![
-                        chore_id,
-                        i32::try_from(completion_count).unwrap_or(i32::MAX),
-                        i32::try_from(current_total).unwrap_or(i32::MAX),
-                        i32::try_from(expected_total).unwrap_or(i32::MAX),
-                    ]
-                },
-            )
-            .collect();
-
-        Ok(result)
     }
 }
 
