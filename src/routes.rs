@@ -15,7 +15,7 @@ use std::sync::Arc;
 use tower::ServiceBuilder;
 use tower_http::compression::CompressionLayer;
 use tower_http::cors::{Any, CorsLayer};
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 
 #[derive(RustEmbed, Clone)]
 #[folder = "site/build/"]
@@ -58,7 +58,7 @@ pub async fn app(context: GraphQLContext) -> Router {
     let qm_schema = create_schema();
     let mut oidc_config = OidcConfig::from_env();
 
-    info!("OIDC Config: {:?}", oidc_config);
+    debug!("OIDC Config: {:?}", oidc_config);
     // Initialize OIDC discovery config
     if let Err(e) = oidc_config.initialize().await {
         warn!("Failed to initialize OIDC config: {}", e);
