@@ -73,13 +73,12 @@ export const ChoreCompletionDetail: React.FC<ChoreCompletionDetailProps> = ({
   };
 
   const handleApproveCompletion = async () => {
-    if (!isAdmin || !adminId) return;
+    if (!isAdmin) return;
 
     try {
       await approveChoreCompletion({
         variables: {
           completionUuid: completion.uuid,
-          adminId: adminId,
         },
       });
     } catch (err) {
