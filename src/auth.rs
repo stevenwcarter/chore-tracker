@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use axum::{
     extract::{Query, State},
-    response::{IntoResponse, Redirect},
+    response::{IntoResponse, Redirect, Response},
 };
 use axum_extra::extract::cookie::{Cookie, CookieJar};
 use serde::{Deserialize, Serialize};
@@ -303,108 +303,128 @@ pub async fn callback_handler(
 ) -> impl IntoResponse {
     debug!("OIDC callback received");
 
-    // Verify CSRF state matches what was set in login_handler
-    let stored = match jar.get("oidc_state").map(|c| c.value().to_owned()) {
-        Some(s) => s,
-        None => return Redirect::to("/?error=missing_state").into_response(),
-    };
+    // Each phase returns Err(Response) on failure, where the Response is the
+    // appropriate error redirect; the final `Ok | Err` collapse always yields
+    // a Response.
+    let result: std::result::Result<Response, Response> = async {
+        let (stored_nonce, jar) = verify_oidc_state(jar, &params)?;
+        let user_info =
+            exchange_code_for_user(&oidc_config, &params.code, &stored_nonce).await?;
+        let (jar, redirect) = create_admin_session(&context, &user_info, jar)?;
+        Ok((jar, redirect).into_response())
+    }
+    .await;
+
+    match result {
+        Ok(r) | Err(r) => r,
+    }
+}
+
+/// Validate the `oidc_state` cookie and return `(stored_nonce, jar_without_state_cookie)`.
+fn verify_oidc_state(
+    jar: CookieJar,
+    params: &AuthCallback,
+) -> std::result::Result<(String, CookieJar), Response> {
+    let stored = jar
+        .get("oidc_state")
+        .map(|c| c.value().to_owned())
+        .ok_or_else(|| Redirect::to("/?error=missing_state").into_response())?;
     let jar = jar.remove("oidc_state");
 
-    let (stored_state, stored_nonce) = match stored.split_once('|') {
-        Some((s, n)) => (s.to_owned(), n.to_owned()),
-        None => return Redirect::to("/?error=invalid_state").into_response(),
-    };
+    let (stored_state, stored_nonce) = stored
+        .split_once('|')
+        .map(|(s, n)| (s.to_owned(), n.to_owned()))
+        .ok_or_else(|| Redirect::to("/?error=invalid_state").into_response())?;
 
     if stored_state != params.state {
         error!("OIDC state mismatch - possible CSRF attack");
-        return (jar, Redirect::to("/?error=state_mismatch")).into_response();
+        return Err((jar, Redirect::to("/?error=state_mismatch")).into_response());
     }
 
-    // Exchange authorization code for access token
-    match oidc_config.exchange_code_for_token(&params.code).await {
-        Ok(token) => {
-            debug!("Token exchange successful");
+    Ok((stored_nonce, jar))
+}
 
-            // id_token is required — fail hard if absent
-            let id_token_str = match token.id_token.as_deref() {
-                Some(s) => s.to_owned(),
-                None => {
-                    error!("OIDC provider did not return an id_token");
-                    return Redirect::to("/?error=missing_id_token").into_response();
-                }
-            };
-            match oidc_config
-                .verify_id_token(&id_token_str, &stored_nonce)
-                .await
-            {
-                Ok(()) => debug!("id_token verified successfully"),
-                Err(e) => {
-                    error!("id_token verification failed: {}", e);
-                    return Redirect::to("/?error=token_verification_failed").into_response();
-                }
-            }
+/// Exchange the authorization code for tokens, verify the ID token nonce, and fetch user info.
+async fn exchange_code_for_user(
+    oidc_config: &OidcConfig,
+    code: &str,
+    stored_nonce: &str,
+) -> std::result::Result<UserInfo, Response> {
+    let token = oidc_config.exchange_code_for_token(code).await.map_err(|e| {
+        error!("Token exchange failed: {}", e);
+        Redirect::to("/?error=token_exchange_failed").into_response()
+    })?;
+    debug!("Token exchange successful");
 
-            // Get user info from the OIDC provider
-            match oidc_config.get_user_info(&token.access_token).await {
-                Ok(user_info) => {
-                    debug!("User info retrieved");
+    let id_token_str = token
+        .id_token
+        .as_deref()
+        .ok_or_else(|| {
+            error!("OIDC provider did not return an id_token");
+            Redirect::to("/?error=missing_id_token").into_response()
+        })?
+        .to_owned();
 
-                    // Get or create admin user automatically since OIDC access is restricted
-                    let name = user_info
-                        .name
-                        .as_deref()
-                        .or(user_info.preferred_username.as_deref())
-                        .unwrap_or("Admin User");
-                    let email = user_info.email.as_deref().unwrap_or("");
+    oidc_config
+        .verify_id_token(&id_token_str, stored_nonce)
+        .await
+        .map_err(|e| {
+            error!("id_token verification failed: {}", e);
+            Redirect::to("/?error=token_verification_failed").into_response()
+        })?;
+    debug!("id_token verified successfully");
 
-                    match AdminSvc::get_or_create_by_oidc(&context, &user_info.sub, name, email) {
-                        Ok(admin) => {
-                            info!("Admin authenticated: {}", admin.uuid);
-                            // Create opaque session token in DB
-                            let admin_id = match admin.id {
-                                Some(id) => id,
-                                None => {
-                                    error!("Admin has no id after get_or_create");
-                                    return Redirect::to("/?error=session_creation_failed")
-                                        .into_response();
-                                }
-                            };
-                            let token = match AdminSvc::create_session(&context, admin_id) {
-                                Ok(t) => t,
-                                Err(e) => {
-                                    error!("Failed to create admin session: {}", e);
-                                    return Redirect::to("/?error=session_creation_failed")
-                                        .into_response();
-                                }
-                            };
-                            let session_cookie = Cookie::build(("admin_session", token))
-                                .path("/")
-                                .http_only(true)
-                                .secure(!cfg!(debug_assertions))
-                                .same_site(axum_extra::extract::cookie::SameSite::Lax)
-                                .max_age(time::Duration::days(7))
-                                .build();
+    let user_info = oidc_config
+        .get_user_info(&token.access_token)
+        .await
+        .map_err(|e| {
+            error!("UserInfo request failed: {}", e);
+            Redirect::to("/?error=userinfo_failed").into_response()
+        })?;
+    debug!("User info retrieved");
+    Ok(user_info)
+}
 
-                            let jar = jar.add(session_cookie);
-                            (jar, Redirect::to("/admin")).into_response()
-                        }
-                        Err(e) => {
-                            error!("Failed to get or create admin: {}", e);
-                            Redirect::to("/?error=admin_creation_failed").into_response()
-                        }
-                    }
-                }
-                Err(e) => {
-                    error!("UserInfo request failed: {}", e);
-                    Redirect::to("/?error=userinfo_failed").into_response()
-                }
-            }
-        }
-        Err(e) => {
-            error!("Token exchange failed: {}", e);
-            Redirect::to("/?error=token_exchange_failed").into_response()
-        }
-    }
+/// Find or create the admin row for the OIDC subject, mint a session token, and return the
+/// cookie jar with the `admin_session` cookie attached plus a redirect to `/admin`.
+fn create_admin_session(
+    context: &GraphQLContext,
+    user_info: &UserInfo,
+    jar: CookieJar,
+) -> std::result::Result<(CookieJar, Redirect), Response> {
+    let name = user_info
+        .name
+        .as_deref()
+        .or(user_info.preferred_username.as_deref())
+        .unwrap_or("Admin User");
+    let email = user_info.email.as_deref().unwrap_or("");
+
+    let admin =
+        AdminSvc::get_or_create_by_oidc(context, &user_info.sub, name, email).map_err(|e| {
+            error!("Failed to get or create admin: {}", e);
+            Redirect::to("/?error=admin_creation_failed").into_response()
+        })?;
+    info!("Admin authenticated: {}", admin.uuid);
+
+    let admin_id = admin.id.ok_or_else(|| {
+        error!("Admin has no id after get_or_create");
+        Redirect::to("/?error=session_creation_failed").into_response()
+    })?;
+
+    let token = AdminSvc::create_session(context, admin_id).map_err(|e| {
+        error!("Failed to create admin session: {}", e);
+        Redirect::to("/?error=session_creation_failed").into_response()
+    })?;
+
+    let session_cookie = Cookie::build(("admin_session", token))
+        .path("/")
+        .http_only(true)
+        .secure(!cfg!(debug_assertions))
+        .same_site(axum_extra::extract::cookie::SameSite::Lax)
+        .max_age(time::Duration::days(7))
+        .build();
+
+    Ok((jar.add(session_cookie), Redirect::to("/admin")))
 }
 
 /// Deletes the admin session from the database and clears the session cookie, then redirects home.
