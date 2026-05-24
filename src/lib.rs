@@ -3,8 +3,6 @@
 #![allow(clippy::missing_const_for_fn)]
 #![recursion_limit = "256"]
 
-// use chrono::{DateTime, NaiveDateTime, Utc};
-// use chrono_tz::Tz;
 use std::{env, fmt, str::FromStr};
 
 pub mod api;
