@@ -658,32 +658,32 @@ pub enum BadgeType {
 impl BadgeType {
     pub fn as_str(&self) -> &'static str {
         match self {
-            BadgeType::FirstChore => "first_chore",
-            BadgeType::TenDollarsEarned => "ten_dollars_earned",
-            BadgeType::FiftyDollarsEarned => "fifty_dollars_earned",
-            BadgeType::PerfectWeek => "perfect_week",
-            BadgeType::FiveDayStreak => "five_day_streak",
+            Self::FirstChore => "first_chore",
+            Self::TenDollarsEarned => "ten_dollars_earned",
+            Self::FiftyDollarsEarned => "fifty_dollars_earned",
+            Self::PerfectWeek => "perfect_week",
+            Self::FiveDayStreak => "five_day_streak",
         }
     }
 
-    pub fn from_str(s: &str) -> Option<BadgeType> {
+    pub fn from_str(s: &str) -> Option<Self> {
         match s {
-            "first_chore" => Some(BadgeType::FirstChore),
-            "ten_dollars_earned" => Some(BadgeType::TenDollarsEarned),
-            "fifty_dollars_earned" => Some(BadgeType::FiftyDollarsEarned),
-            "perfect_week" => Some(BadgeType::PerfectWeek),
-            "five_day_streak" => Some(BadgeType::FiveDayStreak),
+            "first_chore" => Some(Self::FirstChore),
+            "ten_dollars_earned" => Some(Self::TenDollarsEarned),
+            "fifty_dollars_earned" => Some(Self::FiftyDollarsEarned),
+            "perfect_week" => Some(Self::PerfectWeek),
+            "five_day_streak" => Some(Self::FiveDayStreak),
             _ => None,
         }
     }
 
-    pub fn all() -> Vec<BadgeType> {
+    pub fn all() -> Vec<Self> {
         vec![
-            BadgeType::FirstChore,
-            BadgeType::TenDollarsEarned,
-            BadgeType::FiftyDollarsEarned,
-            BadgeType::PerfectWeek,
-            BadgeType::FiveDayStreak,
+            Self::FirstChore,
+            Self::TenDollarsEarned,
+            Self::FiftyDollarsEarned,
+            Self::PerfectWeek,
+            Self::FiveDayStreak,
         ]
     }
 }
