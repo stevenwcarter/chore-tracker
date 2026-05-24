@@ -164,12 +164,12 @@ impl ChoreCompletionSvc {
         let chore = ChoreSvc::get_by_id(context, completion_input.chore_id)?;
 
         // Guard: if this is a bonus chore with max_claims, check the cap
-        if chore.bonus_date.is_some() {
-            if !ChoreSvc::can_claim_bonus(context, completion_input.chore_id)? {
-                return Err(anyhow::anyhow!(
-                    "This bonus chore has already reached its claim limit"
-                ));
-            }
+        if chore.bonus_date.is_some()
+            && !ChoreSvc::can_claim_bonus(context, completion_input.chore_id)?
+        {
+            return Err(anyhow::anyhow!(
+                "This bonus chore has already reached its claim limit"
+            ));
         }
         let payment_type = PaymentType::from(chore.payment_type);
 
