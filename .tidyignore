@@ -1,0 +1,22 @@
+# tidy: language probe (auto-detected)
+# Rust:
+#   build: cargo build
+#   test:  cargo test
+#   lint:  cargo clippy --all-targets -- -D warnings
+#   format: cargo fmt
+# TypeScript (cd site):
+#   build: yarn build  (tsc && vite build)
+#   test:  yarn test   (vitest)
+#   lint:  yarn lint   (eslint --max-warnings 0)
+#   format: prettier (via lint-staged)
+
+# OpenAPI-generated vendored client (per ynab-api/README.md)
+ynab-api/
+
+# Diesel auto-generated schema (also caught by @generated header)
+src/schema.rs
+
+# Misc top-level audit / plan docs we don't refactor
+CODE_HEALTH_AUDIT.md
+WEEKLY_CHORE_FIX.md
+docs/
