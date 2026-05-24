@@ -42,13 +42,19 @@ pub fn get_pool() -> SqlitePool {
     use std::env;
     dotenv().ok();
     let url = env::var("DATABASE_URL").unwrap_or_else(|_| "db/db.sqlite".to_owned());
+    build_pool_for_url(&url)
+}
 
-    // Create the database directory if it doesn't exist
-    if let Some(parent) = std::path::Path::new(&url).parent() {
+/// Builds an SQLite connection pool for an explicit URL, creating the parent directory
+/// of the database file if needed. Used by `get_pool` and integration tests.
+pub fn build_pool_for_url(url: &str) -> SqlitePool {
+    if let Some(parent) = std::path::Path::new(url).parent()
+        && !parent.as_os_str().is_empty()
+    {
         fs::create_dir_all(parent).expect("Could not create database directory");
     }
 
-    let mgr = ConnectionManager::<SqliteConnection>::new(&url);
+    let mgr = ConnectionManager::<SqliteConnection>::new(url);
     r2d2::Pool::builder()
         .min_idle(Some(3))
         .max_size(20)
@@ -63,6 +69,22 @@ pub(crate) fn get_conn(
     context: &GraphQLContext,
 ) -> anyhow::Result<PooledConnection<ConnectionMgr>> {
     context.pool.get().context("Could not get db connection")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn build_pool_for_url_in_memory_works() {
+        // Characterization: the happy path returns a usable pool for an in-memory SQLite URL
+        // (no directory creation needed, no panic).
+        let pool = build_pool_for_url(":memory:");
+        assert!(
+            pool.get().is_ok(),
+            "expected to acquire a connection from in-memory pool"
+        );
+    }
 }
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
