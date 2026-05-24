@@ -185,7 +185,7 @@ impl From<UserInput> for User {
     fn from(input: UserInput) -> Self {
         Self {
             id: None,
-            uuid: input.uuid.unwrap_or_else(|| Uuid::now_v7().to_string()),
+            uuid: crate::uuid_or_generate(input.uuid),
             name: input.name,
             image_path: None,
             created_at: None,
@@ -223,7 +223,7 @@ impl From<AdminInput> for Admin {
     fn from(input: AdminInput) -> Self {
         Self {
             id: None,
-            uuid: input.uuid.unwrap_or_else(|| Uuid::now_v7().to_string()),
+            uuid: crate::uuid_or_generate(input.uuid),
             name: input.name,
             email: input.email,
             oidc_subject: input.oidc_subject,
@@ -346,7 +346,7 @@ impl From<ChoreInput> for Chore {
     fn from(input: ChoreInput) -> Self {
         Self {
             id: None,
-            uuid: input.uuid.unwrap_or_else(|| Uuid::now_v7().to_string()),
+            uuid: crate::uuid_or_generate(input.uuid),
             name: input.name,
             description: input.description,
             payment_type: input.payment_type.into(),
@@ -632,7 +632,7 @@ impl From<ChoreCompletionNoteInput> for ChoreCompletionNote {
     fn from(input: ChoreCompletionNoteInput) -> Self {
         Self {
             id: None,
-            uuid: input.uuid.unwrap_or_else(|| Uuid::now_v7().to_string()),
+            uuid: crate::uuid_or_generate(input.uuid),
             chore_completion_id: input.chore_completion_id,
             author_type: input.author_type.into(),
             author_user_id: input.author_user_id,

@@ -4,6 +4,7 @@
 #![recursion_limit = "256"]
 
 use std::{env, fmt, str::FromStr};
+use uuid::Uuid;
 
 pub mod api;
 pub mod auth;
@@ -17,6 +18,11 @@ pub mod svc;
 
 #[cfg(test)]
 pub mod test_helpers;
+
+/// Return the input UUID if present, otherwise generate a fresh time-ordered UUIDv7.
+pub fn uuid_or_generate(input: Option<String>) -> String {
+    input.unwrap_or_else(|| Uuid::now_v7().to_string())
+}
 
 /// Return an environment variable typed generically
 ///

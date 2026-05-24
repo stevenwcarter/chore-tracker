@@ -10,7 +10,6 @@ use anyhow::{Context, Result};
 use chrono::{NaiveDate, Utc};
 use diesel::prelude::*;
 use juniper::GraphQLInputObject;
-use uuid::Uuid;
 
 #[derive(Debug, Copy, Clone, Default, GraphQLInputObject)]
 pub struct ChoreCompletionFilter {
@@ -185,10 +184,7 @@ impl ChoreCompletionSvc {
         // Create the completion with calculated amount
         let completion = ChoreCompletion {
             id: None,
-            uuid: completion_input
-                .uuid
-                .clone()
-                .unwrap_or_else(|| Uuid::now_v7().to_string()),
+            uuid: crate::uuid_or_generate(completion_input.uuid.clone()),
             chore_id: completion_input.chore_id,
             user_id: completion_input.user_id,
             completed_date: completion_input.completed_date,
