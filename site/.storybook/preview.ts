@@ -1,5 +1,4 @@
 import '../src/index.css';
-import '../src/index.css';
 
 const preview: any = {
   parameters: {
