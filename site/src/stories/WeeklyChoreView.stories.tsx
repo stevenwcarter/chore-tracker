@@ -3,7 +3,12 @@ import { fn } from '@storybook/test';
 import { MockedProvider } from '@apollo/client/testing';
 import { WeeklyChoreView } from 'components/WeeklyChoreView';
 import { User, ChoreCompletion, PaymentType, AuthorType } from 'types/chore';
-import { GET_ALL_WEEKLY_COMPLETIONS, GET_USER_BADGES, GET_USER_CHORES, GET_WEEKLY_CHORES } from 'graphql/queries';
+import {
+  GET_ALL_WEEKLY_COMPLETIONS,
+  GET_USER_BADGES,
+  GET_USER_CHORES,
+  GET_WEEKLY_CHORES,
+} from 'graphql/queries';
 
 const testDate = new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(); // 4 hours ago
 
