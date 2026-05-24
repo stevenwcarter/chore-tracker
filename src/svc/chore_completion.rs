@@ -51,6 +51,7 @@ impl ChoreCompletionSvc {
 
         let mut query = chore_completions::table.into_boxed();
 
+        // Filter: target user / chore / date range
         if let Some(user_id) = filter.user_id {
             query = query.filter(chore_completions::user_id.eq(user_id));
         }
@@ -67,6 +68,7 @@ impl ChoreCompletionSvc {
             query = query.filter(chore_completions::completed_date.le(date_to));
         }
 
+        // Filter: approval and payment status
         if filter.approved_only == Some(true) {
             query = query.filter(chore_completions::approved.eq(true));
         }
