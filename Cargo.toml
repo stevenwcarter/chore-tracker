@@ -59,7 +59,6 @@ reqwest = { version = "0.12.15", default-features = false, features = [
   "zstd",
 ] }
 chrono-tz = { version = "0.10.3", features = ["serde"] }
-bigdecimal = { version = "0.4.8", features = ["serde", "serde_json"] }
 tracing = "0.1.41"
 axum-embed = "0.1.0"
 rust-embed = { version = "8.7.2", features = [
