@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use anyhow::Context as _;
+use anyhow::{Context as _, Result};
 use diesel::prelude::*;
 use diesel::r2d2::{self, ConnectionManager, CustomizeConnection, Pool, PooledConnection};
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
@@ -37,7 +37,7 @@ impl CustomizeConnection<SqliteConnection, diesel::r2d2::Error> for ConnectionOp
 
 /// Builds an SQLite connection pool from the `DATABASE_URL` environment variable
 /// (defaults to `db/db.sqlite`), creating the parent directory if needed.
-pub fn get_pool() -> SqlitePool {
+pub fn get_pool() -> Result<SqlitePool> {
     use dotenvy::dotenv;
     use std::env;
     dotenv().ok();
@@ -47,11 +47,11 @@ pub fn get_pool() -> SqlitePool {
 
 /// Builds an SQLite connection pool for an explicit URL, creating the parent directory
 /// of the database file if needed. Used by `get_pool` and integration tests.
-pub fn build_pool_for_url(url: &str) -> SqlitePool {
+pub fn build_pool_for_url(url: &str) -> Result<SqlitePool> {
     if let Some(parent) = std::path::Path::new(url).parent()
         && !parent.as_os_str().is_empty()
     {
-        fs::create_dir_all(parent).expect("Could not create database directory");
+        fs::create_dir_all(parent).context("Could not create database directory")?;
     }
 
     let mgr = ConnectionManager::<SqliteConnection>::new(url);
@@ -62,7 +62,7 @@ pub fn build_pool_for_url(url: &str) -> SqlitePool {
             busy_timeout: Some(Duration::from_secs(2)),
         }))
         .build(mgr)
-        .expect("could not build connection pool")
+        .context("could not build connection pool")
 }
 
 pub(crate) fn get_conn(
@@ -78,8 +78,8 @@ mod tests {
     #[test]
     fn build_pool_for_url_in_memory_works() {
         // Characterization: the happy path returns a usable pool for an in-memory SQLite URL
-        // (no directory creation needed, no panic).
-        let pool = build_pool_for_url(":memory:");
+        // (no directory creation needed).
+        let pool = build_pool_for_url(":memory:").expect("in-memory pool should build");
         assert!(
             pool.get().is_ok(),
             "expected to acquire a connection from in-memory pool"
