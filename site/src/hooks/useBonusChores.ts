@@ -3,6 +3,7 @@ import { useQuery } from '@apollo/client';
 import { toast } from 'react-toastify';
 import { Chore } from 'types/chore';
 import { LIST_BONUS_CHORES, CREATE_BONUS_CHORE } from 'graphql/queries';
+import { withErrorToast } from 'utils/withErrorToast';
 import { useRefetchingMutation } from './useRefetchingMutation';
 
 interface CreateBonusChoreInput {
@@ -40,12 +41,9 @@ export const useBonusChores = (date: string): UseBonusChoresResult => {
   );
 
   const createBonusChore = async (input: CreateBonusChoreInput): Promise<void> => {
-    try {
-      await createMutation({ variables: { input } });
-    } catch (err) {
-      toast.error('Error creating bonus chore');
-      throw err;
-    }
+    await withErrorToast('Error creating bonus chore', () =>
+      createMutation({ variables: { input } }),
+    );
   };
 
   return {

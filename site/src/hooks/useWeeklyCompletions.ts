@@ -1,5 +1,4 @@
 import { useQuery } from '@apollo/client';
-import { toast } from 'react-toastify';
 import { ChoreCompletion, ChoreCompletionNoteInput } from 'types/chore';
 import {
   GET_ALL_WEEKLY_COMPLETIONS,
@@ -8,6 +7,7 @@ import {
   DELETE_CHORE_COMPLETION,
 } from 'graphql/queries';
 import { formatDateForGraphQL } from 'utils/dateUtils';
+import { withErrorToast } from 'utils/withErrorToast';
 import { useRefetchingMutation } from './useRefetchingMutation';
 
 interface UseWeeklyCompletionsOptions {
@@ -29,44 +29,18 @@ export const useWeeklyCompletions = ({ weekStartDate }: UseWeeklyCompletionsOpti
 
   const completions: ChoreCompletion[] = data?.getAllWeeklyCompletions ?? [];
 
-  const approveCompletion = async (completionUuid: string) => {
-    try {
-      await approveChoreCompletion({
-        variables: {
-          completionUuid,
-        },
-      });
-    } catch (err) {
-      toast.error('Error approving completion');
-      throw err;
-    }
-  };
+  const approveCompletion = (completionUuid: string) =>
+    withErrorToast('Error approving completion', () =>
+      approveChoreCompletion({ variables: { completionUuid } }),
+    );
 
-  const deleteCompletion = async (completionUuid: string) => {
-    try {
-      await deleteChoreCompletion({
-        variables: {
-          completionUuid,
-        },
-      });
-    } catch (err) {
-      toast.error('Error deleting completion');
-      throw err;
-    }
-  };
+  const deleteCompletion = (completionUuid: string) =>
+    withErrorToast('Error deleting completion', () =>
+      deleteChoreCompletion({ variables: { completionUuid } }),
+    );
 
-  const addNote = async (noteData: ChoreCompletionNoteInput) => {
-    try {
-      await addChoreNote({
-        variables: {
-          note: noteData,
-        },
-      });
-    } catch (err) {
-      toast.error('Error adding note');
-      throw err;
-    }
-  };
+  const addNote = (noteData: ChoreCompletionNoteInput) =>
+    withErrorToast('Error adding note', () => addChoreNote({ variables: { note: noteData } }));
 
   const pendingCompletions = completions.filter((c) => !c.approved);
   const approvedCompletions = completions.filter((c) => c.approved);
