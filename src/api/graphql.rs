@@ -12,6 +12,8 @@ use juniper_graphql_ws::ConnectionConfig;
 use std::sync::Arc;
 use tracing::warn;
 
+/// Builds the GraphQL router exposing the main endpoint (`/`), websocket subscriptions,
+/// GraphiQL, and the Playground UI.
 pub fn graphql_routes() -> Router {
     Router::new()
         .route(
@@ -55,15 +57,15 @@ async fn custom_graphql(
     JuniperRequest(request): JuniperRequest,
 ) -> JuniperResponse {
     use crate::svc::AdminSvc;
-    let admin_id = jar.get("admin_session").and_then(|c| {
-        match AdminSvc::get_session(&context, c.value()) {
-            Ok(maybe_admin) => maybe_admin.and_then(|a| a.id),
-            Err(e) => {
-                warn!("session lookup failed: {}", e);
-                None
-            }
-        }
-    });
+    let admin_id =
+        jar.get("admin_session")
+            .and_then(|c| match AdminSvc::get_session(&context, c.value()) {
+                Ok(maybe_admin) => maybe_admin.and_then(|a| a.id),
+                Err(e) => {
+                    warn!("session lookup failed: {}", e);
+                    None
+                }
+            });
     let authed_context = crate::context::GraphQLContext {
         pool: context.pool.clone(),
         admin_id,

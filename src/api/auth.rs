@@ -4,6 +4,7 @@ use crate::context::GraphQLContext;
 use axum::Router;
 use axum::routing::get;
 
+/// Builds the OIDC auth router exposing `/login`, `/callback`, `/logout`, and `/me`.
 pub fn auth_routes(oidc_config: OidcConfig, context: GraphQLContext) -> Router {
     Router::new()
         .route("/login", get(login_handler))

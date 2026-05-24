@@ -28,6 +28,7 @@ fn require_admin_cookie(context: &GraphQLContext, jar: &CookieJar) -> Result<i32
         .ok_or_else(|| AppError(anyhow::anyhow!("Unauthorized")))
 }
 
+/// Builds the image router for uploading, fetching, and deleting user profile images.
 pub fn image_routes() -> Router {
     Router::new()
         .route("/upload/{user_uuid}", post(upload_user_image))

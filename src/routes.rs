@@ -21,6 +21,8 @@ use tracing::{debug, warn};
 #[folder = "site/build/"]
 struct Assets;
 
+/// Response wrapper that serves an embedded static asset with the inferred MIME type,
+/// returning 404 if the path is not present in the bundle.
 pub struct StaticFile<T>(pub T);
 
 impl<T> IntoResponse for StaticFile<T>
@@ -54,6 +56,8 @@ async fn index_handler() -> impl IntoResponse {
     static_handler("/index.html".parse::<Uri>().unwrap()).await
 }
 
+/// Builds the top-level Axum router with CORS, compression, static assets, and the
+/// `/graphql`, `/auth`, and `/images` sub-routers wired up.
 pub async fn app(context: GraphQLContext) -> Router {
     let qm_schema = create_schema();
     let mut oidc_config = OidcConfig::from_env();
@@ -82,7 +86,9 @@ pub async fn app(context: GraphQLContext) -> Router {
 
     let image_routes = images::image_routes()
         .layer(Extension(context.clone()))
-        .layer(tower_http::limit::RequestBodyLimitLayer::new(6 * 1024 * 1024));
+        .layer(tower_http::limit::RequestBodyLimitLayer::new(
+            6 * 1024 * 1024,
+        ));
 
     Router::new()
         .route("/assets/{*uri}", get(static_handler))

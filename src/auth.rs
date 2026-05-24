@@ -10,6 +10,7 @@ use uuid::Uuid;
 
 use crate::{context::GraphQLContext, get_env, models::Admin, svc::AdminSvc};
 
+/// JWT claims deserialized from an OIDC ID token.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
     pub sub: String,
@@ -21,6 +22,7 @@ pub struct Claims {
     pub iat: usize,
 }
 
+/// OIDC client credentials plus the discovered provider metadata and signing keys.
 #[derive(Clone)]
 pub struct OidcConfig {
     pub client_id: String,
@@ -43,6 +45,7 @@ impl std::fmt::Debug for OidcConfig {
     }
 }
 
+/// Endpoints and metadata fetched from the OIDC provider's discovery document.
 #[derive(Debug, Clone, Deserialize)]
 pub struct OidcDiscoveryConfig {
     pub issuer: String,
@@ -81,7 +84,10 @@ impl OidcConfig {
                 for cause in e.chain().skip(1) {
                     error!("Caused by: {}", cause);
                 }
-                return Err(anyhow::anyhow!("Failed to fetch OIDC discovery config: {:?}", e));
+                return Err(anyhow::anyhow!(
+                    "Failed to fetch OIDC discovery config: {:?}",
+                    e
+                ));
             }
         };
 
@@ -130,12 +136,15 @@ impl OidcConfig {
     }
 
     pub async fn verify_id_token(&self, id_token: &str, expected_nonce: &str) -> Result<()> {
-        use jsonwebtoken::{decode, decode_header, DecodingKey, Validation};
+        use jsonwebtoken::{DecodingKey, Validation, decode, decode_header};
 
         let header = decode_header(id_token).context("decoding id_token header")?;
         let kid = header.kid.as_deref().unwrap_or("");
 
-        let jwks = self.jwks.as_ref().ok_or_else(|| anyhow::anyhow!("JWKS not initialised"))?;
+        let jwks = self
+            .jwks
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("JWKS not initialised"))?;
         let jwk = jwks
             .find(kid)
             .ok_or_else(|| anyhow::anyhow!("No JWK found for kid={}", kid))?;
@@ -231,6 +240,7 @@ impl OidcConfig {
     }
 }
 
+/// Successful response from the OIDC token endpoint.
 #[derive(Debug, Deserialize)]
 pub struct TokenResponse {
     pub access_token: String,
@@ -239,6 +249,7 @@ pub struct TokenResponse {
     pub id_token: Option<String>,
 }
 
+/// User profile data returned by the OIDC userinfo endpoint.
 #[derive(Debug, Deserialize)]
 pub struct UserInfo {
     pub sub: String,
@@ -247,6 +258,7 @@ pub struct UserInfo {
     pub preferred_username: Option<String>,
 }
 
+/// Query parameters delivered by the OIDC provider on the authorization callback.
 #[derive(Debug, Deserialize)]
 pub struct AuthCallback {
     code: String,
@@ -254,6 +266,9 @@ pub struct AuthCallback {
 }
 
 // OIDC handlers with real implementation
+
+/// Initiates the OIDC login flow: generates state and nonce, stores them in a cookie,
+/// and redirects the user to the provider's authorization endpoint.
 pub async fn login_handler(
     State((oidc_config, _context)): State<(OidcConfig, GraphQLContext)>,
     jar: CookieJar,
@@ -262,21 +277,25 @@ pub async fn login_handler(
     let nonce = Uuid::new_v4().to_string();
     let state_value = format!("{}|{}", state, nonce);
 
-    oidc_config.get_authorization_url(&state, &nonce).map_or_else(
-        |_| Redirect::to("/?error=oidc_config_error").into_response(),
-        |auth_url| {
-            let state_cookie = Cookie::build(("oidc_state", state_value))
-                .path("/")
-                .http_only(true)
-                .secure(!cfg!(debug_assertions))
-                .same_site(axum_extra::extract::cookie::SameSite::Lax)
-                .max_age(time::Duration::minutes(10))
-                .build();
-            (jar.add(state_cookie), Redirect::to(&auth_url)).into_response()
-        },
-    )
+    oidc_config
+        .get_authorization_url(&state, &nonce)
+        .map_or_else(
+            |_| Redirect::to("/?error=oidc_config_error").into_response(),
+            |auth_url| {
+                let state_cookie = Cookie::build(("oidc_state", state_value))
+                    .path("/")
+                    .http_only(true)
+                    .secure(!cfg!(debug_assertions))
+                    .same_site(axum_extra::extract::cookie::SameSite::Lax)
+                    .max_age(time::Duration::minutes(10))
+                    .build();
+                (jar.add(state_cookie), Redirect::to(&auth_url)).into_response()
+            },
+        )
 }
 
+/// Handles the OIDC provider callback: verifies CSRF state, exchanges the code for tokens,
+/// validates the ID token nonce, and creates an admin session cookie.
 pub async fn callback_handler(
     State((oidc_config, context)): State<(OidcConfig, GraphQLContext)>,
     Query(params): Query<AuthCallback>,
@@ -314,7 +333,10 @@ pub async fn callback_handler(
                     return Redirect::to("/?error=missing_id_token").into_response();
                 }
             };
-            match oidc_config.verify_id_token(&id_token_str, &stored_nonce).await {
+            match oidc_config
+                .verify_id_token(&id_token_str, &stored_nonce)
+                .await
+            {
                 Ok(()) => debug!("id_token verified successfully"),
                 Err(e) => {
                     error!("id_token verification failed: {}", e);
@@ -343,14 +365,16 @@ pub async fn callback_handler(
                                 Some(id) => id,
                                 None => {
                                     error!("Admin has no id after get_or_create");
-                                    return Redirect::to("/?error=session_creation_failed").into_response();
+                                    return Redirect::to("/?error=session_creation_failed")
+                                        .into_response();
                                 }
                             };
                             let token = match AdminSvc::create_session(&context, admin_id) {
                                 Ok(t) => t,
                                 Err(e) => {
                                     error!("Failed to create admin session: {}", e);
-                                    return Redirect::to("/?error=session_creation_failed").into_response();
+                                    return Redirect::to("/?error=session_creation_failed")
+                                        .into_response();
                                 }
                             };
                             let session_cookie = Cookie::build(("admin_session", token))
@@ -383,6 +407,7 @@ pub async fn callback_handler(
     }
 }
 
+/// Deletes the admin session from the database and clears the session cookie, then redirects home.
 pub async fn logout_handler(
     State((_oidc_config, context)): State<(OidcConfig, GraphQLContext)>,
     jar: CookieJar,
@@ -397,6 +422,7 @@ pub async fn logout_handler(
     (jar, Redirect::to("/"))
 }
 
+/// Returns the currently authenticated admin as JSON, or 401 if the session is invalid.
 pub async fn me_handler(
     State((_oidc_config, context)): State<(OidcConfig, GraphQLContext)>,
     jar: CookieJar,
@@ -407,6 +433,7 @@ pub async fn me_handler(
     )
 }
 
+/// Validates the admin session token from the cookie jar and returns the associated `Admin`.
 pub async fn check_admin_session(
     State(context): State<GraphQLContext>,
     jar: CookieJar,

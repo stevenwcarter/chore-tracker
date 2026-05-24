@@ -9,9 +9,13 @@ use std::time::Duration;
 
 use crate::context::GraphQLContext;
 
+/// Diesel connection manager for SQLite.
 pub type ConnectionMgr = ConnectionManager<SqliteConnection>;
+/// r2d2 pool of SQLite connections used throughout the application.
 pub type SqlitePool = Pool<ConnectionManager<SqliteConnection>>;
 
+/// r2d2 connection customizer that sets `PRAGMA busy_timeout` and enables foreign keys
+/// on each acquired connection.
 #[derive(Debug)]
 pub struct ConnectionOptions {
     pub busy_timeout: Option<Duration>,
@@ -31,6 +35,8 @@ impl CustomizeConnection<SqliteConnection, diesel::r2d2::Error> for ConnectionOp
     }
 }
 
+/// Builds an SQLite connection pool from the `DATABASE_URL` environment variable
+/// (defaults to `db/db.sqlite`), creating the parent directory if needed.
 pub fn get_pool() -> SqlitePool {
     use dotenvy::dotenv;
     use std::env;
@@ -60,6 +66,7 @@ pub(crate) fn get_conn(
 }
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
+/// Runs all pending Diesel migrations against the given database connection.
 pub fn run_migrations(
     connection: &mut impl MigrationHarness<diesel::sqlite::Sqlite>,
 ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {

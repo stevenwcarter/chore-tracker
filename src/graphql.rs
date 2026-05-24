@@ -10,14 +10,15 @@ use crate::{
         ChoreCompletionNoteInput, ChoreInput, UnpaidTotal, User, UserBadge, UserInput,
     },
     svc::{
-        AdminSvc, ChoreCompletionNoteSvc, ChoreCompletionSvc, ChoreSvc,
-        UserSvc, chore_completion::ChoreCompletionFilter, user::UserBalance,
+        AdminSvc, ChoreCompletionNoteSvc, ChoreCompletionSvc, ChoreSvc, UserSvc,
+        chore_completion::ChoreCompletionFilter, user::UserBalance,
     },
 };
 
 const DEFAULT_LIST_LIMIT: i32 = 100;
 const DEFAULT_LIST_OFFSET: i32 = 0;
 
+/// GraphQL query root: all read operations are implemented here.
 pub struct Query;
 
 #[juniper::graphql_object(context = GraphQLContext)]
@@ -74,10 +75,7 @@ impl Query {
         graphql_translate_anyhow(ChoreSvc::list(context, user_id, active_only, limit, offset))
     }
 
-    pub fn list_bonus_chores(
-        context: &GraphQLContext,
-        date: NaiveDate,
-    ) -> FieldResult<Vec<Chore>> {
+    pub fn list_bonus_chores(context: &GraphQLContext, date: NaiveDate) -> FieldResult<Vec<Chore>> {
         graphql_translate_anyhow(ChoreSvc::list_bonus_chores(context, date))
     }
 
@@ -148,21 +146,18 @@ impl Query {
     pub fn user_badges(context: &GraphQLContext, user_id: i32) -> FieldResult<Vec<UserBadge>> {
         use crate::schema::user_badges::dsl;
         use diesel::prelude::*;
-        graphql_translate_anyhow(
-            context
-                .pool
-                .get()
-                .map_err(anyhow::Error::from)
-                .and_then(|mut conn| {
-                    dsl::user_badges
-                        .filter(dsl::user_id.eq(user_id))
-                        .load::<UserBadge>(&mut conn)
-                        .map_err(anyhow::Error::from)
-                }),
-        )
+        graphql_translate_anyhow(context.pool.get().map_err(anyhow::Error::from).and_then(
+            |mut conn| {
+                dsl::user_badges
+                    .filter(dsl::user_id.eq(user_id))
+                    .load::<UserBadge>(&mut conn)
+                    .map_err(anyhow::Error::from)
+            },
+        ))
     }
 }
 
+/// GraphQL mutation root: all write operations are implemented here.
 pub struct Mutation;
 
 #[juniper::graphql_object(context = GraphQLContext)]
@@ -309,11 +304,15 @@ impl Mutation {
     }
 }
 
+/// Top-level Juniper GraphQL schema used by the server.
 pub type Schema = RootNode<Query, Mutation, EmptySubscription<GraphQLContext>>;
+
+/// Builds a new instance of the GraphQL schema.
 pub fn create_schema() -> Schema {
     Schema::new(Query, Mutation, EmptySubscription::new())
 }
 
+/// Converts an `anyhow::Result` into a Juniper `FieldResult`, logging the error on failure.
 pub fn graphql_translate_anyhow<T>(res: anyhow::Result<T>) -> FieldResult<T> {
     match res {
         Ok(t) => Ok(t),
