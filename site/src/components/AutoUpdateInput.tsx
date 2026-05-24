@@ -24,7 +24,7 @@ export const AutoUpdateInput = (props: AutoUpdateInputProps) => {
     if (debouncedValue !== serverValue) {
       onChange(debouncedValue);
     }
-  }, [debouncedValue, currentValue, serverValue, onChange]);
+  }, [debouncedValue, serverValue, onChange]);
 
   const handleInputChange = (event: ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
     setCurrentValue(event.target.value);
