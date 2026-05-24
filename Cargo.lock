@@ -350,7 +350,6 @@ dependencies = [
  "axum",
  "axum-embed",
  "axum-extra",
- "base64",
  "chrono",
  "chrono-tz",
  "diesel",
