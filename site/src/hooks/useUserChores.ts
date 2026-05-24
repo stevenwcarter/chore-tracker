@@ -1,9 +1,10 @@
-import { useMutation, useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client';
 import { useMemo } from 'react';
 import { toast } from 'react-toastify';
 import { ChoreCompletion, WeeklyChoreData, Chore } from 'types/chore';
 import { GET_USER_CHORES, GET_WEEKLY_CHORES, CREATE_CHORE_COMPLETION } from 'graphql/queries';
 import { formatDateForGraphQL } from 'utils/dateUtils';
+import { useRefetchingMutation } from './useRefetchingMutation';
 
 interface UseUserChoresOptions {
   userId: number;
@@ -37,11 +38,7 @@ export const useUserChores = ({ userId, weekStartDate }: UseUserChoresOptions) =
     pollInterval: 30_000,
   });
 
-  const [createChoreCompletion] = useMutation(CREATE_CHORE_COMPLETION, {
-    onCompleted: () => {
-      refetchWeekly();
-    },
-  });
+  const [createChoreCompletion] = useRefetchingMutation(CREATE_CHORE_COMPLETION, refetchWeekly);
 
   const weeklyChoreData = useMemo<WeeklyChoreData[]>(() => {
     if (!userChoresData?.listChores || !weeklyData?.getWeeklyChoreCompletions) return [];

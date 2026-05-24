@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client';
 import { toast } from 'react-toastify';
 import { ChoreCompletion, ChoreCompletionNoteInput } from 'types/chore';
 import {
@@ -8,6 +8,7 @@ import {
   DELETE_CHORE_COMPLETION,
 } from 'graphql/queries';
 import { formatDateForGraphQL } from 'utils/dateUtils';
+import { useRefetchingMutation } from './useRefetchingMutation';
 
 interface UseWeeklyCompletionsOptions {
   weekStartDate: Date;
@@ -22,23 +23,9 @@ export const useWeeklyCompletions = ({ weekStartDate }: UseWeeklyCompletionsOpti
     pollInterval: 30_000,
   });
 
-  const [approveChoreCompletion] = useMutation(APPROVE_CHORE_COMPLETION, {
-    onCompleted: () => {
-      refetch();
-    },
-  });
-
-  const [addChoreNote] = useMutation(ADD_CHORE_NOTE, {
-    onCompleted: () => {
-      refetch();
-    },
-  });
-
-  const [deleteChoreCompletion] = useMutation(DELETE_CHORE_COMPLETION, {
-    onCompleted: () => {
-      refetch();
-    },
-  });
+  const [approveChoreCompletion] = useRefetchingMutation(APPROVE_CHORE_COMPLETION, refetch);
+  const [addChoreNote] = useRefetchingMutation(ADD_CHORE_NOTE, refetch);
+  const [deleteChoreCompletion] = useRefetchingMutation(DELETE_CHORE_COMPLETION, refetch);
 
   const completions: ChoreCompletion[] = data?.getAllWeeklyCompletions ?? [];
 

@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client';
 import { toast } from 'react-toastify';
 import { Chore, User, ChoreInput, UserInput } from 'types/chore';
 import {
@@ -10,6 +10,7 @@ import {
   ASSIGN_CHORE_TO_USER,
   UNASSIGN_USER_FROM_CHORE,
 } from 'graphql/queries';
+import { useRefetchingMutation } from './useRefetchingMutation';
 
 export const useAdminChoreManagement = () => {
   const {
@@ -26,35 +27,11 @@ export const useAdminChoreManagement = () => {
     refetch: refetchUsers,
   } = useQuery(GET_ALL_USERS);
 
-  const [createChore] = useMutation(CREATE_CHORE, {
-    onCompleted: () => {
-      refetchChores();
-    },
-  });
-
-  const [updateChore] = useMutation(UPDATE_CHORE, {
-    onCompleted: () => {
-      refetchChores();
-    },
-  });
-
-  const [createUser] = useMutation(CREATE_USER, {
-    onCompleted: () => {
-      refetchUsers();
-    },
-  });
-
-  const [assignChoreToUser] = useMutation(ASSIGN_CHORE_TO_USER, {
-    onCompleted: () => {
-      refetchChores();
-    },
-  });
-
-  const [unassignUserFromChore] = useMutation(UNASSIGN_USER_FROM_CHORE, {
-    onCompleted: () => {
-      refetchChores();
-    },
-  });
+  const [createChore] = useRefetchingMutation(CREATE_CHORE, refetchChores);
+  const [updateChore] = useRefetchingMutation(UPDATE_CHORE, refetchChores);
+  const [createUser] = useRefetchingMutation(CREATE_USER, refetchUsers);
+  const [assignChoreToUser] = useRefetchingMutation(ASSIGN_CHORE_TO_USER, refetchChores);
+  const [unassignUserFromChore] = useRefetchingMutation(UNASSIGN_USER_FROM_CHORE, refetchChores);
 
   const chores: Chore[] = choresData?.listChores ?? [];
   const users: User[] = usersData?.listUsers ?? [];
