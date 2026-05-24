@@ -646,7 +646,7 @@ impl From<ChoreCompletionNoteInput> for ChoreCompletionNote {
 }
 
 // BadgeType enum
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BadgeType {
     FirstChore,
     TenDollarsEarned,
