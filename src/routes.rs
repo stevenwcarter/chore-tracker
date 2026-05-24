@@ -53,7 +53,7 @@ async fn static_handler(uri: Uri) -> impl IntoResponse {
 }
 
 async fn index_handler() -> impl IntoResponse {
-    static_handler("/index.html".parse::<Uri>().unwrap()).await
+    static_handler(Uri::from_static("/index.html")).await
 }
 
 /// Builds the top-level Axum router with CORS, compression, static assets, and the
