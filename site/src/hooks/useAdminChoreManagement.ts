@@ -1,4 +1,4 @@
-import { useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client/react';
 import { Chore, User, ChoreInput, UserInput } from 'types/chore';
 import {
   GET_ALL_CHORES,
@@ -18,14 +18,14 @@ export const useAdminChoreManagement = () => {
     loading: choresLoading,
     error: choresError,
     refetch: refetchChores,
-  } = useQuery(GET_ALL_CHORES);
+  } = useQuery<{ listChores: Chore[] }>(GET_ALL_CHORES);
 
   const {
     data: usersData,
     loading: usersLoading,
     error: usersError,
     refetch: refetchUsers,
-  } = useQuery(GET_ALL_USERS);
+  } = useQuery<{ listUsers: User[] }>(GET_ALL_USERS);
 
   const [createChore] = useRefetchingMutation(CREATE_CHORE, refetchChores);
   const [updateChore] = useRefetchingMutation(UPDATE_CHORE, refetchChores);

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { MockedProvider } from '@apollo/client/testing';
+import { MockedProvider } from '@apollo/client/testing/react';
 import { AdminCompletionReview } from 'components/AdminCompletionReview';
 import { ChoreCompletion, PaymentType, AuthorType } from 'types/chore';
 import { GET_ALL_WEEKLY_COMPLETIONS } from 'graphql/queries';
@@ -176,7 +176,7 @@ export const WithCompletions: Story = {
   },
   decorators: [
     (Story) => (
-      <MockedProvider mocks={mockWithCompletions} addTypename={false}>
+      <MockedProvider mocks={mockWithCompletions}>
         <Story />
       </MockedProvider>
     ),
@@ -189,7 +189,7 @@ export const EmptyWeek: Story = {
   },
   decorators: [
     (Story) => (
-      <MockedProvider mocks={mockEmpty} addTypename={false}>
+      <MockedProvider mocks={mockEmpty}>
         <Story />
       </MockedProvider>
     ),
@@ -202,7 +202,7 @@ export const LoadingState: Story = {
   },
   decorators: [
     (Story) => (
-      <MockedProvider mocks={mockLoading} addTypename={false}>
+      <MockedProvider mocks={mockLoading}>
         <Story />
       </MockedProvider>
     ),
@@ -215,7 +215,7 @@ export const ErrorState: Story = {
   },
   decorators: [
     (Story) => (
-      <MockedProvider mocks={mockError} addTypename={false}>
+      <MockedProvider mocks={mockError}>
         <Story />
       </MockedProvider>
     ),

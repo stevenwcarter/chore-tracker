@@ -1,4 +1,4 @@
-import { useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client/react';
 import { GET_ALL_USERS } from 'graphql/queries';
 import { User } from 'types/chore';
 import LoadingSpinner from './LoadingSpinner';
@@ -17,7 +17,7 @@ export default function UserSelector({
   onUserSelect,
   className = '',
 }: UserSelectorProps) {
-  const { data, loading, error } = useQuery(GET_ALL_USERS);
+  const { data, loading, error } = useQuery<{ listUsers: User[] }>(GET_ALL_USERS);
   const { balances } = useBalances();
 
   if (loading) return <LoadingSpinner />;

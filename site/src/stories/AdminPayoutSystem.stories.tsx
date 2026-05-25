@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { MockedProvider } from '@apollo/client/testing';
+import { MockedProvider } from '@apollo/client/testing/react';
 import { AdminPayoutSystem } from 'components/AdminPayoutSystem';
 import { UnpaidTotal } from 'types/chore';
 import { GET_UNPAID_TOTALS } from 'graphql/queries';
@@ -165,7 +165,7 @@ export const WithUnpaidAmounts: Story = {
   },
   decorators: [
     (Story) => (
-      <MockedProvider mocks={mockWithData} addTypename={false}>
+      <MockedProvider mocks={mockWithData}>
         <Story />
       </MockedProvider>
     ),
@@ -178,7 +178,7 @@ export const HighValueAmounts: Story = {
   },
   decorators: [
     (Story) => (
-      <MockedProvider mocks={mockHighValue} addTypename={false}>
+      <MockedProvider mocks={mockHighValue}>
         <Story />
       </MockedProvider>
     ),
@@ -191,7 +191,7 @@ export const SingleUser: Story = {
   },
   decorators: [
     (Story) => (
-      <MockedProvider mocks={mockSingleUser} addTypename={false}>
+      <MockedProvider mocks={mockSingleUser}>
         <Story />
       </MockedProvider>
     ),
@@ -204,7 +204,7 @@ export const NothingToPayout: Story = {
   },
   decorators: [
     (Story) => (
-      <MockedProvider mocks={mockEmpty} addTypename={false}>
+      <MockedProvider mocks={mockEmpty}>
         <Story />
       </MockedProvider>
     ),
@@ -217,7 +217,7 @@ export const LoadingState: Story = {
   },
   decorators: [
     (Story) => (
-      <MockedProvider mocks={mockLoading} addTypename={false}>
+      <MockedProvider mocks={mockLoading}>
         <Story />
       </MockedProvider>
     ),
@@ -230,7 +230,7 @@ export const ErrorState: Story = {
   },
   decorators: [
     (Story) => (
-      <MockedProvider mocks={mockError} addTypename={false}>
+      <MockedProvider mocks={mockError}>
         <Story />
       </MockedProvider>
     ),

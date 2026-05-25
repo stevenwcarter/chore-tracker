@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { MockedProvider } from '@apollo/client/testing';
+import { MockedProvider } from '@apollo/client/testing/react';
 import { AdminChoreManagement } from 'components/AdminChoreManagement';
 import { Chore, User, PaymentType } from 'types/chore';
 import { GET_ALL_CHORES, GET_ALL_USERS } from 'graphql/queries';
@@ -191,7 +191,7 @@ export const WithData: Story = {
   },
   decorators: [
     (Story) => (
-      <MockedProvider mocks={mockWithData} addTypename={false}>
+      <MockedProvider mocks={mockWithData}>
         <Story />
       </MockedProvider>
     ),
@@ -204,7 +204,7 @@ export const EmptyState: Story = {
   },
   decorators: [
     (Story) => (
-      <MockedProvider mocks={mockEmpty} addTypename={false}>
+      <MockedProvider mocks={mockEmpty}>
         <Story />
       </MockedProvider>
     ),
@@ -217,7 +217,7 @@ export const LoadingState: Story = {
   },
   decorators: [
     (Story) => (
-      <MockedProvider mocks={mockLoading} addTypename={false}>
+      <MockedProvider mocks={mockLoading}>
         <Story />
       </MockedProvider>
     ),
@@ -230,7 +230,7 @@ export const ErrorState: Story = {
   },
   decorators: [
     (Story) => (
-      <MockedProvider mocks={mockError} addTypename={false}>
+      <MockedProvider mocks={mockError}>
         <Story />
       </MockedProvider>
     ),

@@ -1,4 +1,4 @@
-import { useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client/react';
 import { ChoreCompletion, ChoreCompletionNoteInput } from 'types/chore';
 import {
   GET_ALL_WEEKLY_COMPLETIONS,
@@ -15,7 +15,9 @@ interface UseWeeklyCompletionsOptions {
 }
 
 export const useWeeklyCompletions = ({ weekStartDate }: UseWeeklyCompletionsOptions) => {
-  const { data, loading, error, refetch } = useQuery(GET_ALL_WEEKLY_COMPLETIONS, {
+  const { data, loading, error, refetch } = useQuery<{
+    getAllWeeklyCompletions: ChoreCompletion[];
+  }>(GET_ALL_WEEKLY_COMPLETIONS, {
     fetchPolicy: 'cache-and-network',
     variables: {
       weekStartDate: formatDateForGraphQL(weekStartDate),

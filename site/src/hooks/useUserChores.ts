@@ -1,4 +1,4 @@
-import { useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client/react';
 import { useMemo } from 'react';
 import { ChoreCompletion, WeeklyChoreData, Chore } from 'types/chore';
 import { GET_USER_CHORES, GET_WEEKLY_CHORES, CREATE_CHORE_COMPLETION } from 'graphql/queries';
@@ -17,7 +17,7 @@ export const useUserChores = ({ userId, weekStartDate }: UseUserChoresOptions) =
     data: userChoresData,
     loading: choresLoading,
     error: choresError,
-  } = useQuery(GET_USER_CHORES, {
+  } = useQuery<{ listChores: Chore[] }>(GET_USER_CHORES, {
     variables: {
       userId,
     },
@@ -29,7 +29,7 @@ export const useUserChores = ({ userId, weekStartDate }: UseUserChoresOptions) =
     loading: weeklyLoading,
     error: weeklyError,
     refetch: refetchWeekly,
-  } = useQuery(GET_WEEKLY_CHORES, {
+  } = useQuery<{ getWeeklyChoreCompletions: ChoreCompletion[] }>(GET_WEEKLY_CHORES, {
     fetchPolicy: 'cache-and-network',
     variables: {
       userId,

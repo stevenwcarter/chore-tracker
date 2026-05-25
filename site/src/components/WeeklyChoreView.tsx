@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client/react';
 import { toast } from 'react-toastify';
 import { GET_ALL_WEEKLY_COMPLETIONS } from 'graphql/queries';
 import { User, ChoreCompletion, BADGE_DISPLAY } from 'types/chore';
@@ -75,14 +75,13 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
   const { badges } = useUserBadges(user.id);
 
   // Query to get all completions for the week (to check if chores are completed by anyone)
-  const { data: allCompletionsData, refetch: refetchAllCompletions } = useQuery(
-    GET_ALL_WEEKLY_COMPLETIONS,
-    {
-      variables: {
-        weekStartDate: formatDateForGraphQL(weekRange.start),
-      },
+  const { data: allCompletionsData, refetch: refetchAllCompletions } = useQuery<{
+    getAllWeeklyCompletions: ChoreCompletion[];
+  }>(GET_ALL_WEEKLY_COMPLETIONS, {
+    variables: {
+      weekStartDate: formatDateForGraphQL(weekRange.start),
     },
-  );
+  });
 
   const handleCompleteChore = async (choreId: number, completionDate: Date) => {
     try {

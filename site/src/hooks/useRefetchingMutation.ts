@@ -1,4 +1,5 @@
-import { useMutation, MutationHookOptions, DocumentNode, OperationVariables } from '@apollo/client';
+import type { DocumentNode, OperationVariables } from '@apollo/client';
+import { useMutation, type MutationHookOptions } from '@apollo/client/react';
 
 // TData defaults to `any` to mirror Apollo's untyped `useMutation` ergonomics —
 // most callers in this codebase rely on `response.data?.fieldName` without

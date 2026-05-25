@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client/react';
 import { toast } from 'react-toastify';
 import { UserBadge } from 'types/chore';
 import { GET_USER_BADGES } from 'graphql/queries';

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery, useMutation } from '@apollo/client';
+import { useQuery, useMutation } from '@apollo/client/react';
 import { toast } from 'react-toastify';
 import {
   GET_ALL_WEEKLY_COMPLETIONS,
@@ -29,7 +29,9 @@ export const AdminCompletionReview: React.FC<AdminCompletionReviewProps> = ({ ad
 
   const weekRange = getWeekDateRange(currentWeekStart);
 
-  const { data, loading, error, refetch } = useQuery(GET_ALL_WEEKLY_COMPLETIONS, {
+  const { data, loading, error, refetch } = useQuery<{
+    getAllWeeklyCompletions: ChoreCompletion[];
+  }>(GET_ALL_WEEKLY_COMPLETIONS, {
     variables: {
       weekStartDate: formatDateForGraphQL(weekRange.start),
     },

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from 'storybook/test';
-import { MockedProvider } from '@apollo/client/testing';
+import { MockedProvider } from '@apollo/client/testing/react';
 import { WeeklyChoreView } from 'components/WeeklyChoreView';
 import { User, ChoreCompletion, PaymentType, AuthorType } from 'types/chore';
 import {
@@ -474,7 +474,7 @@ export const AsUser: Story = {
   },
   decorators: [
     (Story) => (
-      <MockedProvider mocks={mockWithData} addTypename={false}>
+      <MockedProvider mocks={mockWithData}>
         <Story />
       </MockedProvider>
     ),
@@ -489,7 +489,7 @@ export const AsAdmin: Story = {
   },
   decorators: [
     (Story) => (
-      <MockedProvider mocks={mockWithData} addTypename={false}>
+      <MockedProvider mocks={mockWithData}>
         <Story />
       </MockedProvider>
     ),
@@ -503,7 +503,7 @@ export const NoCompletions: Story = {
   },
   decorators: [
     (Story) => (
-      <MockedProvider mocks={mockNoCompletions} addTypename={false}>
+      <MockedProvider mocks={mockNoCompletions}>
         <Story />
       </MockedProvider>
     ),
@@ -517,7 +517,7 @@ export const NoChoresAssigned: Story = {
   },
   decorators: [
     (Story) => (
-      <MockedProvider mocks={mockNoChores} addTypename={false}>
+      <MockedProvider mocks={mockNoChores}>
         <Story />
       </MockedProvider>
     ),
@@ -531,7 +531,7 @@ export const LoadingState: Story = {
   },
   decorators: [
     (Story) => (
-      <MockedProvider mocks={mockLoading} addTypename={false}>
+      <MockedProvider mocks={mockLoading}>
         <Story />
       </MockedProvider>
     ),
@@ -549,7 +549,7 @@ export const LongUserName: Story = {
   },
   decorators: [
     (Story) => (
-      <MockedProvider mocks={mockWithData} addTypename={false}>
+      <MockedProvider mocks={mockWithData}>
         <Story />
       </MockedProvider>
     ),
@@ -564,7 +564,7 @@ export const MobileView: Story = {
   },
   decorators: [
     (Story) => (
-      <MockedProvider mocks={mockWithData} addTypename={false}>
+      <MockedProvider mocks={mockWithData}>
         <Story />
       </MockedProvider>
     ),
@@ -588,7 +588,7 @@ export const MobileWithBadges: Story = {
   },
   decorators: [
     (Story) => (
-      <MockedProvider mocks={mockWithData} addTypename={false}>
+      <MockedProvider mocks={mockWithData}>
         <Story />
       </MockedProvider>
     ),

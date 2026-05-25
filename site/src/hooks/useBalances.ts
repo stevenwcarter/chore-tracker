@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client/react';
 import { toast } from 'react-toastify';
 import { Balance } from 'types';
 import { LIST_BALANCES_GQL } from './queries';

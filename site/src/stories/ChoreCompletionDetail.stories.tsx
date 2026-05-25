@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from 'storybook/test';
-import { MockedProvider } from '@apollo/client/testing';
+import { MockedProvider } from '@apollo/client/testing/react';
 import { ChoreCompletionDetail } from 'components/ChoreCompletionDetail';
 import { ChoreCompletion, PaymentType, AuthorType } from 'types/chore';
 
@@ -140,7 +140,7 @@ export const PendingCompletion: Story = {
   },
   decorators: [
     (Story) => (
-      <MockedProvider mocks={[]} addTypename={false}>
+      <MockedProvider mocks={[]}>
         <Story />
       </MockedProvider>
     ),
@@ -155,7 +155,7 @@ export const PendingForAdmin: Story = {
   },
   decorators: [
     (Story) => (
-      <MockedProvider mocks={[]} addTypename={false}>
+      <MockedProvider mocks={[]}>
         <Story />
       </MockedProvider>
     ),
@@ -170,7 +170,7 @@ export const ApprovedCompletion: Story = {
   },
   decorators: [
     (Story) => (
-      <MockedProvider mocks={[]} addTypename={false}>
+      <MockedProvider mocks={[]}>
         <Story />
       </MockedProvider>
     ),
@@ -185,7 +185,7 @@ export const WithNotes: Story = {
   },
   decorators: [
     (Story) => (
-      <MockedProvider mocks={[]} addTypename={false}>
+      <MockedProvider mocks={[]}>
         <Story />
       </MockedProvider>
     ),
@@ -200,7 +200,7 @@ export const WithNotesAsUser: Story = {
   },
   decorators: [
     (Story) => (
-      <MockedProvider mocks={[]} addTypename={false}>
+      <MockedProvider mocks={[]}>
         <Story />
       </MockedProvider>
     ),
@@ -215,7 +215,7 @@ export const HighValueCompletion: Story = {
   },
   decorators: [
     (Story) => (
-      <MockedProvider mocks={[]} addTypename={false}>
+      <MockedProvider mocks={[]}>
         <Story />
       </MockedProvider>
     ),
@@ -229,7 +229,7 @@ export const LongNames: Story = {
   },
   decorators: [
     (Story) => (
-      <MockedProvider mocks={[]} addTypename={false}>
+      <MockedProvider mocks={[]}>
         <Story />
       </MockedProvider>
     ),
@@ -248,7 +248,7 @@ export const MissingData: Story = {
   },
   decorators: [
     (Story) => (
-      <MockedProvider mocks={[]} addTypename={false}>
+      <MockedProvider mocks={[]}>
         <Story />
       </MockedProvider>
     ),

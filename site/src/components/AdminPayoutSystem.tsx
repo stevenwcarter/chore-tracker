@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery, useMutation } from '@apollo/client';
+import { useQuery, useMutation } from '@apollo/client/react';
 import { toast } from 'react-toastify';
 import { GET_UNPAID_TOTALS, MARK_COMPLETIONS_AS_PAID } from '../graphql/queries';
 import { UnpaidTotal } from '../types/chore';
@@ -14,9 +14,12 @@ export const AdminPayoutSystem: React.FC<AdminPayoutSystemProps> = () => {
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   const [isProcessingPayout, setIsProcessingPayout] = useState(false);
 
-  const { data, loading, error, refetch } = useQuery(GET_UNPAID_TOTALS, {
-    fetchPolicy: 'no-cache',
-  });
+  const { data, loading, error, refetch } = useQuery<{ getUnpaidTotals: UnpaidTotal[] }>(
+    GET_UNPAID_TOTALS,
+    {
+      fetchPolicy: 'no-cache',
+    },
+  );
 
   const [markCompletionsAsPaid] = useMutation(MARK_COMPLETIONS_AS_PAID, {
     onCompleted: () => {

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client/react';
 import { toast } from 'react-toastify';
 import { Chore } from 'types/chore';
 import { LIST_BONUS_CHORES, CREATE_BONUS_CHORE } from 'graphql/queries';

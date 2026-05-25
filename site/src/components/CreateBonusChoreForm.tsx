@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useMutation } from '@apollo/client';
+import { useMutation } from '@apollo/client/react';
 import { toast } from 'react-toastify';
 import { CREATE_BONUS_CHORE } from 'graphql/queries';
 
