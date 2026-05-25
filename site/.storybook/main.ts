@@ -3,12 +3,7 @@
 const config: any = {
   stories: ['../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
 
-  addons: [
-    '@storybook/addon-essentials',
-    '@storybook/addon-interactions',
-    '@storybook/addon-links',
-    '@chromatic-com/storybook',
-  ],
+  addons: ['@storybook/addon-links', '@chromatic-com/storybook'],
 
   core: {
     builder: '@storybook/builder-vite',

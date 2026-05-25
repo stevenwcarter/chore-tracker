@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { fn } from '@storybook/test';
+import { fn } from 'storybook/test';
 import { User } from 'types/chore';
 
 // Create a simple mock component that doesn't require GraphQL

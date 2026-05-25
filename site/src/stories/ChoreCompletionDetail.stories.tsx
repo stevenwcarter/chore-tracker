@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { fn } from '@storybook/test';
+import { fn } from 'storybook/test';
 import { MockedProvider } from '@apollo/client/testing';
 import { ChoreCompletionDetail } from 'components/ChoreCompletionDetail';
 import { ChoreCompletion, PaymentType, AuthorType } from 'types/chore';

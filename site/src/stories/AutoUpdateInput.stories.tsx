@@ -1,5 +1,5 @@
 import { Meta, StoryObj } from '@storybook/react';
-import { fn } from '@storybook/test';
+import { fn } from 'storybook/test';
 import { AutoUpdateInput } from 'components/AutoUpdateInput';
 
 const meta = {
