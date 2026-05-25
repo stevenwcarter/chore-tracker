@@ -11,7 +11,7 @@ lto = true
 
 [dependencies]
 anyhow = "1.0.82"
-axum-extra = { version = "0.10", features = [
+axum-extra = { version = "0.12", features = [
   "cookie",
   "json-deserializer",
   "query",
