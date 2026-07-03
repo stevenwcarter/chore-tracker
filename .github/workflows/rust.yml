@@ -151,3 +151,17 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=registry,ref=${{ secrets.DOCKER_REGISTRY }}/chore-tracker:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKER_REGISTRY }}/chore-tracker:buildcache,mode=max,image-manifest=true,oci-mediatypes=true
+      - name: Trigger Watchtower update
+        # Notify Watchtower to pull the exact image:tag refs we just pushed and
+        # redeploy any container running them. Passes every tag from the metadata
+        # step as a comma-separated ?image= list so Watchtower scopes the update to
+        # this image instead of scanning every container it watches.
+        env:
+          IMAGE_TAGS: ${{ steps.meta.outputs.tags }}
+          WATCHTOWER_HTTP_API_TOKEN: ${{ secrets.WATCHTOWER_HTTP_API_TOKEN }}
+        run: |
+          images=$(printf '%s\n' "$IMAGE_TAGS" | grep -v '^[[:space:]]*$' | paste -sd, -)
+          echo "Notifying Watchtower to update: $images"
+          curl -fsS --retry 3 --retry-delay 5 --retry-connrefused -X POST \
+            -H "Authorization: Bearer ${WATCHTOWER_HTTP_API_TOKEN}" \
+            "https://watchtower.javapl.us/v1/update?image=${images}"
