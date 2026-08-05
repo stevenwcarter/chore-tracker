@@ -2,6 +2,7 @@ import React from 'react';
 import confetti from 'canvas-confetti';
 import { WeeklyChoreData, ChoreCompletion, PaymentType } from '../types/chore';
 import { formatCurrency, isSameDayAsString } from '../utils/dateUtils';
+import { isDayInBitmask } from '../utils/weekdayBitmask';
 import clsx from 'clsx';
 
 interface ChoreRowProps {
@@ -31,17 +32,9 @@ export const ChoreRow: React.FC<ChoreRowProps> = ({
     );
   };
 
-  const isChoreScheduledForDay = (daysOfWeek: number, date: Date): boolean => {
-    // Backend spec: Mon=1, Tue=2, Wed=4, Thu=8, Fri=16, Sat=32, Sun=64
-    const dayIndex = date.getDay(); // 0 (Sun) to 6 (Sat)
-    const mondayBasedIndex = (dayIndex + 6) % 7; // Mon=0, Tue=1, ..., Sun=6
-    const dayBit = 1 << mondayBasedIndex;
-    return (daysOfWeek & dayBit) === dayBit;
-  };
-
   const renderChoreCell = (date: Date) => {
     const completion = getCompletionForDate(date);
-    const isScheduled = isChoreScheduledForDay(choreData.chore.requiredDays, date);
+    const isScheduled = isDayInBitmask(choreData.chore.requiredDays, date);
     const isCompletedByAnyone = isChoreCompletedByAnyone(choreData.chore.id, date);
 
     const getCompletionNotes = () => {

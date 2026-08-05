@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PaymentType, User, Chore } from 'types/chore';
+import { DAY_NAMES, DayName, bitmaskFromDayNames, dayNamesFromBitmask } from 'utils/weekdayBitmask';
 
 interface CreateChoreFormProps {
   users: User[];
@@ -9,28 +10,6 @@ interface CreateChoreFormProps {
   loading?: boolean;
   initialChore?: Chore; // For editing mode
 }
-
-/**
- * Bit value this form uses for each weekday when encoding/decoding a chore's
- * `requiredDays` bitmask.
- *
- * WARNING: the layout below is Sunday = 1, Monday = 2 ... Saturday = 64, which
- * DISAGREES with the backend contract of Monday = 1, Tuesday = 2, Wednesday = 4,
- * Thursday = 8, Friday = 16, Saturday = 32, Sunday = 64. The two are shifted by
- * one weekday, so a mask written here is read as a different set of days by the
- * server (and by the payout split, which divides by the popcount of the mask).
- * This conflict is a known bug tracked separately - do not treat the values
- * below as the canonical layout.
- */
-const DAYS = {
-  Sunday: 1,
-  Monday: 2,
-  Tuesday: 4,
-  Wednesday: 8,
-  Thursday: 16,
-  Friday: 32,
-  Saturday: 64,
-};
 
 const CreateChoreForm: React.FC<CreateChoreFormProps> = ({
   users,
@@ -45,7 +24,7 @@ const CreateChoreForm: React.FC<CreateChoreFormProps> = ({
   const [value, setValue] = useState<number>(0);
   const [paymentType, setPaymentType] = useState<PaymentType>(PaymentType.Daily);
   const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
-  const [selectedDays, setSelectedDays] = useState<string[]>([]);
+  const [selectedDays, setSelectedDays] = useState<DayName[]>([]);
 
   const isEditMode = !!initialChore;
 
@@ -57,16 +36,7 @@ const CreateChoreForm: React.FC<CreateChoreFormProps> = ({
       setValue(initialChore.amountCents || 0);
       setPaymentType(initialChore.paymentType || PaymentType.Daily);
 
-      const requiredDays = initialChore.requiredDays || 0;
-      const days: string[] = [];
-      if (requiredDays & 1) days.push('Sunday');
-      if (requiredDays & 2) days.push('Monday');
-      if (requiredDays & 4) days.push('Tuesday');
-      if (requiredDays & 8) days.push('Wednesday');
-      if (requiredDays & 16) days.push('Thursday');
-      if (requiredDays & 32) days.push('Friday');
-      if (requiredDays & 64) days.push('Saturday');
-      setSelectedDays(days);
+      setSelectedDays(dayNamesFromBitmask(initialChore.requiredDays ?? 0));
 
       // Set assigned users
       const assignedUserIds = initialChore.assignedUsers?.map((user) => user.id) || [];
@@ -76,10 +46,7 @@ const CreateChoreForm: React.FC<CreateChoreFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const requiredDays = selectedDays.reduce(
-      (acc, day) => acc + (DAYS[day as keyof typeof DAYS] ?? 0),
-      0,
-    );
+    const requiredDays = bitmaskFromDayNames(selectedDays as DayName[]);
     if (title.trim()) {
       const choreData = {
         uuid: initialChore?.uuid, // Include UUID for updates
@@ -179,7 +146,7 @@ const CreateChoreForm: React.FC<CreateChoreFormProps> = ({
       <div>
         <div className="block text-sm font-medium text-gray-700 mb-2">Required Days</div>
         <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-200 rounded-md p-3">
-          {Object.keys(DAYS).map((day) => (
+          {DAY_NAMES.map((day) => (
             <label key={day} className="flex items-center space-x-2 cursor-pointer">
               <input
                 type="checkbox"
