@@ -491,3 +491,40 @@ pub async fn check_admin_session(
     AdminSvc::get_session(&context, token)?
         .ok_or_else(|| anyhow::anyhow!("Session not found or expired"))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_helpers::test_db;
+
+    fn create_session_for_test(context: &GraphQLContext, admin_id: i32) -> String {
+        AdminSvc::create_session(context, admin_id).unwrap()
+    }
+
+    #[test]
+    fn admin_id_from_jar_returns_none_without_a_cookie() {
+        let context = test_db::create_test_context();
+        let jar = CookieJar::new();
+        assert_eq!(admin_id_from_jar(&context, &jar).unwrap(), None);
+    }
+
+    #[test]
+    fn admin_id_from_jar_returns_none_for_an_unknown_token() {
+        let context = test_db::create_test_context();
+        let jar = CookieJar::new().add(Cookie::new(ADMIN_SESSION_COOKIE, "not-a-real-token"));
+        assert_eq!(admin_id_from_jar(&context, &jar).unwrap(), None);
+    }
+
+    #[test]
+    fn admin_id_from_jar_resolves_a_valid_session() {
+        let context = test_db::create_test_context();
+        let admin = test_db::create_test_admin(&context, "Parent", "parent@example.com");
+        let token = create_session_for_test(&context, admin.id.unwrap());
+
+        let jar = CookieJar::new().add(Cookie::new(ADMIN_SESSION_COOKIE, token));
+        assert_eq!(
+            admin_id_from_jar(&context, &jar).unwrap(),
+            Some(admin.id.unwrap())
+        );
+    }
+}
