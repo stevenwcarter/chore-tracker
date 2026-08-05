@@ -7,8 +7,11 @@ import ChoreCard from './ChoreCard';
 import CreateChoreForm from './CreateChoreForm';
 import CreateBonusChoreForm from './CreateBonusChoreForm';
 import CreateUserForm from './CreateUserForm';
-import UserManagementCard from './UserManagementCard';
+import AdminChoreToolbar from './AdminChoreToolbar';
+import ChoreAssignmentModal from './ChoreAssignmentModal';
+import UserManagementModal from './UserManagementModal';
 import { useAdminChoreManagement } from '../hooks/useAdminChoreManagement';
+import { useUserImages } from '../hooks/useUserImages';
 
 interface AdminChoreManagementProps {
   adminId: number;
@@ -35,39 +38,23 @@ export const AdminChoreManagement: React.FC<AdminChoreManagementProps> = ({ admi
     refetchUsers,
   } = useAdminChoreManagement();
 
+  const { uploadImage, removeImage } = useUserImages(refetchUsers);
+
   const handleImageUpload = async (userUuid: string, file: File) => {
     try {
-      const formData = new FormData();
-      formData.append('image', file);
-
-      const response = await fetch(`/images/upload/${userUuid}`, {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (response.ok) {
-        await refetchUsers();
-      } else {
-        toast.error('Failed to upload image');
-      }
+      await uploadImage(userUuid, file);
     } catch (err) {
-      toast.error('Error uploading image');
+      // uploadImage already toasted; swallow so this fire-and-forget caller
+      // (UserManagementCard's onChange) doesn't leave an unhandled rejection.
     }
   };
 
   const handleRemoveImage = async (userId: number) => {
     try {
-      const response = await fetch(`/images/user/${userId}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        await refetchUsers();
-      } else {
-        toast.error('Failed to remove image');
-      }
+      await removeImage(userId);
     } catch (err) {
-      toast.error('Error removing image');
+      // removeImage already toasted; swallow so this fire-and-forget caller
+      // (UserManagementCard's onClick) doesn't leave an unhandled rejection.
     }
   };
 
@@ -112,32 +99,12 @@ export const AdminChoreManagement: React.FC<AdminChoreManagementProps> = ({ admi
         <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">Chore Management</h2>
 
         {/* Always stack on small screens, horizontal on larger screens */}
-        <div className="flex flex-col lg:flex-row gap-3">
-          <button
-            onClick={() => setIsManagingUsers(true)}
-            className="w-full lg:w-auto px-4 py-3 lg:py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors text-sm lg:text-base font-medium"
-          >
-            👥 Manage Users
-          </button>
-          <button
-            onClick={() => setIsCreatingUser(true)}
-            className="w-full lg:w-auto px-4 py-3 lg:py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors text-sm lg:text-base font-medium"
-          >
-            + Create New User
-          </button>
-          <button
-            onClick={() => setIsCreatingChore(true)}
-            className="w-full lg:w-auto px-4 py-3 lg:py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-sm lg:text-base font-medium"
-          >
-            + Create New Chore
-          </button>
-          <button
-            onClick={() => setIsCreatingBonusChore(true)}
-            className="w-full lg:w-auto px-4 py-3 lg:py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors text-sm lg:text-base font-medium"
-          >
-            + Create Bonus Chore
-          </button>
-        </div>
+        <AdminChoreToolbar
+          onManageUsers={() => setIsManagingUsers(true)}
+          onCreateUser={() => setIsCreatingUser(true)}
+          onCreateChore={() => setIsCreatingChore(true)}
+          onCreateBonusChore={() => setIsCreatingBonusChore(true)}
+        />
       </div>
 
       {/* Existing Chores */}
@@ -209,72 +176,22 @@ export const AdminChoreManagement: React.FC<AdminChoreManagementProps> = ({ admi
       </Modal>
 
       {/* Chore Assignment Modal */}
-      <Modal
-        isOpen={!!selectedChore}
+      <ChoreAssignmentModal
+        chore={selectedChore}
+        users={users}
+        onAssign={handleAssignUser}
+        onUnassign={handleUnassignUser}
         onClose={() => setSelectedChore(null)}
-        title={`Assign Users: ${selectedChore?.name}`}
-        maxWidth="sm"
-      >
-        {selectedChore && (
-          <div className="space-y-4">
-            <div>
-              <p className="text-sm font-medium text-gray-300 mb-3">Assign to Users:</p>
-              <div className="space-y-3">
-                {users.map((user) => {
-                  const isAssigned = selectedChore.assignedUsers?.some((au) => au.id === user.id);
-                  return (
-                    <div
-                      key={user.id}
-                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 bg-gray-700 rounded-lg"
-                    >
-                      <span className="text-sm text-gray-300 font-medium">{user.name}</span>
-                      <button
-                        onClick={() =>
-                          !isAssigned
-                            ? handleAssignUser(selectedChore.id, user.id)
-                            : handleUnassignUser(selectedChore.id, user.id)
-                        }
-                        className={`w-full sm:w-auto px-4 py-2 text-sm rounded-lg font-medium transition-colors ${
-                          isAssigned
-                            ? 'bg-red-600 hover:bg-red-700 text-white'
-                            : 'bg-blue-600 hover:bg-blue-700 text-white'
-                        }`}
-                      >
-                        {isAssigned ? 'Unassign' : 'Assign'}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        )}
-      </Modal>
+      />
 
       {/* User Management Modal */}
-      <Modal
+      <UserManagementModal
+        users={users}
         isOpen={isManagingUsers}
         onClose={() => setIsManagingUsers(false)}
-        title="Manage Users"
-        maxWidth="lg"
-      >
-        <div className="grid gap-4">
-          {users.map((user) => (
-            <UserManagementCard
-              key={user.id}
-              user={user}
-              onImageUpload={handleImageUpload}
-              onRemoveImage={handleRemoveImage}
-            />
-          ))}
-
-          {users.length === 0 && (
-            <div className="text-center py-8 text-gray-400">
-              <p>No users found. Create a new user to get started.</p>
-            </div>
-          )}
-        </div>
-      </Modal>
+        onImageUpload={handleImageUpload}
+        onRemoveImage={handleRemoveImage}
+      />
     </div>
   );
 };
