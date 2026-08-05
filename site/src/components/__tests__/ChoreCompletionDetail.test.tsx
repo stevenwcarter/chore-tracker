@@ -380,6 +380,61 @@ describe('ChoreCompletionDetail add note', () => {
     expect(toast.error).not.toHaveBeenCalled();
   });
 
+  // Pins the two halves of the "successful save" state-reset behaviour that
+  // the previous test's `.not.toBeInTheDocument()` check can't distinguish
+  // from a no-op: the whole form is conditionally rendered on `isAddingNote`,
+  // so "the textarea is gone" alone proves the form closed but says nothing
+  // about whether `noteText` was actually cleared. Reopening the form after
+  // a successful save is the only way to observe both: the draft text is
+  // cleared, but (per the pre-existing quirk carried over verbatim from the
+  // original component) the visibility checkbox is NOT reset to its
+  // checked-by-default state -- only Cancel does that.
+  it('admin: reopening the form after a successful save shows cleared text but a NOT-reset visibility checkbox', async () => {
+    const mocks: MockedResponse[] = [
+      {
+        request: {
+          query: ADD_CHORE_NOTE,
+          variables: {
+            note: {
+              choreCompletionId: BASE_COMPLETION.id,
+              noteText: 'Reopen check',
+              authorType: AuthorType.Admin,
+              authorAdminId: 1,
+              visibleToUser: false,
+            },
+          },
+        },
+        result: {
+          data: {
+            createChoreCompletionNote: {
+              id: 11,
+              uuid: 'note-11',
+              noteText: 'Reopen check',
+              authorType: AuthorType.Admin,
+              visibleToUser: false,
+              createdAt: '2026-08-02T00:00:00Z',
+            },
+          },
+        },
+      },
+    ];
+    renderCompletion({ isAdmin: true, adminId: 1 }, mocks);
+
+    await userEvent.click(screen.getByRole('button', { name: /Add Note/ }));
+    await userEvent.type(screen.getByPlaceholderText('Add a note...'), 'Reopen check');
+    await userEvent.click(screen.getByRole('checkbox', { name: /Visible to user/ })); // uncheck -> false
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() =>
+      expect(screen.queryByPlaceholderText('Add a note...')).not.toBeInTheDocument(),
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: /Add Note/ }));
+
+    expect(screen.getByPlaceholderText('Add a note...')).toHaveValue('');
+    expect(screen.getByRole('checkbox', { name: /Visible to user/ })).not.toBeChecked();
+  });
+
   // This pins the kid-facing "Add Note" button's current wiring exactly as-is.
   // TIDY finding T12 notes that in production this mutation always errors for
   // a non-admin session -- that is a known, out-of-scope issue (not fixed
