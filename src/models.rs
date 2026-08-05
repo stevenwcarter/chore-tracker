@@ -784,6 +784,7 @@ impl UnpaidTotal {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{svc::ChoreCompletionSvc, test_helpers::test_db};
 
     #[test]
     fn test_payment_type_from_string() {
@@ -798,5 +799,111 @@ mod tests {
         assert_eq!(AuthorType::from("admin"), AuthorType::Admin);
         assert_eq!(AuthorType::from("other"), AuthorType::User);
         assert_eq!(AuthorType::from("ADmin"), AuthorType::Admin);
+    }
+
+    /// Creates a chore completion for `user_id` on a fixed test date.
+    fn create_completion_for_test(
+        context: &GraphQLContext,
+        chore_id: i32,
+        user_id: i32,
+    ) -> ChoreCompletion {
+        let input = ChoreCompletionInput {
+            uuid: None,
+            chore_id,
+            user_id,
+            completed_date: test_db::create_test_date(2024, 10, 21),
+        };
+        ChoreCompletionSvc::create(context, &input).unwrap()
+    }
+
+    /// Creates an admin-authored note on `completion_id` with the given visibility.
+    ///
+    /// Notes are always admin-authored in production (`create_chore_completion_note`
+    /// requires an admin session), so this resolves the completion's chore back to the
+    /// admin who created it rather than accepting an author id, keeping the helper's
+    /// signature limited to what the characterization tests need.
+    fn add_note(context: &GraphQLContext, completion_id: i32, note_text: &str, visible_to_user: bool) {
+        // The test pool holds a single connection, so this must be released (end of
+        // block) before `ChoreCompletionNoteSvc::create` below asks the pool for one.
+        let admin_id: i32 = {
+            let mut conn = context.pool.get().unwrap();
+            let chore_id: i32 = chore_completions::table
+                .filter(chore_completions::id.eq(completion_id))
+                .select(chore_completions::chore_id)
+                .first(&mut conn)
+                .unwrap();
+            chores::table
+                .filter(chores::id.eq(chore_id))
+                .select(chores::created_by_admin_id)
+                .first(&mut conn)
+                .unwrap()
+        };
+
+        let input = ChoreCompletionNoteInput {
+            uuid: None,
+            chore_completion_id: completion_id,
+            author_type: AuthorType::Admin,
+            author_user_id: None,
+            author_admin_id: Some(admin_id),
+            note_text: note_text.to_owned(),
+            visible_to_user: Some(visible_to_user),
+        };
+        ChoreCompletionNoteSvc::create(context, &ChoreCompletionNote::from(input)).unwrap();
+    }
+
+    // These two tests drive the actual `ChoreCompletion::notes` resolver (not the svc
+    // function directly) so they characterize the resolver's visibility gate itself,
+    // not just the already-correct filtering inside `ChoreCompletionNoteSvc`.
+    #[tokio::test]
+    async fn notes_hide_admin_only_entries_from_unauthenticated_requests() {
+        let context = test_db::create_test_context(); // admin_id: None
+        let admin = test_db::create_test_admin(&context, "Parent", "parent@example.com");
+        let user = test_db::create_test_user(&context, "Kid");
+        let chore = test_db::create_test_chore(
+            &context,
+            "Dishes",
+            PaymentType::Daily,
+            100,
+            test_db::day_patterns::monday_only(),
+            admin.id.unwrap(),
+        );
+
+        let completion = create_completion_for_test(&context, chore.id.unwrap(), user.id.unwrap());
+        add_note(&context, completion.id.unwrap(), "visible to kid", true);
+        add_note(&context, completion.id.unwrap(), "admin eyes only", false);
+
+        let notes = completion.notes(&context).await.unwrap();
+
+        assert_eq!(
+            notes.len(),
+            1,
+            "unauthenticated request must not receive admin-only notes"
+        );
+        assert_eq!(notes[0].note_text, "visible to kid");
+    }
+
+    #[tokio::test]
+    async fn notes_include_admin_only_entries_for_admin_requests() {
+        let mut context = test_db::create_test_context();
+        let admin = test_db::create_test_admin(&context, "Parent", "parent@example.com");
+        context.admin_id = Some(admin.id.unwrap());
+
+        let user = test_db::create_test_user(&context, "Kid");
+        let chore = test_db::create_test_chore(
+            &context,
+            "Dishes",
+            PaymentType::Daily,
+            100,
+            test_db::day_patterns::monday_only(),
+            admin.id.unwrap(),
+        );
+
+        let completion = create_completion_for_test(&context, chore.id.unwrap(), user.id.unwrap());
+        add_note(&context, completion.id.unwrap(), "visible to kid", true);
+        add_note(&context, completion.id.unwrap(), "admin eyes only", false);
+
+        let notes = completion.notes(&context).await.unwrap();
+
+        assert_eq!(notes.len(), 2, "admin request must still receive every note");
     }
 }
