@@ -56,7 +56,7 @@ const existingChore: Chore = {
   description: 'Take the trash bins to the curb every Tuesday and Friday',
   amountCents: 500,
   paymentType: PaymentType.Daily,
-  requiredDays: 36, // Tuesday (4) + Friday (32) = 36
+  requiredDays: 18, // Tuesday (2) + Friday (16) = 18
   active: true,
   createdAt: '2023-01-01T00:00:00Z',
   createdByAdminId: 1,

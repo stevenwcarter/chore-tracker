@@ -136,23 +136,6 @@ export interface ChoreCompletionNoteInput {
   visibleToUser: boolean;
 }
 
-// Helper types for UI
-export interface DayOfWeek {
-  index: number;
-  name: string;
-  short: string;
-}
-
-export const DAYS_OF_WEEK: DayOfWeek[] = [
-  { index: 0, name: 'Sunday', short: 'Sun' },
-  { index: 1, name: 'Monday', short: 'Mon' },
-  { index: 2, name: 'Tuesday', short: 'Tue' },
-  { index: 3, name: 'Wednesday', short: 'Wed' },
-  { index: 4, name: 'Thursday', short: 'Thu' },
-  { index: 5, name: 'Friday', short: 'Fri' },
-  { index: 6, name: 'Saturday', short: 'Sat' },
-];
-
 export interface WeekDateRange {
   start: Date;
   end: Date;

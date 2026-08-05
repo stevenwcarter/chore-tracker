@@ -47,3 +47,51 @@ impl GraphQLContext {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::User;
+    use crate::test_helpers::test_db::create_test_pool;
+
+    // Pins the invariant documented on `GraphQLContext::new`: constructing a new context per
+    // request (rather than cloning one across requests) must give each context its own,
+    // independent caches. If this test ever fails, something has gone back to sharing
+    // `chore_cache`/`user_cache` (e.g. `Extension<GraphQLContext>` being `.clone()`d instead of
+    // rebuilt) — see the websocket subscription handler in `src/api/graphql.rs`, which used to
+    // do exactly that.
+    #[test]
+    fn new_contexts_do_not_share_cache_state() {
+        let pool = create_test_pool();
+
+        let ctx1 = GraphQLContext::new(pool.clone(), None);
+        let ctx2 = GraphQLContext::new(pool, None);
+
+        let user = User {
+            id: Some(1),
+            uuid: "user-1".to_string(),
+            name: "Alice".to_string(),
+            image_path: None,
+            created_at: None,
+            updated_at: None,
+            image_id: None,
+        };
+        ctx1.user_cache.lock().unwrap().insert(1, user);
+
+        assert_eq!(
+            ctx1.user_cache.lock().unwrap().len(),
+            1,
+            "sanity check: ctx1 should hold the row we just inserted"
+        );
+        assert!(
+            ctx2.user_cache.lock().unwrap().is_empty(),
+            "a freshly constructed GraphQLContext must not see cache entries populated on \
+             another context, even one built from the same pool"
+        );
+
+        // Also confirm the two contexts really are backed by distinct Arcs, not merely
+        // coincidentally both empty.
+        assert!(!Arc::ptr_eq(&ctx1.user_cache, &ctx2.user_cache));
+        assert!(!Arc::ptr_eq(&ctx1.chore_cache, &ctx2.chore_cache));
+    }
+}

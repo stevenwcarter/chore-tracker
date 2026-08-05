@@ -27,6 +27,8 @@ yarn lint         # ESLint + Prettier (auto-fix)
 yarn storybook    # Storybook on port 6006
 ```
 
+Also run `yarn install` once at the **repo root** (not just in `site/`) — it activates the husky pre-commit hook via the root `prepare` script.
+
 ### Database
 
 ```bash

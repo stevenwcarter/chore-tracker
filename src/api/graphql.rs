@@ -45,8 +45,12 @@ async fn custom_subscriptions(
 ) -> Response {
     ws.protocols(["graphql-transport-ws", "graphql-ws"])
         .on_upgrade(move |socket| {
+            // Construct a fresh context rather than cloning `context` — cloning would share
+            // the process-wide chore_cache/user_cache with every other request for the life
+            // of the process. See context.rs.
             let connection_config =
-                ConnectionConfig::new(context.clone()).with_max_in_flight_operations(10);
+                ConnectionConfig::new(GraphQLContext::new(context.pool.clone(), None))
+                    .with_max_in_flight_operations(10);
             subscriptions::serve_ws(socket, schema, connection_config)
         })
 }
