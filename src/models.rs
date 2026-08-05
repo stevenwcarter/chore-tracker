@@ -817,6 +817,24 @@ mod tests {
         ChoreCompletionSvc::create(context, &input).unwrap()
     }
 
+    /// Creates a chore completion for `chore`/`user` on the `day_offset`-th day of the
+    /// fixed test month (October 2024), so a batch of completions for one test each land
+    /// on a distinct `completed_date`.
+    fn create_completion_on_day(
+        context: &GraphQLContext,
+        chore: &Chore,
+        user: &User,
+        day_offset: u32,
+    ) -> ChoreCompletion {
+        let input = ChoreCompletionInput {
+            uuid: None,
+            chore_id: chore.id.unwrap(),
+            user_id: user.id.unwrap(),
+            completed_date: test_db::create_test_date(2024, 10, 21 + day_offset),
+        };
+        ChoreCompletionSvc::create(context, &input).unwrap()
+    }
+
     /// Creates an admin-authored note on `completion_id` with the given visibility.
     ///
     /// Notes are always admin-authored in production (`create_chore_completion_note`
@@ -915,5 +933,34 @@ mod tests {
             2,
             "admin request must still receive every note"
         );
+    }
+
+    // Pins the values `ChoreCompletion::chore` and `::user` resolve today, before they
+    // gain a per-request memo cache - the follow-up tidy commit must keep returning the
+    // same rows, just with fewer queries.
+    #[tokio::test]
+    async fn batched_resolvers_return_the_same_values_as_before() {
+        let context = test_db::create_test_context();
+        let admin = test_db::create_test_admin(&context, "Parent", "p@example.com");
+        let user = test_db::create_test_user(&context, "Kid");
+        let chore = test_db::create_test_chore(
+            &context,
+            "Dishes",
+            PaymentType::Daily,
+            100,
+            test_db::day_patterns::monday_only(),
+            admin.id.unwrap(),
+        );
+
+        let completions: Vec<_> = (0..3)
+            .map(|i| create_completion_on_day(&context, &chore, &user, i))
+            .collect();
+
+        for completion in &completions {
+            let resolved_chore = completion.chore(&context).await.unwrap();
+            let resolved_user = completion.user(&context).await.unwrap();
+            assert_eq!(resolved_chore.id, chore.id);
+            assert_eq!(resolved_user.id, user.id);
+        }
     }
 }
