@@ -303,12 +303,109 @@ impl ChoreCompletionSvc {
 mod tests {
     use super::*;
     use crate::{
-        models::{ChoreCompletionInput, PaymentType},
+        models::{Chore, ChoreCompletionInput, ChoreInput, PaymentType},
         test_helpers::test_db::{
             create_test_admin, create_test_chore, create_test_chore_assignment,
             create_test_context, create_test_date, create_test_user, day_patterns,
         },
     };
+
+    /// Builds a same-day completion input for `user` against `chore`. Bonus chores must be
+    /// completed on their `bonus_date`, so this reuses it when present; other chores get an
+    /// arbitrary fixed date since `calculate_completion_amount` never looks at the date.
+    fn completion_input(chore: &Chore, user: &User) -> ChoreCompletionInput {
+        ChoreCompletionInput {
+            uuid: None,
+            chore_id: chore.id.unwrap(),
+            user_id: user.id.unwrap(),
+            completed_date: chore
+                .bonus_date
+                .unwrap_or_else(|| create_test_date(2024, 10, 21)),
+        }
+    }
+
+    /// Creates a bonus chore due today (a fixed test date) capped at `max_claims` claims.
+    fn create_bonus_chore_for_test(
+        context: &GraphQLContext,
+        admin_id: i32,
+        max_claims: i32,
+    ) -> Chore {
+        let chore_input = ChoreInput {
+            uuid: None,
+            name: "Bonus chore".to_owned(),
+            description: None,
+            payment_type: PaymentType::Daily,
+            amount_cents: 300,
+            required_days: 0,
+            active: Some(true),
+            created_by_admin_id: admin_id,
+            bonus_date: Some(create_test_date(2026, 4, 15)),
+            max_claims: Some(max_claims),
+        };
+        ChoreSvc::create(context, &Chore::from(chore_input)).unwrap()
+    }
+
+    #[test]
+    fn create_computes_daily_amount_unchanged() {
+        let context = create_test_context();
+        let admin = create_test_admin(&context, "Parent", "p@example.com");
+        let user = create_test_user(&context, "Kid");
+        let chore = create_test_chore(
+            &context,
+            "Dishes",
+            PaymentType::Daily,
+            150,
+            day_patterns::mon_wed_fri(),
+            admin.id.unwrap(),
+        );
+
+        let completion =
+            ChoreCompletionSvc::create(&context, &completion_input(&chore, &user)).unwrap();
+        assert_eq!(
+            completion.amount_cents, 150,
+            "daily chores pay the full amount per completion"
+        );
+    }
+
+    #[test]
+    fn create_computes_weekly_split_unchanged() {
+        let context = create_test_context();
+        let admin = create_test_admin(&context, "Parent", "p@example.com");
+        let user = create_test_user(&context, "Kid");
+        // 150 cents over Mon/Wed/Fri == 3 days == 50/day.
+        let chore = create_test_chore(
+            &context,
+            "Trash",
+            PaymentType::Weekly,
+            150,
+            day_patterns::mon_wed_fri(),
+            admin.id.unwrap(),
+        );
+
+        let completion =
+            ChoreCompletionSvc::create(&context, &completion_input(&chore, &user)).unwrap();
+        assert_eq!(
+            completion.amount_cents, 50,
+            "weekly chores split across assigned days"
+        );
+    }
+
+    #[test]
+    fn create_rejects_a_bonus_claim_past_the_cap() {
+        let context = create_test_context();
+        let admin = create_test_admin(&context, "Parent", "p@example.com");
+        let user = create_test_user(&context, "Kid");
+        let chore =
+            create_bonus_chore_for_test(&context, admin.id.unwrap(), /* max_claims */ 1);
+
+        ChoreCompletionSvc::create(&context, &completion_input(&chore, &user)).unwrap();
+        let second = ChoreCompletionSvc::create(&context, &completion_input(&chore, &user));
+
+        assert!(
+            second.is_err(),
+            "second claim must be rejected once max_claims is reached"
+        );
+    }
 
     #[test]
     fn test_weekly_chore_payout_should_pay_fraction_per_day() {
