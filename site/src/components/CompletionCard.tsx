@@ -8,6 +8,8 @@ interface CompletionCardProps {
   onApprove?: (completion: ChoreCompletion) => void;
   onReject?: (completion: ChoreCompletion) => void;
   showActions?: boolean;
+  /** Action button stack direction: 'row' (default) or 'stacked' (vertical at md+ widths). */
+  actionsLayout?: 'row' | 'stacked';
 }
 
 export const CompletionCard: React.FC<CompletionCardProps> = ({
@@ -16,8 +18,10 @@ export const CompletionCard: React.FC<CompletionCardProps> = ({
   onApprove,
   onReject,
   showActions = false,
+  actionsLayout = 'row',
 }) => {
   const borderColor = completion.approved ? 'border-green-500' : 'border-yellow-500';
+  const actionsClassName = actionsLayout === 'stacked' ? 'flex md:flex-col gap-2' : 'flex gap-2';
 
   return (
     <div className={`bg-gray-700 p-4 rounded-lg border ${borderColor}`}>
@@ -37,7 +41,7 @@ export const CompletionCard: React.FC<CompletionCardProps> = ({
             </p>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className={actionsClassName}>
           <button
             onClick={() => onViewDetails(completion)}
             className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-colors"
