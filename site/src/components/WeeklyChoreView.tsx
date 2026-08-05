@@ -1,18 +1,21 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from '@apollo/client/react';
 import { toast } from 'react-toastify';
 import { GET_ALL_WEEKLY_COMPLETIONS } from 'graphql/queries';
-import { User, ChoreCompletion, BADGE_DISPLAY } from 'types/chore';
+import { User, ChoreCompletion } from 'types/chore';
 import { getWeekDateRange, formatDateForGraphQL, formatDateForDisplay } from 'utils/dateUtils';
 import LoadingSpinner from './LoadingSpinner';
 import Modal from './Modal';
 import ChoreCompletionDetail from './ChoreCompletionDetail';
 import WeekNavigator from './WeekNavigator';
 import DayNavigator from './DayNavigator';
-import ChoreGridHeader from './ChoreGridHeader';
-import ChoreRow from './ChoreRow';
+import ChoreGrid from './ChoreGrid';
+import ChoreCardList from './ChoreCardList';
+import BadgeChips from './BadgeChips';
 import { useUserChores } from 'hooks/useUserChores';
 import { useUserBadges } from 'hooks/useUserBadges';
+import { useIsMobile } from 'hooks/useIsMobile';
+import { useCompletionLookup } from 'hooks/useCompletionLookup';
 import UserImage from './UserImage';
 import BonusChoreSection from './BonusChoreSection';
 
@@ -31,11 +34,10 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
 }) => {
   const [currentWeekStart, setCurrentWeekStart] = useState(getWeekDateRange().start);
   const [selectedCompletion, setSelectedCompletion] = useState<ChoreCompletion | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
+  const isMobile = useIsMobile();
 
   const weekRange = useMemo(() => getWeekDateRange(currentWeekStart), [currentWeekStart]);
 
-  // The day the user has navigated to on desktop, seeded with the first day of the week.
   const [selectedDate, setSelectedDate] = useState(() => {
     return weekRange.dates.length > 0 ? weekRange.dates[0] : new Date();
   });
@@ -48,17 +50,6 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
     }
     return selectedDate;
   }, [isMobile, weekRange.dates, selectedDate]);
-
-  // Check for mobile screen size
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 600);
-    };
-
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   // Use custom hook for user chores
   const {
@@ -83,6 +74,9 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
     },
   });
 
+  const { isChoreCompletedByAnyone, isChoreCompletedByUser } =
+    useCompletionLookup(allCompletionsData);
+
   const handleCompleteChore = async (choreId: number, completionDate: Date) => {
     try {
       await completeChore(choreId, completionDate);
@@ -96,30 +90,6 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
     refetch();
     refetchAllCompletions();
     setSelectedCompletion(null);
-  };
-
-  // Build a Set keyed by "choreId-YYYY-MM-DD" for O(1) per-cell lookup
-  const completionLookup = useMemo(() => {
-    const set = new Set<string>();
-    allCompletionsData?.getAllWeeklyCompletions?.forEach((c: ChoreCompletion) => {
-      set.add(`${c.choreId}-${c.completedDate}`);
-    });
-    return set;
-  }, [allCompletionsData]);
-
-  const isChoreCompletedByAnyone = (choreId: number, date: Date): boolean => {
-    return completionLookup.has(`${choreId}-${formatDateForGraphQL(date)}`);
-  };
-
-  const isChoreCompletedByUser = (choreId: number, userId: number, date: Date): boolean => {
-    return (
-      allCompletionsData?.getAllWeeklyCompletions?.some(
-        (c: ChoreCompletion) =>
-          c.choreId === choreId &&
-          c.userId === userId &&
-          c.completedDate === formatDateForGraphQL(date),
-      ) ?? false
-    );
   };
 
   const handleWeekChange = (newWeekStart: Date) => {
@@ -159,41 +129,11 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
                 {formatDateForDisplay(weekRange.end)}
               </p>
             )}
-            {!isMobile && badges.length > 0 && (
-              <div className="flex flex-row gap-2 overflow-x-auto pb-1 mt-2">
-                {badges.map((badge) => {
-                  const display = BADGE_DISPLAY[badge.badgeType];
-                  if (!display) return null;
-                  return (
-                    <span
-                      key={badge.id}
-                      className="flex items-center gap-1 px-3 py-1 bg-purple-500/20 border border-purple-500/40 rounded-full text-sm whitespace-nowrap"
-                    >
-                      {display.emoji} {display.label}
-                    </span>
-                  );
-                })}
-              </div>
-            )}
+            {!isMobile && <BadgeChips badges={badges} />}
           </div>
         </div>
 
-        {isMobile && badges.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-4">
-            {badges.map((badge) => {
-              const display = BADGE_DISPLAY[badge.badgeType];
-              if (!display) return null;
-              return (
-                <span
-                  key={badge.id}
-                  className="flex items-center gap-1 px-3 py-1 bg-purple-500/20 border border-purple-500/40 rounded-full text-sm"
-                >
-                  {display.emoji} {display.label}
-                </span>
-              );
-            })}
-          </div>
-        )}
+        {isMobile && <BadgeChips badges={badges} wrap />}
 
         <WeekNavigator
           currentWeekStart={currentWeekStart}
@@ -214,40 +154,21 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
 
       {/* Chore display */}
       {isMobile ? (
-        // Mobile layout - cards
-        <div className="space-y-4">
-          {weeklyChoreData.map((choreData) => (
-            <ChoreRow
-              key={choreData.chore.id}
-              choreData={choreData}
-              dates={[currentDate]}
-              onCompleteChore={handleCompleteChore}
-              onSelectCompletion={setSelectedCompletion}
-              isChoreCompletedByAnyone={isChoreCompletedByAnyone}
-              currentDate={currentDate}
-              isMobile={true}
-            />
-          ))}
-        </div>
+        <ChoreCardList
+          weeklyChoreData={weeklyChoreData}
+          currentDate={currentDate}
+          onCompleteChore={handleCompleteChore}
+          onSelectCompletion={setSelectedCompletion}
+          isChoreCompletedByAnyone={isChoreCompletedByAnyone}
+        />
       ) : (
-        // Desktop layout - table
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <ChoreGridHeader dates={weekRange.dates} />
-            <tbody>
-              {weeklyChoreData.map((choreData) => (
-                <ChoreRow
-                  key={choreData.chore.id}
-                  choreData={choreData}
-                  dates={weekRange.dates}
-                  onCompleteChore={handleCompleteChore}
-                  onSelectCompletion={setSelectedCompletion}
-                  isChoreCompletedByAnyone={isChoreCompletedByAnyone}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ChoreGrid
+          weeklyChoreData={weeklyChoreData}
+          dates={weekRange.dates}
+          onCompleteChore={handleCompleteChore}
+          onSelectCompletion={setSelectedCompletion}
+          isChoreCompletedByAnyone={isChoreCompletedByAnyone}
+        />
       )}
 
       {/* Bonus chores */}
