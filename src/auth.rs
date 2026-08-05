@@ -549,10 +549,7 @@ mod tests {
     #[test]
     fn admin_id_from_jar_propagates_database_errors() {
         let pool = test_db::create_test_pool();
-        let context = GraphQLContext {
-            pool,
-            admin_id: None,
-        };
+        let context = GraphQLContext::new(pool, None);
 
         {
             // Drop the connection guard before calling `admin_id_from_jar` below - the

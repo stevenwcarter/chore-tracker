@@ -40,7 +40,7 @@ pub mod test_db {
     /// Creates a test GraphQL context with in-memory database
     pub fn create_test_context() -> GraphQLContext {
         let pool = create_test_pool();
-        GraphQLContext { pool, admin_id: None }
+        GraphQLContext::new(pool, None)
     }
 
     /// Test data factory for creating users

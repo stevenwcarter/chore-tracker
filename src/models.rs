@@ -13,6 +13,8 @@ use chrono::{NaiveDate, NaiveDateTime, Utc};
 use diesel::prelude::*;
 use juniper::{GraphQLEnum, GraphQLInputObject, GraphQLObject};
 use serde::Serialize;
+use std::collections::HashMap;
+use std::sync::Mutex;
 use tracing::{debug, info};
 use uuid::Uuid;
 
@@ -261,7 +263,7 @@ pub struct AdminSession {
 }
 
 // Chore model
-#[derive(Queryable, Debug, Identifiable, Insertable, Selectable, AsChangeset)]
+#[derive(Queryable, Debug, Clone, Identifiable, Insertable, Selectable, AsChangeset)]
 #[diesel(primary_key(id))]
 #[diesel(table_name = chores)]
 pub struct Chore {
@@ -427,6 +429,26 @@ pub struct ChoreCompletion {
     pub updated_at: Option<NaiveDateTime>,
 }
 
+/// Looks up `id` in `cache`, calling `fetch` and memoizing the result on a miss.
+///
+/// The mutex is only ever held for the lookup and the insert; `fetch` (a database round
+/// trip) always runs with the lock released, so a resolver can never hold the mutex across
+/// I/O.
+fn cached_by_id<T: Clone>(
+    cache: &Mutex<HashMap<i32, T>>,
+    id: i32,
+    fetch: impl FnOnce() -> juniper::FieldResult<T>,
+) -> juniper::FieldResult<T> {
+    let hit = cache.lock()?.get(&id).cloned();
+    if let Some(hit) = hit {
+        return Ok(hit);
+    }
+
+    let value = fetch()?;
+    cache.lock()?.insert(id, value.clone());
+    Ok(value)
+}
+
 // Custom GraphQL object implementation for ChoreCompletion to add relationships
 #[juniper::graphql_object(context = GraphQLContext)]
 impl ChoreCompletion {
@@ -484,26 +506,26 @@ impl ChoreCompletion {
 
     // Relationship fields
     pub async fn chore(&self, context: &GraphQLContext) -> juniper::FieldResult<Chore> {
-        use crate::svc::ChoreSvc;
         use diesel::prelude::*;
 
-        let chore = chores::table
-            .filter(chores::id.eq(self.chore_id))
-            .first::<Chore>(&mut context.pool.get()?)
-            .map_err(|e| juniper::FieldError::from(anyhow::anyhow!(e)))?;
-
-        Ok(chore)
+        cached_by_id(&context.chore_cache, self.chore_id, || {
+            chores::table
+                .filter(chores::id.eq(self.chore_id))
+                .first::<Chore>(&mut context.pool.get()?)
+                .map_err(|e| juniper::FieldError::from(anyhow::anyhow!(e)))
+        })
     }
 
     pub async fn user(&self, context: &GraphQLContext) -> juniper::FieldResult<User> {
         use diesel::prelude::*;
 
-        let user = users::table
-            .filter(users::id.eq(self.user_id))
-            .first::<User>(&mut context.pool.get()?)
-            .context("fetching user for chore completion")?;
-
-        Ok(user)
+        cached_by_id(&context.user_cache, self.user_id, || {
+            users::table
+                .filter(users::id.eq(self.user_id))
+                .first::<User>(&mut context.pool.get()?)
+                .context("fetching user for chore completion")
+                .map_err(juniper::FieldError::from)
+        })
     }
 
     pub async fn notes(

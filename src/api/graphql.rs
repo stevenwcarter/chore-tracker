@@ -58,10 +58,7 @@ async fn custom_graphql(
     JuniperRequest(request): JuniperRequest,
 ) -> Result<JuniperResponse, AppError> {
     let admin_id = admin_id_from_jar(&context, &jar)?;
-    let authed_context = GraphQLContext {
-        pool: context.pool.clone(),
-        admin_id,
-    };
+    let authed_context = GraphQLContext::new(context.pool.clone(), admin_id);
     Ok(JuniperResponse(
         request.execute(&*schema, &authed_context).await,
     ))
