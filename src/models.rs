@@ -515,7 +515,7 @@ impl ChoreCompletion {
             self.id.ok_or_else(|| {
                 juniper::FieldError::new("ChoreCompletion has no id", juniper::Value::null())
             })?,
-            false,
+            context.admin_id.is_none(),
         )
         .context("fetching chore completion notes")?)
     }
@@ -524,6 +524,7 @@ impl ChoreCompletion {
         &self,
         context: &GraphQLContext,
     ) -> juniper::FieldResult<Vec<ChoreCompletionNote>> {
+        context.require_admin()?;
         Ok(ChoreCompletionNoteSvc::list_for_completion(
             context,
             self.id.ok_or_else(|| {
@@ -822,7 +823,12 @@ mod tests {
     /// requires an admin session), so this resolves the completion's chore back to the
     /// admin who created it rather than accepting an author id, keeping the helper's
     /// signature limited to what the characterization tests need.
-    fn add_note(context: &GraphQLContext, completion_id: i32, note_text: &str, visible_to_user: bool) {
+    fn add_note(
+        context: &GraphQLContext,
+        completion_id: i32,
+        note_text: &str,
+        visible_to_user: bool,
+    ) {
         // The test pool holds a single connection, so this must be released (end of
         // block) before `ChoreCompletionNoteSvc::create` below asks the pool for one.
         let admin_id: i32 = {
@@ -904,6 +910,10 @@ mod tests {
 
         let notes = completion.notes(&context).await.unwrap();
 
-        assert_eq!(notes.len(), 2, "admin request must still receive every note");
+        assert_eq!(
+            notes.len(),
+            2,
+            "admin request must still receive every note"
+        );
     }
 }
