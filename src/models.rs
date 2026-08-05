@@ -964,8 +964,10 @@ mod tests {
     async fn batched_resolvers_return_the_same_values_as_before() {
         let context = test_db::create_test_context();
         let admin = test_db::create_test_admin(&context, "Parent", "p@example.com");
-        let user = test_db::create_test_user(&context, "Kid");
-        let chore = test_db::create_test_chore(
+
+        let alice = test_db::create_test_user(&context, "Alice");
+        let bob = test_db::create_test_user(&context, "Bob");
+        let dishes = test_db::create_test_chore(
             &context,
             "Dishes",
             PaymentType::Daily,
@@ -973,16 +975,45 @@ mod tests {
             test_db::day_patterns::monday_only(),
             admin.id.unwrap(),
         );
+        let trash = test_db::create_test_chore(
+            &context,
+            "Trash",
+            PaymentType::Daily,
+            250,
+            test_db::day_patterns::monday_only(),
+            admin.id.unwrap(),
+        );
 
-        let completions: Vec<_> = (0..3)
-            .map(|i| create_completion_on_day(&context, &chore, &user, i))
+        // Interleave so a cache keyed on anything but the id resolves the wrong row.
+        let expected = [
+            (&dishes, &alice),
+            (&trash, &bob),
+            (&dishes, &bob),
+            (&trash, &alice),
+        ];
+
+        let completions: Vec<_> = expected
+            .iter()
+            .enumerate()
+            .map(|(i, (chore, user))| create_completion_on_day(&context, chore, user, i as u32))
             .collect();
 
-        for completion in &completions {
+        for (completion, (chore, user)) in completions.iter().zip(expected.iter()) {
             let resolved_chore = completion.chore(&context).await.unwrap();
             let resolved_user = completion.user(&context).await.unwrap();
-            assert_eq!(resolved_chore.id, chore.id);
-            assert_eq!(resolved_user.id, user.id);
+            assert_eq!(
+                resolved_chore.id, chore.id,
+                "completion resolved the wrong chore -- cache mis-keyed?"
+            );
+            assert_eq!(
+                resolved_chore.name, chore.name,
+                "resolved chore name mismatch"
+            );
+            assert_eq!(
+                resolved_user.id, user.id,
+                "completion resolved the wrong user -- cache mis-keyed?"
+            );
+            assert_eq!(resolved_user.name, user.name, "resolved user name mismatch");
         }
     }
 }
