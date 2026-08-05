@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::OnceLock;
 use ynab_api::{
     apis::{categories_api::get_categories, configuration::Configuration},
-    models::CategoriesResponse,
+    models::{CategoriesResponse, CategoryGroupWithCategories},
 };
 
 /// A user's spending-money balance as reported by YNAB.
@@ -22,6 +22,33 @@ pub struct UserBalance {
 }
 
 static REQWEST_CLIENT: OnceLock<Client> = OnceLock::new();
+
+/// (YNAB category name, display name) for each child.
+/// Adding a child is a one-line change here.
+const KIDS: [(&str, &str); 3] = [
+    ("Aurora Cash", "Aurora"),
+    ("Madeline Cash", "Madeline"),
+    ("AJ Cash", "AJ"),
+];
+
+/// Maps the "Kids Allowances" category group to per-child balances in dollars.
+///
+/// Errors if any configured child category is absent from the group.
+fn kid_balances(group: &CategoryGroupWithCategories) -> Result<Vec<UserBalance>> {
+    KIDS.iter()
+        .map(|(category_name, display_name)| {
+            let category = group
+                .categories
+                .iter()
+                .find(|c| c.name == *category_name)
+                .with_context(|| format!("YNAB category {category_name} not found"))?;
+            Ok(UserBalance {
+                name: (*display_name).to_owned(),
+                balance: category.balance as f64 / 1000.0, // milliunits -> dollars
+            })
+        })
+        .collect()
+}
 
 pub struct UserSvc {}
 
@@ -103,37 +130,7 @@ impl UserSvc {
             .iter()
             .find(|g| g.name == "Kids Allowances")
             .ok_or_else(|| anyhow::anyhow!("YNAB group 'Kids Allowances' not found"))?;
-        // Single pass over categories instead of three separate linear scans.
-        let mut aurora_bal = None;
-        let mut madeline_bal = None;
-        let mut aj_bal = None;
-        for c in &group.categories {
-            match c.name.as_str() {
-                "Aurora Cash" => aurora_bal = Some(c.balance as f64 / 1000.0),
-                "Madeline Cash" => madeline_bal = Some(c.balance as f64 / 1000.0),
-                "AJ Cash" => aj_bal = Some(c.balance as f64 / 1000.0),
-                _ => {}
-            }
-        }
-        let aurora =
-            aurora_bal.ok_or_else(|| anyhow::anyhow!("YNAB category 'Aurora Cash' not found"))?;
-        let madeline = madeline_bal
-            .ok_or_else(|| anyhow::anyhow!("YNAB category 'Madeline Cash' not found"))?;
-        let aj = aj_bal.ok_or_else(|| anyhow::anyhow!("YNAB category 'AJ Cash' not found"))?;
-        Ok(vec![
-            UserBalance {
-                name: "Aurora".to_owned(),
-                balance: aurora,
-            },
-            UserBalance {
-                name: "Madeline".to_owned(),
-                balance: madeline,
-            },
-            UserBalance {
-                name: "AJ".to_owned(),
-                balance: aj,
-            },
-        ])
+        kid_balances(group)
     }
 }
 
@@ -145,6 +142,49 @@ mod tests {
         test_helpers::test_db::{create_test_context, create_test_user},
     };
     use uuid::Uuid;
+    use ynab_api::models::Category;
+
+    /// Builds a `CategoryGroupWithCategories` containing one category per
+    /// `(name, balance in milliunits)` pair, for exercising `kid_balances` without
+    /// hitting the network.
+    fn category_group_for_test(categories: &[(&str, i64)]) -> CategoryGroupWithCategories {
+        CategoryGroupWithCategories {
+            categories: categories
+                .iter()
+                .map(|(name, balance)| Category {
+                    name: (*name).to_owned(),
+                    balance: *balance,
+                    ..Default::default()
+                })
+                .collect(),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn kid_balances_converts_milliunits_to_dollars() {
+        let group = category_group_for_test(&[
+            ("Aurora Cash", 12_500), // milliunits -> 12.50
+            ("Madeline Cash", 0),
+            ("AJ Cash", 1_000), // -> 1.00
+        ]);
+
+        let balances = kid_balances(&group).unwrap();
+
+        assert_eq!(balances.len(), 3);
+        assert_eq!(balances[0].name, "Aurora");
+        assert!((balances[0].balance - 12.50).abs() < f64::EPSILON);
+        assert!((balances[2].balance - 1.00).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn kid_balances_errors_when_a_category_is_missing() {
+        let group = category_group_for_test(&[("Aurora Cash", 100)]);
+        assert!(
+            kid_balances(&group).is_err(),
+            "a missing kid category must be an error, not a silent zero"
+        );
+    }
 
     #[test]
     fn test_user_crud_operations() {
