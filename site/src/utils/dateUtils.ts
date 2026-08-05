@@ -61,6 +61,12 @@ export function isSameDay(date1: Date, date2: Date): boolean {
   );
 }
 
+/**
+ * Compares a Date against a GraphQL date string, which must be in `YYYY-MM-DD` form.
+ *
+ * The string is split and rebuilt as a local-time Date on purpose: `new Date(dateString)`
+ * would parse it as UTC midnight and report the previous day in negative-offset timezones.
+ */
 export function isSameDayAsString(date: Date, dateString: string): boolean {
   // Parse the date string in local timezone to avoid UTC conversion
   const [year, month, day] = dateString.split('-').map(Number);

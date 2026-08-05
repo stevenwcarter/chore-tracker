@@ -11,6 +11,14 @@ use chrono::{NaiveDate, Utc};
 use diesel::prelude::*;
 use juniper::GraphQLInputObject;
 
+/// Predicates for [`ChoreCompletionSvc::list`]. Every field is optional and all supplied
+/// ones are AND-ed together.
+///
+/// The boolean flags are tri-state in name only: `None` and `Some(false)` both mean "do not
+/// filter on this", so only `Some(true)` narrows the result. Setting both `unpaid_only` and
+/// `paid_only` therefore asks for rows that are paid and unpaid at once, and returns none.
+///
+/// `limit` defaults to 100 and is capped at `MAX_COMPLETION_LIMIT`; `offset` defaults to 0.
 #[derive(Debug, Copy, Clone, Default, GraphQLInputObject)]
 pub struct ChoreCompletionFilter {
     pub user_id: Option<i32>,
@@ -114,6 +122,11 @@ impl ChoreCompletionSvc {
             .context("Could not load weekly chore completions")
     }
 
+    /// One user's completions over the inclusive 7-day window
+    /// `week_start_date ..= week_start_date + 6`, ordered ascending by completed date.
+    ///
+    /// Which weekday a week starts on is the caller's choice, not this function's; the
+    /// frontend passes a Sunday.
     pub fn get_weekly_view(
         context: &GraphQLContext,
         user_id: i32,
@@ -122,6 +135,8 @@ impl ChoreCompletionSvc {
         Self::load_weekly(context, week_start_date, Some(user_id))
     }
 
+    /// The all-users variant of [`Self::get_weekly_view`], over the same inclusive 7-day
+    /// window. The weekly grid uses it to grey out chores a sibling has already claimed.
     pub fn get_all_weekly_completions(
         context: &GraphQLContext,
         week_start_date: NaiveDate,
@@ -129,6 +144,13 @@ impl ChoreCompletionSvc {
         Self::load_weekly(context, week_start_date, None)
     }
 
+    /// Totals what is owed to each user, summing only completions that are approved and not
+    /// yet paid out.
+    ///
+    /// The LEFT JOIN deliberately keeps users who have no completions at all, reporting them
+    /// with a total of 0 so they still show up on the payout screen. A user whose completions
+    /// have *all* been paid out matches neither arm of the filter and drops out of the result
+    /// entirely.
     pub fn get_unpaid_totals(context: &GraphQLContext) -> Result<Vec<(User, i32)>> {
         let results: Vec<(User, Option<i64>)> = users::table
             .left_join(chore_completions::table)
@@ -174,14 +196,12 @@ impl ChoreCompletionSvc {
         }
         let payment_type = PaymentType::from(chore.payment_type);
 
-        // Calculate the appropriate amount based on chore payment type
         let calculated_amount = PaymentType::calculate_completion_amount(
             &payment_type,
             chore.amount_cents,
             chore.required_days,
         );
 
-        // Create the completion with calculated amount
         let completion = ChoreCompletion {
             id: None,
             uuid: crate::uuid_or_generate(completion_input.uuid.clone()),
@@ -206,6 +226,11 @@ impl ChoreCompletionSvc {
         Self::get(context, &completion.uuid)
     }
 
+    /// Approves a completion, stamping `approved_by_admin_id` and `approved_at`, which is
+    /// what makes it eligible for payout.
+    ///
+    /// Also re-runs the badge checks for the owning user; a failure there is swallowed rather
+    /// than failing the approval.
     pub fn approve(
         context: &GraphQLContext,
         completion_uuid: &str,

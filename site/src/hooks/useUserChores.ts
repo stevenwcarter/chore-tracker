@@ -11,6 +11,14 @@ interface UseUserChoresOptions {
   weekStartDate: Date;
 }
 
+/**
+ * Loads the data behind the weekly chore grid for a single user.
+ *
+ * Issues two queries - the chores assigned to the user, and that user's completions for the
+ * week beginning `weekStartDate` - and zips them into one `WeeklyChoreData` row per chore,
+ * with its completions attached. Loading and error state are the combination of both
+ * queries, so the caller sees a single pending/failed signal.
+ */
 export const useUserChores = ({ userId, weekStartDate }: UseUserChoresOptions) => {
   // Fetch all chores assigned to the user
   const {

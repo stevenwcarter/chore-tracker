@@ -24,12 +24,13 @@ pub fn uuid_or_generate(input: Option<String>) -> String {
     input.unwrap_or_else(|| Uuid::now_v7().to_string())
 }
 
-/// Return an environment variable typed generically
+/// Read the named environment variable as a `String`, falling back to `default` when it is
+/// not set.
 ///
 /// ```
 /// use chore_tracker::get_env;
 /// assert!(get_env("PATH", "test").len() > 4);
-/// ````
+/// ```
 pub fn get_env(search_key: &str, default: &str) -> String {
     env::vars()
         .filter(|(key, _)| key.eq(search_key))
@@ -38,12 +39,15 @@ pub fn get_env(search_key: &str, default: &str) -> String {
         .unwrap_or_else(|| default.to_owned())
 }
 
-/// Return an environment variable typed generically
+/// Read the named environment variable parsed as `T`, falling back to `default`.
+///
+/// The fallback covers both cases: the variable being unset, and its value failing to parse
+/// as `T`. An unparseable value is silently swallowed rather than reported as an error.
 ///
 /// ```
 /// use chore_tracker::get_env_typed;
 /// assert!(get_env_typed::<u16>("SHLVL", 9) > 0);
-/// ````
+/// ```
 pub fn get_env_typed<T>(search_key: &str, default: T) -> T
 where
     T: FromStr + fmt::Debug,

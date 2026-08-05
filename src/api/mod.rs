@@ -26,12 +26,10 @@ pub fn err_wrapper<T: Serialize>(result: anyhow::Result<T>) -> impl IntoResponse
     }
 }
 
-// Make our own error that wraps `anyhow::Error`.
 /// Axum-friendly error wrapper around `anyhow::Error` that converts to an HTTP response,
 /// mapping `Unauthorized` messages to 401 and everything else to 404.
 pub struct AppError(anyhow::Error);
 
-// Tell axum how to convert `AppError` into a response.
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let status = if self.0.to_string().starts_with("Unauthorized") {

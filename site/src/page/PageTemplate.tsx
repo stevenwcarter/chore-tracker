@@ -4,7 +4,10 @@ import { useState, useEffect } from 'react';
 import { Admin } from '../types/chore';
 import { toast } from 'react-toastify';
 
-// Real admin session check that calls the backend
+/**
+ * GETs `/auth/me` with credentials included and resolves to the signed-in `Admin`, or to
+ * null when there is no valid admin session (or the request fails, which also toasts).
+ */
 const checkAdminSession = async (): Promise<Admin | null> => {
   try {
     const response = await fetch('/auth/me', {

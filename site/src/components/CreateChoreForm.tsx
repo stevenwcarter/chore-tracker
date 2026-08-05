@@ -10,6 +10,18 @@ interface CreateChoreFormProps {
   initialChore?: Chore; // For editing mode
 }
 
+/**
+ * Bit value this form uses for each weekday when encoding/decoding a chore's
+ * `requiredDays` bitmask.
+ *
+ * WARNING: the layout below is Sunday = 1, Monday = 2 ... Saturday = 64, which
+ * DISAGREES with the backend contract of Monday = 1, Tuesday = 2, Wednesday = 4,
+ * Thursday = 8, Friday = 16, Saturday = 32, Sunday = 64. The two are shifted by
+ * one weekday, so a mask written here is read as a different set of days by the
+ * server (and by the payout split, which divides by the popcount of the mask).
+ * This conflict is a known bug tracked separately - do not treat the values
+ * below as the canonical layout.
+ */
 const DAYS = {
   Sunday: 1,
   Monday: 2,
@@ -45,7 +57,6 @@ const CreateChoreForm: React.FC<CreateChoreFormProps> = ({
       setValue(initialChore.amountCents || 0);
       setPaymentType(initialChore.paymentType || PaymentType.Daily);
 
-      // Convert requiredDays bitmask back to selected days array
       const requiredDays = initialChore.requiredDays || 0;
       const days: string[] = [];
       if (requiredDays & 1) days.push('Sunday');

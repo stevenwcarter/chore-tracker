@@ -63,7 +63,6 @@ pub async fn app(context: GraphQLContext) -> Router {
     let mut oidc_config = OidcConfig::from_env();
 
     debug!("OIDC Config: {:?}", oidc_config);
-    // Initialize OIDC discovery config
     if let Err(e) = oidc_config.initialize().await {
         warn!("Failed to initialize OIDC config: {}", e);
     }
@@ -77,7 +76,6 @@ pub async fn app(context: GraphQLContext) -> Router {
         .layer(cors)
         .layer(CompressionLayer::new());
 
-    // Create modular routes
     let graphql_routes = graphql::graphql_routes()
         .layer(Extension(context.clone()))
         .layer(Extension(Arc::new(qm_schema)));

@@ -161,6 +161,9 @@ impl ChoreSvc {
             .context("Could not load assigned users")
     }
 
+    /// Lists the active chores whose `bonus_date` is exactly `date`. Bonus chores are one-off
+    /// offers for a single day; recurring chores have a null `bonus_date` and never appear
+    /// here.
     pub fn list_bonus_chores(context: &GraphQLContext, date: NaiveDate) -> Result<Vec<Chore>> {
         chores::table
             .filter(chores::bonus_date.eq(date))
@@ -170,6 +173,12 @@ impl ChoreSvc {
             .context("Could not load bonus chores")
     }
 
+    /// Whether a bonus chore still has room to be claimed.
+    ///
+    /// A `max_claims` of `None` means unlimited. Otherwise the cap counts total completions
+    /// of the chore across *all* users, not per user - so a bonus chore is first come, first
+    /// served and is exhausted once any combination of users has claimed it `max_claims`
+    /// times.
     pub fn can_claim_bonus(context: &GraphQLContext, chore_id: i32) -> Result<bool> {
         let chore = Self::get_by_id(context, chore_id)?;
 

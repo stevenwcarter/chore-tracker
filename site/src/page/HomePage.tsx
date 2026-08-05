@@ -37,7 +37,8 @@ export const HomePage = () => {
       }, USER_AUTO_DESELECT_MS);
     }
 
-    // Cleanup on unmount
+    // Clear the pending auto-deselect timer whenever the effect re-runs (i.e. on every
+    // selectedUser change) as well as on unmount.
     return () => {
       if (deselectTimer.current) {
         clearTimeout(deselectTimer.current);

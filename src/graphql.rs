@@ -94,7 +94,9 @@ impl Query {
         graphql_translate_anyhow(ChoreCompletionSvc::list(context, &filter))
     }
 
-    // Get weekly view for a user
+    /// One user's completions over the inclusive 7-day window
+    /// `week_start_date ..= week_start_date + 6`. The caller picks which weekday a week
+    /// starts on; the frontend passes a Sunday.
     pub fn get_weekly_chore_completions(
         context: &GraphQLContext,
         user_id: i32,
@@ -107,7 +109,8 @@ impl Query {
         ))
     }
 
-    // Get all completions for the week (for all users)
+    /// The unfiltered sibling of `getWeeklyChoreCompletions`: the same 7-day window across
+    /// every user. The weekly grid uses it to show which chores a sibling has already claimed.
     pub fn get_all_weekly_completions(
         context: &GraphQLContext,
         week_start_date: NaiveDate,
@@ -118,7 +121,9 @@ impl Query {
         ))
     }
 
-    // Get total unpaid amounts per user
+    /// Amount owed to each user, counting only completions that are approved but not yet
+    /// paid out. A user with nothing owed may come back with a total of 0 or be omitted
+    /// entirely, depending on whether they have any completions at all.
     pub fn get_unpaid_totals(context: &GraphQLContext) -> FieldResult<Vec<UnpaidTotal>> {
         let results = ChoreCompletionSvc::get_unpaid_totals(context)?;
         let unpaid_totals = results
@@ -143,6 +148,9 @@ impl Query {
     }
 
     // Badges
+    /// Every badge a user has earned, read straight from the `user_badges` table rather than
+    /// through the service layer. This query only reads: badges are awarded as a side effect
+    /// of approving a chore completion.
     pub fn user_badges(context: &GraphQLContext, user_id: i32) -> FieldResult<Vec<UserBadge>> {
         use crate::schema::user_badges::dsl;
         use diesel::prelude::*;
@@ -215,7 +223,8 @@ impl Mutation {
         Ok(true)
     }
 
-    // Assign user to chore
+    /// Assigns a user to a chore. Admin-only. Assigning a user who is already assigned is a
+    /// successful no-op.
     pub async fn assign_user_to_chore(
         context: &GraphQLContext,
         chore_id: i32,
@@ -226,7 +235,8 @@ impl Mutation {
         Ok(true)
     }
 
-    // Remove user from chore
+    /// Removes a user's assignment to a chore. Admin-only, always returns true (including
+    /// when no assignment existed), and leaves any completions the user already logged intact.
     pub async fn unassign_user_from_chore(
         context: &GraphQLContext,
         chore_id: i32,
@@ -245,6 +255,9 @@ impl Mutation {
         graphql_translate_anyhow(ChoreCompletionSvc::create(context, &completion))
     }
 
+    /// Approves a logged completion. Requires an admin session, records which admin approved
+    /// it and when, which is what makes the completion eligible for payout, and then re-runs
+    /// the badge checks for the owning user.
     pub async fn approve_chore_completion(
         context: &GraphQLContext,
         completion_uuid: String,
@@ -257,9 +270,12 @@ impl Mutation {
         ))
     }
 
+    /// Settles up with the listed users: requires an admin session and marks every approved,
+    /// unpaid completion belonging to any of them as paid, in a single statement. An empty
+    /// `user_ids` is a no-op that still reports success.
     pub async fn mark_completions_as_paid(
         context: &GraphQLContext,
-        user_ids: Vec<i32>, // Support multiple user IDs
+        user_ids: Vec<i32>,
     ) -> FieldResult<bool> {
         context.require_admin()?;
         if !user_ids.is_empty() {

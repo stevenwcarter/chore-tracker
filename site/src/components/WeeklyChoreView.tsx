@@ -35,13 +35,13 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
 
   const weekRange = useMemo(() => getWeekDateRange(currentWeekStart), [currentWeekStart]);
 
-  // For mobile, always use the first day of the current week
-  // For desktop, allow free navigation through the week
+  // The day the user has navigated to on desktop, seeded with the first day of the week.
   const [selectedDate, setSelectedDate] = useState(() => {
     return weekRange.dates.length > 0 ? weekRange.dates[0] : new Date();
   });
 
-  // Derive the current date based on mobile state
+  // On mobile the view is pinned to the first day of the current week; on desktop the
+  // user navigates freely through the week and `selectedDate` wins.
   const currentDate = useMemo(() => {
     if (isMobile && weekRange.dates.length > 0) {
       return weekRange.dates[0];

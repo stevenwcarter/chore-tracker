@@ -21,6 +21,12 @@ export interface Chore {
   description?: string;
   amountCents: number;
   paymentType: PaymentType;
+  /**
+   * Bitmask of the weekdays this chore is scheduled for, using the backend layout:
+   * 1 = Mon, 2 = Tue, 4 = Wed, 8 = Thu, 16 = Fri, 32 = Sat, 64 = Sun. 0 means no
+   * scheduled days. For weekly chores the server divides `amountCents` by the number
+   * of set bits to arrive at the per-completion payout.
+   */
   requiredDays: number;
   active?: boolean;
   createdAt: string;
@@ -70,6 +76,13 @@ export interface UnpaidTotal {
   amountCents: number;
 }
 
+/**
+ * How a chore's `amountCents` turns into money for the kid.
+ *
+ * `Daily` pays the full `amountCents` for every completion. `Weekly` splits `amountCents`
+ * across the days set in `requiredDays`, so a weekly chore's `amountCents` shown in the UI
+ * is the whole-week total, not what a single completion is worth.
+ */
 export enum PaymentType {
   Daily = 'DAILY',
   Weekly = 'WEEKLY',

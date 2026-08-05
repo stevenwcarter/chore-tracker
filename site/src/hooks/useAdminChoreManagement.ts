@@ -12,6 +12,15 @@ import {
 import { withErrorToast } from 'utils/withErrorToast';
 import { useRefetchingMutation } from './useRefetchingMutation';
 
+/**
+ * Owns every admin-side chore and user CRUD operation (create/update chore, create user,
+ * assign/unassign users) along with the chore and user lists they refetch.
+ *
+ * Updating a chore diffs its assignments against a snapshot of the assigned users taken
+ * *before* the update mutation runs. The mutation's onCompleted triggers a refetch of the
+ * chore list, which replaces the assignment data mid-flight, so diffing against the live
+ * query result would compare the new assignments to themselves and issue no changes.
+ */
 export const useAdminChoreManagement = () => {
   const {
     data: choresData,

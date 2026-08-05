@@ -10,6 +10,11 @@ use ynab_api::{
     models::CategoriesResponse,
 };
 
+/// A user's spending-money balance as reported by YNAB.
+///
+/// `name` is the display name of the YNAB "<name> Cash" category this balance came from,
+/// not the local `User` row's name, and `balance` is in whole dollars, already converted
+/// from YNAB's milliunits.
 #[derive(Debug, Clone, Serialize, Deserialize, GraphQLObject)]
 pub struct UserBalance {
     pub name: String,

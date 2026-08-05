@@ -57,6 +57,12 @@ pub struct OidcDiscoveryConfig {
 }
 
 impl OidcConfig {
+    /// Reads the client credentials from `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` and
+    /// `OIDC_DISCOVERY_URL`, plus `OIDC_REDIRECT_URL` (defaulting to
+    /// `http://localhost:7007/auth/callback`).
+    ///
+    /// The returned config is not yet usable: discovery metadata and JWKS are empty until
+    /// [`Self::initialize`] has run.
     pub fn from_env() -> Self {
         Self {
             client_id: get_env("OIDC_CLIENT_ID", ""),
@@ -119,6 +125,12 @@ impl OidcConfig {
         Ok(())
     }
 
+    /// Builds the authorization-code redirect to the discovered authorization endpoint,
+    /// requesting the `openid email profile` scope.
+    ///
+    /// `state` is the caller's CSRF token and `nonce` its replay-protection value; both are
+    /// URL-encoded into the query and must later be checked against the login cookie. Errors
+    /// if [`Self::initialize`] has not run.
     pub fn get_authorization_url(&self, state: &str, nonce: &str) -> Result<String> {
         let config = self
             .discovery_config
@@ -135,6 +147,13 @@ impl OidcConfig {
         ))
     }
 
+    /// Validates an ID token: selects the signing key from the JWKS by the token's `kid`,
+    /// verifies the signature, and checks the `iss` and `aud` claims against the discovered
+    /// issuer and this client id.
+    ///
+    /// It additionally requires the token's `nonce` claim to equal `expected_nonce`, the value
+    /// stashed in the login cookie. A token with no `nonce` claim at all is an error, not a
+    /// pass - skipping that check would reopen the replay hole the nonce exists to close.
     pub async fn verify_id_token(&self, id_token: &str, expected_nonce: &str) -> Result<()> {
         use jsonwebtoken::{DecodingKey, Validation, decode, decode_header};
 
@@ -175,6 +194,10 @@ impl OidcConfig {
         }
     }
 
+    /// Redeems an authorization code at the discovered token endpoint using the
+    /// `authorization_code` grant, the client secret, and the configured redirect URI.
+    ///
+    /// A non-2xx response is turned into an error carrying the status and the response body.
     pub async fn exchange_code_for_token(&self, code: &str) -> Result<TokenResponse> {
         let config = self
             .discovery_config
@@ -211,6 +234,8 @@ impl OidcConfig {
         Ok(token)
     }
 
+    /// Fetches the profile from the discovered userinfo endpoint, bearer-authenticating with
+    /// `access_token`. Every field of the returned profile except `sub` may be absent.
     pub async fn get_user_info(&self, access_token: &str) -> Result<UserInfo> {
         let config = self
             .discovery_config
