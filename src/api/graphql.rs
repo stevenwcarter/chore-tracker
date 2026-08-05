@@ -38,6 +38,12 @@ async fn root() -> &'static str {
 }
 
 // Subscriptions use the base context (admin_id: None) — no subscription currently requires admin auth.
+//
+// No test coverage: the repo has no websocket harness. This is tolerable only
+// because the schema's subscription root is `EmptySubscription`, so nothing is
+// resolvable here — an invariant pinned by `graphql::tests::subscription_root_is_still_empty`.
+// Before adding a real subscription, add a harness that exercises this handler;
+// a prior cache-sharing bug here was caught only by manual inspection.
 async fn custom_subscriptions(
     Extension(schema): Extension<Arc<Schema>>,
     Extension(context): Extension<GraphQLContext>,

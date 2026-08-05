@@ -338,3 +338,27 @@ pub fn graphql_translate_anyhow<T>(res: anyhow::Result<T>) -> FieldResult<T> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Guards the invariant the untested websocket path depends on.
+    ///
+    /// `custom_subscriptions` has no test coverage — the repo has no
+    /// websocket harness. That is tolerable only because nothing is
+    /// resolvable over the socket. This function only type-checks while the
+    /// schema's subscription root is `EmptySubscription`, so adding a real
+    /// subscription breaks the build here and forces whoever does it to
+    /// confront the missing coverage first.
+    #[test]
+    fn subscription_root_is_still_empty() {
+        fn assert_empty_subscription_root(
+            _: &RootNode<Query, Mutation, EmptySubscription<GraphQLContext>>,
+        ) {
+        }
+
+        let schema = create_schema();
+        assert_empty_subscription_root(&schema);
+    }
+}
