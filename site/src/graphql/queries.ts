@@ -274,8 +274,8 @@ export const LIST_BONUS_CHORES = gql`
 `;
 
 export const CREATE_BONUS_CHORE = gql`
-  mutation CreateBonusChore($input: ChoreInput!) {
-    createBonusChore(input: $input) {
+  mutation CreateBonusChore($chore: ChoreInput!) {
+    createBonusChore(chore: $chore) {
       id
       uuid
       name

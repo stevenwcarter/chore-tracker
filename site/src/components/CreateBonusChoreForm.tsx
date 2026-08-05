@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useMutation } from '@apollo/client/react';
 import { toast } from 'react-toastify';
 import { CREATE_BONUS_CHORE } from 'graphql/queries';
+import { PaymentType } from 'types/chore';
 
 interface CreateBonusChoreFormProps {
   currentAdminId: number;
@@ -42,10 +43,10 @@ const CreateBonusChoreForm: React.FC<CreateBonusChoreFormProps> = ({
 
     await createBonusChore({
       variables: {
-        input: {
+        chore: {
           name: name.trim(),
           description: null,
-          paymentType: 'daily',
+          paymentType: PaymentType.Daily,
           amountCents,
           requiredDays: 0,
           active: true,
