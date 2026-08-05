@@ -288,20 +288,19 @@ describe('AdminCompletionReview approved completions', () => {
     expect(screen.queryByRole('button', { name: /Approve/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Reject/ })).not.toBeInTheDocument();
 
-    // GET_ALL_WEEKLY_COMPLETIONS does not select `approvedAt` (see
-    // src/graphql/queries.ts) -- Apollo's cache read strips fields the query
-    // didn't ask for, so `completion.approvedAt` is always undefined for data
-    // delivered through this query, EVEN THOUGH this mock's result.data sets
-    // it. The JSX's `{completion.approvedAt && <p>Approved: ...</p>}` guard
-    // therefore never renders for real query data -- confirmed with a scratch
-    // probe reading the same query directly. This is a pre-existing,
-    // out-of-scope data-layer gap (not introduced or fixed by this task); this
-    // assertion pins the REAL current behaviour, not what the conditional
-    // would suggest in isolation.
-    expect(screen.queryByText(/Approved:/)).not.toBeInTheDocument();
-
     expect(screen.getByText('Pending Approval (0)')).toBeInTheDocument();
     expect(screen.getByText('No pending completions for this week.')).toBeInTheDocument();
+  });
+
+  it('renders the approval date on an approved completion', async () => {
+    // GET_ALL_WEEKLY_COMPLETIONS now selects `approvedAt` (see
+    // src/graphql/queries.ts) -- this pins the previously-broken behaviour:
+    // CompletionCard's `{completion.approvedAt && <p>Approved: ...</p>}` guard
+    // now actually renders for data delivered through this query. [T104]
+    renderComponent([], [APPROVED_COMPLETION]);
+    await waitForLoaded();
+
+    expect(await screen.findByText(/Approved:/)).toBeInTheDocument();
   });
 });
 

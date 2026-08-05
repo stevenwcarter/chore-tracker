@@ -92,6 +92,7 @@ export const GET_ALL_WEEKLY_COMPLETIONS = gql`
       choreId
       completedDate
       approved
+      approvedAt
       amountCents
       chore {
         id
