@@ -2,8 +2,8 @@
 use crate::{
     context::GraphQLContext,
     db::get_conn,
-    models::{ChoreCompletion, ChoreCompletionInput, PaymentType, User},
-    schema::{chore_completions, users},
+    models::{Chore, ChoreCompletion, ChoreCompletionInput, PaymentType, User},
+    schema::{chore_completions, chores, users},
     svc::{BadgeSvc, ChoreSvc},
 };
 use anyhow::{Context, Result};
@@ -179,51 +179,48 @@ impl ChoreCompletionSvc {
         Ok(converted_results)
     }
 
+    /// Creates a completion for `completion_input`, computing its payout from the chore's
+    /// payment type and enforcing the bonus-chore claim cap.
+    ///
+    /// The chore fetch, cap check, insert and re-read all share one pooled connection inside a
+    /// transaction, instead of each taking (and releasing) its own connection as before. That
+    /// closes the previous check-then-insert window on capped bonus chores: a competing claim
+    /// on the same chore can no longer commit its own insert between this call's cap check and
+    /// its insert, because SQLite serializes commits against any connection still mid-transaction.
     pub fn create(
         context: &GraphQLContext,
         completion_input: &ChoreCompletionInput,
     ) -> Result<ChoreCompletion> {
-        // Get the chore to calculate the correct payment amount
-        let chore = ChoreSvc::get_by_id(context, completion_input.chore_id)?;
+        let mut conn = get_conn(context)?;
 
-        // Guard: if this is a bonus chore with max_claims, check the cap
-        if chore.bonus_date.is_some()
-            && !ChoreSvc::can_claim_bonus(context, completion_input.chore_id)?
-        {
-            return Err(anyhow::anyhow!(
-                "This bonus chore has already reached its claim limit"
-            ));
-        }
-        let payment_type = PaymentType::from(chore.payment_type);
+        conn.transaction(|conn| {
+            let chore = chores::table
+                .filter(chores::id.eq(completion_input.chore_id))
+                .select(Chore::as_select())
+                .first(conn)
+                .context("Could not find chore by ID")?;
 
-        let calculated_amount = PaymentType::calculate_completion_amount(
-            &payment_type,
-            chore.amount_cents,
-            chore.required_days,
-        );
+            ensure_bonus_claim_allowed(&chore, conn)?;
 
-        let completion = ChoreCompletion {
-            id: None,
-            uuid: crate::uuid_or_generate(completion_input.uuid.clone()),
-            chore_id: completion_input.chore_id,
-            user_id: completion_input.user_id,
-            completed_date: completion_input.completed_date,
-            amount_cents: calculated_amount,
-            approved: false,
-            approved_by_admin_id: None,
-            approved_at: None,
-            paid_out: false,
-            paid_out_at: None,
-            created_at: None,
-            updated_at: None,
-        };
+            let payment_type = PaymentType::from(chore.payment_type);
+            let amount_cents = PaymentType::calculate_completion_amount(
+                &payment_type,
+                chore.amount_cents,
+                chore.required_days,
+            );
+            let completion = new_completion(completion_input, amount_cents);
 
-        diesel::insert_into(chore_completions::table)
-            .values(&completion)
-            .execute(&mut get_conn(context)?)
-            .context("Could not create chore completion")?;
+            diesel::insert_into(chore_completions::table)
+                .values(&completion)
+                .execute(conn)
+                .context("Could not create chore completion")?;
 
-        Self::get(context, &completion.uuid)
+            chore_completions::table
+                .filter(chore_completions::uuid.eq(&completion.uuid))
+                .select(ChoreCompletion::as_select())
+                .first(conn)
+                .context("Could not find chore completion")
+        })
     }
 
     /// Approves a completion, stamping `approved_by_admin_id` and `approved_at`, which is
@@ -296,6 +293,34 @@ impl ChoreCompletionSvc {
             .context("Could not delete chore completion")?;
 
         Ok(())
+    }
+}
+
+/// Bails if `chore` is a bonus chore that has already reached its claim cap, sharing the
+/// caller's connection so the check runs inside the same transaction as the insert.
+fn ensure_bonus_claim_allowed(chore: &Chore, conn: &mut SqliteConnection) -> Result<()> {
+    if chore.bonus_date.is_some() && !ChoreSvc::can_claim_bonus_for(chore, conn)? {
+        anyhow::bail!("Bonus chore has reached its claim limit");
+    }
+    Ok(())
+}
+
+/// Builds the completion row to insert; `amount_cents` is the already-computed payout.
+fn new_completion(input: &ChoreCompletionInput, amount_cents: i32) -> ChoreCompletion {
+    ChoreCompletion {
+        id: None,
+        uuid: crate::uuid_or_generate(input.uuid.clone()),
+        chore_id: input.chore_id,
+        user_id: input.user_id,
+        completed_date: input.completed_date,
+        amount_cents,
+        approved: false,
+        approved_by_admin_id: None,
+        approved_at: None,
+        paid_out: false,
+        paid_out_at: None,
+        created_at: None,
+        updated_at: None,
     }
 }
 

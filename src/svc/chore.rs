@@ -181,18 +181,25 @@ impl ChoreSvc {
     /// times.
     pub fn can_claim_bonus(context: &GraphQLContext, chore_id: i32) -> Result<bool> {
         let chore = Self::get_by_id(context, chore_id)?;
+        let mut conn = get_conn(context)?;
+        Self::can_claim_bonus_for(&chore, &mut conn)
+    }
 
-        match chore.max_claims {
-            None => Ok(true), // unlimited
-            Some(cap) => {
-                let count: i64 = chore_completions::table
-                    .filter(chore_completions::chore_id.eq(chore_id))
-                    .count()
-                    .get_result(&mut get_conn(context)?)
-                    .context("Could not count chore completions")?;
-                Ok(count < cap as i64)
-            }
-        }
+    /// Cap check against an already-loaded chore, sharing the caller's connection.
+    ///
+    /// `max_claims == None` means unlimited. The cap counts completions of the
+    /// chore across ALL users, not per user.
+    pub fn can_claim_bonus_for(chore: &Chore, conn: &mut SqliteConnection) -> Result<bool> {
+        let Some(max_claims) = chore.max_claims else {
+            return Ok(true);
+        };
+        let chore_id = chore.id.context("chore has no id")?;
+        let claimed: i64 = chore_completions::table
+            .filter(chore_completions::chore_id.eq(chore_id))
+            .count()
+            .get_result(conn)
+            .context("Could not count chore completions")?;
+        Ok(claimed < i64::from(max_claims))
     }
 }
 
