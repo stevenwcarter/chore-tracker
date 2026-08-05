@@ -69,8 +69,8 @@ mod tests {
 
         let user = User {
             id: Some(1),
-            uuid: "user-1".to_string(),
-            name: "Alice".to_string(),
+            uuid: "user-1".to_owned(),
+            name: "Alice".to_owned(),
             image_path: None,
             created_at: None,
             updated_at: None,
