@@ -513,6 +513,7 @@ pub async fn check_admin_session(
 mod tests {
     use super::*;
     use crate::test_helpers::test_db;
+    use diesel::RunQueryDsl;
 
     fn create_session_for_test(context: &GraphQLContext, admin_id: i32) -> String {
         AdminSvc::create_session(context, admin_id).unwrap()
@@ -542,6 +543,31 @@ mod tests {
         assert_eq!(
             admin_id_from_jar(&context, &jar).unwrap(),
             Some(admin.id.unwrap())
+        );
+    }
+
+    #[test]
+    fn admin_id_from_jar_propagates_database_errors() {
+        let pool = test_db::create_test_pool();
+        let context = GraphQLContext {
+            pool,
+            admin_id: None,
+        };
+
+        {
+            // Drop the connection guard before calling `admin_id_from_jar` below - the
+            // pool is max_size(1), so holding it open would deadlock that call.
+            let mut conn = context.pool.get().unwrap();
+            diesel::sql_query("DROP TABLE admin_sessions")
+                .execute(&mut conn)
+                .unwrap();
+        }
+
+        let jar = CookieJar::new().add(Cookie::new(ADMIN_SESSION_COOKIE, "irrelevant-token"));
+        let result = admin_id_from_jar(&context, &jar);
+        assert!(
+            result.is_err(),
+            "expected a DB error to propagate, got {result:?}"
         );
     }
 }
