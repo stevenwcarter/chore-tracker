@@ -441,7 +441,7 @@ fn create_admin_session(
         Redirect::to("/?error=session_creation_failed").into_response()
     })?;
 
-    let session_cookie = Cookie::build(("admin_session", token))
+    let session_cookie = Cookie::build((ADMIN_SESSION_COOKIE, token))
         .path("/")
         .http_only(true)
         .secure(!cfg!(debug_assertions))
@@ -457,13 +457,13 @@ pub async fn logout_handler(
     State((_oidc_config, context)): State<(OidcConfig, GraphQLContext)>,
     jar: CookieJar,
 ) -> impl IntoResponse {
-    if let Some(cookie) = jar.get("admin_session") {
+    if let Some(cookie) = jar.get(ADMIN_SESSION_COOKIE) {
         let token = cookie.value().to_owned();
         if let Err(e) = AdminSvc::delete_session(&context, &token) {
             error!("Failed to delete session on logout: {}", e);
         }
     }
-    let jar = jar.remove("admin_session");
+    let jar = jar.remove(ADMIN_SESSION_COOKIE);
     (jar, Redirect::to("/"))
 }
 
@@ -478,18 +478,35 @@ pub async fn me_handler(
     )
 }
 
+/// Name of the cookie carrying an admin session token.
+pub const ADMIN_SESSION_COOKIE: &str = "admin_session";
+
+/// Resolves the admin session cookie in `jar` to the associated `Admin` row.
+///
+/// Returns `Ok(None)` when there is no cookie or the token matches no live
+/// session. A database failure is propagated as `Err` — it is deliberately
+/// NOT reported as "not logged in", because silently downgrading an admin to
+/// anonymous on a transient fault fails open.
+fn admin_from_jar(context: &GraphQLContext, jar: &CookieJar) -> Result<Option<Admin>> {
+    let Some(cookie) = jar.get(ADMIN_SESSION_COOKIE) else {
+        return Ok(None);
+    };
+    AdminSvc::get_session(context, cookie.value())
+}
+
+/// Resolves the admin session cookie in `jar` to an admin id.
+///
+/// See [`admin_from_jar`] for the `Ok(None)` vs `Err` semantics this delegates to.
+pub fn admin_id_from_jar(context: &GraphQLContext, jar: &CookieJar) -> Result<Option<i32>> {
+    Ok(admin_from_jar(context, jar)?.and_then(|admin| admin.id))
+}
+
 /// Validates the admin session token from the cookie jar and returns the associated `Admin`.
 pub async fn check_admin_session(
     State(context): State<GraphQLContext>,
     jar: CookieJar,
 ) -> Result<Admin> {
-    let session_cookie = jar
-        .get("admin_session")
-        .ok_or_else(|| anyhow::anyhow!("No session found"))?;
-
-    let token = session_cookie.value();
-    AdminSvc::get_session(&context, token)?
-        .ok_or_else(|| anyhow::anyhow!("Session not found or expired"))
+    admin_from_jar(&context, &jar)?.ok_or_else(|| anyhow::anyhow!("No session found"))
 }
 
 #[cfg(test)]

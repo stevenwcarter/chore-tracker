@@ -1,3 +1,5 @@
+use crate::api::AppError;
+use crate::auth::admin_id_from_jar;
 use crate::context::GraphQLContext;
 use crate::graphql::Schema;
 
@@ -10,7 +12,6 @@ use juniper_axum::response::JuniperResponse;
 use juniper_axum::{graphiql, playground, subscriptions};
 use juniper_graphql_ws::ConnectionConfig;
 use std::sync::Arc;
-use tracing::warn;
 
 /// Builds the GraphQL router exposing the main endpoint (`/`), websocket subscriptions,
 /// GraphiQL, and the Playground UI.
@@ -55,20 +56,13 @@ async fn custom_graphql(
     Extension(context): Extension<GraphQLContext>,
     jar: axum_extra::extract::CookieJar,
     JuniperRequest(request): JuniperRequest,
-) -> JuniperResponse {
-    use crate::svc::AdminSvc;
-    let admin_id =
-        jar.get("admin_session")
-            .and_then(|c| match AdminSvc::get_session(&context, c.value()) {
-                Ok(maybe_admin) => maybe_admin.and_then(|a| a.id),
-                Err(e) => {
-                    warn!("session lookup failed: {}", e);
-                    None
-                }
-            });
-    let authed_context = crate::context::GraphQLContext {
+) -> Result<JuniperResponse, AppError> {
+    let admin_id = admin_id_from_jar(&context, &jar)?;
+    let authed_context = GraphQLContext {
         pool: context.pool.clone(),
         admin_id,
     };
-    JuniperResponse(request.execute(&*schema, &authed_context).await)
+    Ok(JuniperResponse(
+        request.execute(&*schema, &authed_context).await,
+    ))
 }
