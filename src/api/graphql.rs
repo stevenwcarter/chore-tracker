@@ -39,11 +39,20 @@ async fn root() -> &'static str {
 
 // Subscriptions use the base context (admin_id: None) — no subscription currently requires admin auth.
 //
-// No test coverage: the repo has no websocket harness. This is tolerable only
-// because the schema's subscription root is `EmptySubscription`, so nothing is
-// resolvable here — an invariant pinned by `graphql::tests::subscription_root_is_still_empty`.
-// Before adding a real subscription, add a harness that exercises this handler;
-// a prior cache-sharing bug here was caught only by manual inspection.
+// No test coverage: the repo has no websocket harness. `juniper_graphql_ws` executes
+// queries and mutations over this socket directly — it only falls through to the
+// subscription resolver on `GraphQLError::IsSubscription` — so the full `Query` and
+// `Mutation` root is reachable here today, unauthenticated. That is not an escalation:
+// `custom_graphql` also resolves to `admin_id: None` for a cookie-less request, so this
+// matches anonymous HTTP GraphQL access. What's actually unreachable is the subscription
+// *stream* path, because the schema's subscription root is `EmptySubscription` — an
+// invariant pinned by `graphql::tests::subscription_root_is_still_empty`, which is
+// `#[cfg(test)]` and so only fires under `cargo test` / `cargo clippy --all-targets`, not
+// under a plain `cargo build`. That guard covers exactly one trigger — a change to
+// `pub type Schema`'s third (subscription) parameter — and does not protect the
+// query/mutation surface described above. Before adding a real subscription, add a
+// harness that exercises this handler; a prior cache-sharing bug here was caught only
+// by manual inspection.
 async fn custom_subscriptions(
     Extension(schema): Extension<Arc<Schema>>,
     Extension(context): Extension<GraphQLContext>,

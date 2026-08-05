@@ -47,9 +47,12 @@ const USER_ALICE: User = {
   createdAt: '2026-01-01T00:00:00Z',
 };
 
-// Pending completions never carry an approvedAt (the mutation that sets it
-// hasn't run yet) -- this is the natural data invariant the component's
-// approvedAt-line rendering depends on.
+// Pending completions never carry an approvedAt in practice (the mutation that
+// sets it hasn't run yet). CompletionCard does not rely on that data invariant,
+// though -- it gates the approval line on `completion.approved` explicitly (see
+// the "suppresses the approval date on a pending completion that carries one"
+// test below), so this fixture is just the ordinary shape, not a guarantee the
+// component trusts.
 const PENDING_COMPLETION: ChoreCompletion = {
   id: 100,
   uuid: 'completion-uuid-100',

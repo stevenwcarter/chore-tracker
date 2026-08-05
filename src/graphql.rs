@@ -343,14 +343,18 @@ pub fn graphql_translate_anyhow<T>(res: anyhow::Result<T>) -> FieldResult<T> {
 mod tests {
     use super::*;
 
-    /// Guards the invariant the untested websocket path depends on.
+    /// Guards the one invariant the untested websocket path actually depends on: that
+    /// the subscription *stream* path is unreachable.
     ///
-    /// `custom_subscriptions` has no test coverage — the repo has no
-    /// websocket harness. That is tolerable only because nothing is
-    /// resolvable over the socket. This function only type-checks while the
-    /// schema's subscription root is `EmptySubscription`, so adding a real
-    /// subscription breaks the build here and forces whoever does it to
-    /// confront the missing coverage first.
+    /// `custom_subscriptions` has no test coverage — the repo has no websocket
+    /// harness. `juniper_graphql_ws` executes queries and mutations over the socket
+    /// directly before ever considering the subscription root, so those DO resolve
+    /// there today, unauthenticated (`admin_id: None`) — the same posture as a
+    /// cookie-less HTTP request to `custom_graphql`, so this is not an escalation.
+    /// What this test pins is narrower: it only type-checks while the schema's
+    /// subscription root is `EmptySubscription`, so adding a real subscription
+    /// breaks `cargo test` / `cargo clippy --all-targets` (not a plain `cargo build`)
+    /// here and forces whoever does it to confront the missing coverage first.
     #[test]
     fn subscription_root_is_still_empty() {
         fn assert_empty_subscription_root(
