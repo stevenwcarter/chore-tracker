@@ -1,6 +1,16 @@
 import { WeekDateRange } from '../types/chore';
 
-export function getWeekStartDate(date: Date = new Date()): Date {
+/**
+ * Start of the week containing `date`, as a local-time, midnight-normalised
+ * Date. Weeks are treated as **Sunday-start**: this is the value sent to the
+ * backend as `weekStartDate`.
+ *
+ * Deliberately independent of the chore `requiredDays` bitmask, which is
+ * Monday-first (see `utils/weekdayBitmask.ts`). The two answer different
+ * questions — "which calendar week am I looking at" vs "which weekdays is
+ * this chore scheduled for" — and must not be unified.
+ */
+function getWeekStartDate(date: Date = new Date()): Date {
   const d = new Date(date);
   const day = d.getDay();
   const diff = d.getDate() - day; // Subtract days since Sunday
@@ -9,7 +19,7 @@ export function getWeekStartDate(date: Date = new Date()): Date {
   return weekStart;
 }
 
-export function getWeekEndDate(weekStart: Date): Date {
+function getWeekEndDate(weekStart: Date): Date {
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekStart.getDate() + 6);
   weekEnd.setHours(23, 59, 59, 999);
@@ -53,7 +63,7 @@ export function formatCurrency(amountCents: number): string {
   });
 }
 
-export function isSameDay(date1: Date, date2: Date): boolean {
+function isSameDay(date1: Date, date2: Date): boolean {
   return (
     date1.getFullYear() === date2.getFullYear() &&
     date1.getMonth() === date2.getMonth() &&
