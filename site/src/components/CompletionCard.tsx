@@ -35,7 +35,7 @@ export const CompletionCard: React.FC<CompletionCardProps> = ({
           <p className="text-sm text-green-400 font-medium">
             {formatCurrency(completion.amountCents)}
           </p>
-          {completion.approvedAt && (
+          {completion.approved && completion.approvedAt && (
             <p className="text-xs text-gray-400">
               Approved: {new Date(completion.approvedAt).toLocaleDateString()}
             </p>

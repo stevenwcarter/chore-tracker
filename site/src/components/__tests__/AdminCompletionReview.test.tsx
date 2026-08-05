@@ -302,6 +302,26 @@ describe('AdminCompletionReview approved completions', () => {
 
     expect(await screen.findByText(/Approved:/)).toBeInTheDocument();
   });
+
+  it('suppresses the approval date on a pending completion that carries one', async () => {
+    // The backend never actually produces this combination today (approved_at
+    // is only written alongside approved = true, and "reject" is a delete, so
+    // there is no unapprove path) -- constructing it here is the point: it is
+    // exactly what CompletionCard's gate must not trust incidental invariants
+    // to prevent. [T105]
+    const pendingWithApprovedAt: ChoreCompletion = {
+      ...PENDING_COMPLETION,
+      approved: false,
+      approvedAt: '2026-08-03T12:00:00',
+    };
+    renderComponent([], [pendingWithApprovedAt]);
+    await waitForLoaded();
+
+    // The pending card must be on screen...
+    expect(await screen.findByRole('button', { name: /Approve/ })).toBeInTheDocument();
+    // ...and must NOT show an approval date.
+    expect(screen.queryByText(/Approved:/)).not.toBeInTheDocument();
+  });
 });
 
 describe('AdminCompletionReview completion detail modal', () => {
