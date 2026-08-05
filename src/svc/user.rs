@@ -23,6 +23,9 @@ pub struct UserBalance {
 
 static REQWEST_CLIENT: OnceLock<Client> = OnceLock::new();
 
+/// YNAB budget the family's allowance categories live in.
+const YNAB_BUDGET_ID: &str = "0dcd28d3-c3e8-4f3d-a64f-f63b5f12f87f";
+
 /// (YNAB category name, display name) for each child.
 /// Adding a child is a one-line change here.
 const KIDS: [(&str, &str); 3] = [
@@ -30,6 +33,21 @@ const KIDS: [(&str, &str); 3] = [
     ("Madeline Cash", "Madeline"),
     ("AJ Cash", "AJ"),
 ];
+
+/// Builds the YNAB client configuration from the `YNAB_TOKEN` env var.
+///
+/// Reuses a single pooled client across calls (`reqwest::Client` pools connections
+/// internally).
+fn ynab_configuration() -> Configuration {
+    let ynab_token = get_env("YNAB_TOKEN", "NOT_SET");
+    let client = REQWEST_CLIENT.get_or_init(Client::new).clone();
+    Configuration {
+        base_path: "https://api.ynab.com/v1/".to_owned(),
+        client,
+        bearer_access_token: Some(ynab_token),
+        ..Default::default()
+    }
+}
 
 /// Maps the "Kids Allowances" category group to per-child balances in dollars.
 ///
@@ -110,18 +128,15 @@ impl UserSvc {
         Ok(())
     }
 
+    /// Fetches per-child spending-money balances from YNAB.
+    ///
+    /// Balances come from the external YNAB API, not the local database. The
+    /// `YNAB_BUDGET_ID` budget must contain a "Kids Allowances" category group with a
+    /// "<name> Cash" category for every entry in `KIDS`, or this errors. Requires the
+    /// `YNAB_TOKEN` env var.
     pub async fn balances(_context: &GraphQLContext) -> Result<Vec<UserBalance>> {
-        let ynab_token = get_env("YNAB_TOKEN", "NOT_SET");
-        // Reuse a single client across calls (reqwest::Client pools connections internally).
-        let client = REQWEST_CLIENT.get_or_init(Client::new).clone();
-        let budget_id = "0dcd28d3-c3e8-4f3d-a64f-f63b5f12f87f";
-        let configuration = Configuration {
-            base_path: "https://api.ynab.com/v1/".to_owned(),
-            client,
-            bearer_access_token: Some(ynab_token),
-            ..Default::default()
-        };
-        let categories: CategoriesResponse = get_categories(&configuration, budget_id, None)
+        let configuration = ynab_configuration();
+        let categories: CategoriesResponse = get_categories(&configuration, YNAB_BUDGET_ID, None)
             .await
             .context("could not get categories")?;
         let group = categories
