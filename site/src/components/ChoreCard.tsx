@@ -1,6 +1,7 @@
 import React from 'react';
 import { Chore } from '../types/chore';
 import { formatCurrency } from '../utils/dateUtils';
+import { formatWindow } from '../utils/availabilityWindow';
 
 interface ChoreCardProps {
   chore: Chore;
@@ -48,6 +49,12 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({ chore, onManage, onEdit })
           <span className="text-gray-400">Payment:</span>
           <span className="text-white">{chore.paymentType}</span>
         </div>
+        {chore.availabilityWindow && (
+          <div className="flex justify-between">
+            <span className="text-gray-400">Available:</span>
+            <span className="text-white">{formatWindow(chore.availabilityWindow)}</span>
+          </div>
+        )}
         <div className="flex justify-between items-center">
           <span className="text-gray-400">Status:</span>
           <span
