@@ -48,6 +48,7 @@ const WASH_DISHES = {
   requiredDays: 0,
   active: true,
   createdAt: '2026-01-01T00:00:00Z',
+  availabilityWindow: null,
   assignedUsers: [{ id: 1, uuid: 'user-uuid-1', name: 'Alice', imageId: null, imagePath: null }],
 };
 const chores = [WASH_DISHES];

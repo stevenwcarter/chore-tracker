@@ -47,6 +47,7 @@ const CHORE_DISHES: Chore = {
   active: true,
   createdAt: '2026-01-01T00:00:00Z',
   createdByAdminId: 1,
+  availabilityWindow: null,
 };
 
 // Completed by a DIFFERENT user (id 99, not USER_KID) on the one scheduled day,
