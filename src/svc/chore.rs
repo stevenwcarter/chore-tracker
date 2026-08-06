@@ -86,9 +86,22 @@ impl ChoreSvc {
     }
 
     pub fn update(context: &GraphQLContext, chore: &Chore) -> Result<Chore> {
+        // `available_start`/`available_end` are `#[diesel(skip_update)]` on `Chore` (see
+        // models.rs), so the derived `AsChangeset` above never touches those two columns -
+        // they're set explicitly here instead. That's deliberate: `Chore`'s AsChangeset
+        // does NOT use `treat_none_as_null`, so a bare `.set(chore)` would silently omit
+        // any `None` field from the UPDATE rather than nulling it, making it impossible to
+        // clear a chore's availability window once set. Setting the two columns here (via
+        // `Option<i32>::eq`, which binds NULL for `None`) makes clearing them work, without
+        // reintroducing the same field into the derived changeset and risking Diesel
+        // assigning the same column twice in one UPDATE.
         diesel::update(chores::table)
             .filter(chores::uuid.eq(&chore.uuid))
-            .set(chore)
+            .set((
+                chore,
+                chores::available_start.eq(chore.available_start),
+                chores::available_end.eq(chore.available_end),
+            ))
             .execute(&mut get_conn(context)?)
             .context("Could not update chore")?;
 
@@ -746,7 +759,10 @@ mod tests {
     }
 
     #[test]
-    fn test_chore_input_without_window_clears_the_columns() {
+    fn test_chore_input_without_window_clears_the_struct_fields() {
+        // Note: this only exercises `Chore::try_from`, not the database. It does NOT
+        // prove that `ChoreSvc::update` clears the columns on an existing row - see
+        // `test_update_clears_persisted_availability_window` for that.
         let input = ChoreInput {
             uuid: None,
             name: "Make bed".to_owned(),
@@ -793,5 +809,89 @@ mod tests {
             Chore::try_from(input).is_err(),
             "Feb 30 is not a valid boundary"
         );
+    }
+
+    /// The load-bearing regression test for the "can't clear a chore's availability
+    /// window" bug: `Chore` derives `AsChangeset` without `treat_none_as_null`, so
+    /// Diesel omits `None` fields from the UPDATE by default. `ChoreSvc::update` must
+    /// set `available_start`/`available_end` explicitly so clearing actually persists.
+    #[test]
+    fn test_update_clears_persisted_availability_window() {
+        use crate::models::AvailabilityWindowInput;
+
+        let context = create_test_context();
+        let admin = create_test_admin(&context, "Test Admin", "admin@test.com");
+
+        let input = ChoreInput {
+            uuid: None,
+            name: "Study spelling".to_owned(),
+            description: None,
+            payment_type: PaymentType::Daily,
+            amount_cents: 100,
+            required_days: day_patterns::weekdays(),
+            active: Some(true),
+            created_by_admin_id: admin.id.unwrap(),
+            bonus_date: None,
+            max_claims: None,
+            availability_window: Some(AvailabilityWindowInput {
+                start_month: 9,
+                start_day: 1,
+                end_month: 6,
+                end_day: 15,
+            }),
+        };
+        let created = ChoreSvc::create(&context, &Chore::try_from(input).unwrap()).unwrap();
+        assert_eq!(created.available_start, Some(901));
+        assert_eq!(created.available_end, Some(615));
+
+        let uuid = created.uuid.clone();
+        let cleared = Chore {
+            available_start: None,
+            available_end: None,
+            ..created
+        };
+        ChoreSvc::update(&context, &cleared).unwrap();
+
+        let reloaded = ChoreSvc::get(&context, &uuid).unwrap();
+        assert_eq!(
+            reloaded.available_start, None,
+            "available_start should have been cleared by the update"
+        );
+        assert_eq!(
+            reloaded.available_end, None,
+            "available_end should have been cleared by the update"
+        );
+    }
+
+    /// The converse of the clearing test: updating a windowless chore to add a window
+    /// must also persist, since `ChoreSvc::update` now sets both columns explicitly
+    /// rather than relying on the derived `AsChangeset`.
+    #[test]
+    fn test_update_sets_previously_absent_availability_window() {
+        let context = create_test_context();
+        let admin = create_test_admin(&context, "Test Admin", "admin@test.com");
+
+        let chore = create_test_chore(
+            &context,
+            "Make bed",
+            PaymentType::Daily,
+            100,
+            day_patterns::every_day(),
+            admin.id.unwrap(),
+        );
+        assert_eq!(chore.available_start, None);
+        assert_eq!(chore.available_end, None);
+
+        let uuid = chore.uuid.clone();
+        let windowed = Chore {
+            available_start: Some(901),
+            available_end: Some(615),
+            ..chore
+        };
+        ChoreSvc::update(&context, &windowed).unwrap();
+
+        let reloaded = ChoreSvc::get(&context, &uuid).unwrap();
+        assert_eq!(reloaded.available_start, Some(901));
+        assert_eq!(reloaded.available_end, Some(615));
     }
 }

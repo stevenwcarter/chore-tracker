@@ -27,16 +27,25 @@ const formatBalance = (amount: number, currency = 'USD', locale = 'en-US') => {
 
 export const UserBalance = (props: UserBalanceProps) => {
   const { name, balances, pendingCents } = props;
-  if (!balances || balances.length === 0) {
+  // `balances` comes from YNAB (an external API call, gated on a token) and is `[]`
+  // both on error and while in flight - so its absence must NOT hide the pending
+  // figure, which comes entirely from our own database. Only the balance line's
+  // presence depends on `balances` having data; the pending line is independent.
+  const hasBalances = !!balances && balances.length > 0;
+  const hasPending = !!pendingCents;
+
+  if (!hasBalances && !hasPending) {
     return null;
   }
 
-  const userBalance = balances.find((balance) => balance.name === name) || { balance: 0 };
+  const userBalance = balances?.find((balance) => balance.name === name) || { balance: 0 };
 
   return (
     <div className="mt-1">
-      <div className="text-sm text-white">{formatBalance(userBalance.balance)}</div>
-      {!!pendingCents && (
+      {hasBalances && (
+        <div className="text-sm text-white">{formatBalance(userBalance.balance)}</div>
+      )}
+      {hasPending && (
         <div className="text-xs text-yellow-400" title="Earned, awaiting payout">
           ({formatCurrency(pendingCents)})
         </div>

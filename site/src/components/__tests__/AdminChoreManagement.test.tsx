@@ -464,13 +464,14 @@ describe('assignee filter', () => {
 
     expect(screen.getByText('Study spelling')).toBeInTheDocument();
     expect(screen.queryByText('Wash dishes')).not.toBeInTheDocument();
+    expect(screen.queryByText('Read a book')).not.toBeInTheDocument();
   });
 
   it('restores the full list via All', async () => {
     renderScreen();
     await screen.findByText('Wash dishes');
 
-    await userEvent.click(screen.getByRole('button', { name: /bob/i }));
+    await userEvent.click(screen.getByRole('button', { name: /^bob$/i }));
     expect(screen.queryByText('Wash dishes')).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: /^all$/i }));
@@ -491,7 +492,7 @@ describe('assignee filter', () => {
     );
     await screen.findByText('Wash dishes');
 
-    await userEvent.click(screen.getByRole('button', { name: /bob/i }));
+    await userEvent.click(screen.getByRole('button', { name: /^bob$/i }));
 
     expect(screen.getByText(/no chores assigned to bob/i)).toBeInTheDocument();
   });

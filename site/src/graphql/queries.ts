@@ -250,6 +250,12 @@ export const UPDATE_CHORE = gql`
       requiredDays
       active
       createdAt
+      availabilityWindow {
+        startMonth
+        startDay
+        endMonth
+        endDay
+      }
     }
   }
 `;

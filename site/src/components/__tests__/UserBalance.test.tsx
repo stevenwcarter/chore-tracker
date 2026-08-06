@@ -32,4 +32,18 @@ describe('UserBalance', () => {
     render(<UserBalance name="Alice" balances={balances} pendingCents={200} />);
     expect(screen.getByText('$12.50')).toBeInTheDocument();
   });
+
+  // `balances` comes from YNAB and is `[]` both on error and while in flight. The
+  // pending figure comes entirely from our own database, so it must not disappear
+  // just because YNAB is unavailable.
+  it('renders the pending figure even when balances is empty', () => {
+    render(<UserBalance name="Alice" balances={[]} pendingCents={200} />);
+    expect(screen.getByText('($2.00)')).toBeInTheDocument();
+  });
+
+  it('renders the pending figure when the named kid is missing from a non-empty balances array', () => {
+    const otherKidsBalances = [{ name: 'Bob', balance: 5 }];
+    render(<UserBalance name="Alice" balances={otherKidsBalances} pendingCents={200} />);
+    expect(screen.getByText('($2.00)')).toBeInTheDocument();
+  });
 });

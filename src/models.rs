@@ -287,10 +287,19 @@ pub struct Chore {
     /// Start of the chore's yearly availability window, MMDD-encoded
     /// (`month * 100 + day`), or `None` for a chore available year round.
     /// Always set together with `available_end`; see `crate::availability`.
+    ///
+    /// `#[diesel(skip_update)]`: Diesel's derived `AsChangeset` omits `None` fields
+    /// from the UPDATE rather than setting them to NULL, which would make it
+    /// impossible to *clear* an availability window. `ChoreSvc::update` sets this
+    /// column explicitly instead; see the comment there.
+    #[diesel(skip_update)]
     pub available_start: Option<i32>,
     /// End of the yearly availability window, MMDD-encoded and inclusive. When
     /// `available_end < available_start` the window wraps the new year, which is
     /// the normal case for a school-year chore (Sep 1 - Jun 15).
+    ///
+    /// `#[diesel(skip_update)]`: see `available_start`.
+    #[diesel(skip_update)]
     pub available_end: Option<i32>,
 }
 
@@ -337,6 +346,15 @@ impl Chore {
     }
     /// The chore's yearly availability window, or null when it is available year
     /// round. A window whose end sorts before its start wraps the new year.
+    ///
+    /// Deliberately fails **open**: `.ok().flatten()` below means a malformed
+    /// `available_start`/`available_end` pair (e.g. corrupted MMDD data) renders as
+    /// "year round" rather than as an error. This is the opposite of
+    /// `ensure_within_availability_window` in `svc::chore_completion`, which
+    /// propagates the same parse error with `?` and rejects the completion - i.e.
+    /// fails **closed**. That asymmetry is intentional: display should degrade
+    /// gracefully rather than break the UI, but money (accepting/rejecting a
+    /// completion) should never proceed on data we couldn't validate.
     pub fn availability_window(&self) -> Option<AvailabilityWindowGql> {
         crate::availability::AvailabilityWindow::from_columns(
             self.available_start,
