@@ -1,7 +1,7 @@
 import { User } from 'types/chore';
 
 /** Avatar sizes. `lg` (80px) is the default so every pre-existing call site -
- *  UserSelector, UserManagementCard - renders exactly as before. */
+ *  UserSelector, UserManagementCard, WeeklyChoreView - renders exactly as before. */
 const SIZE_CLASSES = {
   sm: { box: 'w-12 h-12', initial: 'text-lg' },
   lg: { box: 'w-20 h-20', initial: 'text-2xl' },

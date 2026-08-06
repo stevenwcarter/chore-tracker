@@ -55,6 +55,17 @@ describe('ChoreAssigneeFilter', () => {
     expect(screen.getByRole('button', { name: /bob/i })).toHaveAttribute('aria-pressed', 'false');
     expect(screen.getByRole('button', { name: /^all$/i })).toHaveAttribute('aria-pressed', 'false');
   });
+
+  it('gives every chip an unambiguous accessible name, for a user with a photo and one without', () => {
+    render(<ChoreAssigneeFilter users={users} value="all" onChange={vi.fn()} />);
+
+    // Each query must resolve to exactly one element - getByRole throws on
+    // ambiguous matches, so a doubled name (e.g. "Bob Bob") would fail here.
+    expect(screen.getByRole('button', { name: /^all$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^alice$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^bob$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^unassigned$/i })).toBeInTheDocument();
+  });
 });
 
 describe('UserImage size prop', () => {

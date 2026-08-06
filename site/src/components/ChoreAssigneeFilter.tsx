@@ -30,6 +30,7 @@ export const ChoreAssigneeFilter: React.FC<ChoreAssigneeFilterProps> = ({
       type="button"
       onClick={() => onChange('all')}
       aria-pressed={value === 'all'}
+      aria-label="All"
       className={chipClasses(value === 'all')}
     >
       <span
@@ -47,6 +48,7 @@ export const ChoreAssigneeFilter: React.FC<ChoreAssigneeFilterProps> = ({
         type="button"
         onClick={() => onChange(user.id)}
         aria-pressed={value === user.id}
+        aria-label={user.name}
         className={chipClasses(value === user.id)}
       >
         <UserImage user={user} size="sm" />
@@ -58,6 +60,7 @@ export const ChoreAssigneeFilter: React.FC<ChoreAssigneeFilterProps> = ({
       type="button"
       onClick={() => onChange('unassigned')}
       aria-pressed={value === 'unassigned'}
+      aria-label="Unassigned"
       className={chipClasses(value === 'unassigned')}
     >
       <span
