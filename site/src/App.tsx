@@ -6,6 +6,7 @@ import { ToastContainer } from 'react-toastify';
 import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 import 'react-toastify/dist/ReactToastify.css';
 
+// App.test.tsx's `beforeAll` hand-warms `page/PageTemplate` and `page/HomePage`; keep it in sync with this chain (see T113).
 const PageTemplate = React.lazy(() => import('page/PageTemplate'));
 const HomePage = React.lazy(() => import('page/HomePage'));
 const AdminChoreManagementPage = React.lazy(() => import('page/AdminChoreManagementPage'));

@@ -16,6 +16,14 @@ import '@testing-library/jest-dom';
 // Importing the same lazy chunks here pays that one-time transform cost up front, in a
 // hook with its own timeout budget, so `React.lazy`'s later `import()` during `render()`
 // just resolves an already-cached module promise -- independent of what else is running.
+//
+// This list mirrors the `React.lazy` chain reachable from `App.tsx`'s index (`/`) route
+// -- it is hand-written, not derived from `App.tsx`, so it will not update itself. If a
+// lazy route is added to, or reordered ahead of, that chain and this list isn't updated
+// to match, the ordering-dependent failure this hook exists to prevent returns silently:
+// this exact test, `App.test.tsx`, failing deterministically when run alone and
+// intermittently in the full suite. That symptom is finding T113 -- search git history
+// for "T113" for the full investigation.
 beforeAll(async () => {
   await Promise.all([import('page/PageTemplate'), import('page/HomePage')]);
 });
