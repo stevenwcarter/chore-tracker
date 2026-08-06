@@ -284,6 +284,23 @@ pub struct Chore {
     pub updated_at: Option<NaiveDateTime>,
     pub bonus_date: Option<NaiveDate>,
     pub max_claims: Option<i32>,
+    /// Start of the chore's yearly availability window, MMDD-encoded
+    /// (`month * 100 + day`), or `None` for a chore available year round.
+    /// Always set together with `available_end`; see `crate::availability`.
+    ///
+    /// `#[diesel(skip_update)]`: Diesel's derived `AsChangeset` omits `None` fields
+    /// from the UPDATE rather than setting them to NULL, which would make it
+    /// impossible to *clear* an availability window. `ChoreSvc::update` sets this
+    /// column explicitly instead; see the comment there.
+    #[diesel(skip_update)]
+    pub available_start: Option<i32>,
+    /// End of the yearly availability window, MMDD-encoded and inclusive. When
+    /// `available_end < available_start` the window wraps the new year, which is
+    /// the normal case for a school-year chore (Sep 1 - Jun 15).
+    ///
+    /// `#[diesel(skip_update)]`: see `available_start`.
+    #[diesel(skip_update)]
+    pub available_end: Option<i32>,
 }
 
 #[juniper::graphql_object(context = GraphQLContext)]
@@ -327,6 +344,31 @@ impl Chore {
     pub fn max_claims(&self) -> Option<i32> {
         self.max_claims
     }
+    /// The chore's yearly availability window, or null when it is available year
+    /// round. A window whose end sorts before its start wraps the new year.
+    ///
+    /// Deliberately fails **open**: `.ok().flatten()` below means a malformed
+    /// `available_start`/`available_end` pair (e.g. corrupted MMDD data) renders as
+    /// "year round" rather than as an error. This is the opposite of
+    /// `ensure_within_availability_window` in `svc::chore_completion`, which
+    /// propagates the same parse error with `?` and rejects the completion - i.e.
+    /// fails **closed**. That asymmetry is intentional: display should degrade
+    /// gracefully rather than break the UI, but money (accepting/rejecting a
+    /// completion) should never proceed on data we couldn't validate.
+    pub fn availability_window(&self) -> Option<AvailabilityWindowGql> {
+        crate::availability::AvailabilityWindow::from_columns(
+            self.available_start,
+            self.available_end,
+        )
+        .ok()
+        .flatten()
+        .map(|w| AvailabilityWindowGql {
+            start_month: w.start().month(),
+            start_day: w.start().day(),
+            end_month: w.end().month(),
+            end_day: w.end().day(),
+        })
+    }
     pub fn assigned_users(&self, context: &GraphQLContext) -> juniper::FieldResult<Vec<User>> {
         use crate::schema::chore_assignments::dsl::*;
         use crate::schema::users::dsl as users_dsl;
@@ -347,6 +389,44 @@ impl Chore {
     }
 }
 
+/// GraphQL input for a chore's yearly availability window. Absent means the chore
+/// is available year round; present means both ends are supplied.
+#[derive(GraphQLInputObject, Debug, Clone, Copy)]
+pub struct AvailabilityWindowInput {
+    pub start_month: i32,
+    pub start_day: i32,
+    pub end_month: i32,
+    pub end_day: i32,
+}
+
+impl AvailabilityWindowInput {
+    /// Validates and converts to the pair of MMDD column values.
+    fn to_columns(self) -> anyhow::Result<(i32, i32)> {
+        let to_u32 = |v: i32, what: &str| {
+            u32::try_from(v).map_err(|_| anyhow::anyhow!("{what} must not be negative, got {v}"))
+        };
+        let start = crate::availability::MonthDay::new(
+            to_u32(self.start_month, "start month")?,
+            to_u32(self.start_day, "start day")?,
+        )?;
+        let end = crate::availability::MonthDay::new(
+            to_u32(self.end_month, "end month")?,
+            to_u32(self.end_day, "end day")?,
+        )?;
+        Ok((start.as_mmdd(), end.as_mmdd()))
+    }
+}
+
+/// GraphQL output object for a chore's availability window.
+#[derive(GraphQLObject, Debug, Clone, Copy)]
+#[graphql(name = "AvailabilityWindow")]
+pub struct AvailabilityWindowGql {
+    pub start_month: i32,
+    pub start_day: i32,
+    pub end_month: i32,
+    pub end_day: i32,
+}
+
 #[derive(GraphQLInputObject, Debug, Clone)]
 pub struct ChoreInput {
     pub uuid: Option<String>,
@@ -359,11 +439,22 @@ pub struct ChoreInput {
     pub created_by_admin_id: i32,
     pub bonus_date: Option<NaiveDate>,
     pub max_claims: Option<i32>,
+    pub availability_window: Option<AvailabilityWindowInput>,
 }
 
-impl From<ChoreInput> for Chore {
-    fn from(input: ChoreInput) -> Self {
-        Self {
+impl TryFrom<ChoreInput> for Chore {
+    type Error = anyhow::Error;
+
+    fn try_from(input: ChoreInput) -> anyhow::Result<Self> {
+        let (available_start, available_end) = match input.availability_window {
+            Some(window) => {
+                let (start, end) = window.to_columns()?;
+                (Some(start), Some(end))
+            }
+            None => (None, None),
+        };
+
+        Ok(Self {
             id: None,
             uuid: crate::uuid_or_generate(input.uuid),
             name: input.name,
@@ -377,7 +468,9 @@ impl From<ChoreInput> for Chore {
             updated_at: None,
             bonus_date: input.bonus_date,
             max_claims: input.max_claims,
-        }
+            available_start,
+            available_end,
+        })
     }
 }
 
@@ -799,6 +892,30 @@ impl UnpaidTotal {
 }
 
 impl UnpaidTotal {
+    pub fn new(user: User, amount_cents: i32) -> Self {
+        Self { user, amount_cents }
+    }
+}
+
+/// A kid's earned-but-unpaid total, regardless of approval status. Distinct from
+/// [`UnpaidTotal`], which is approved-and-unpaid and drives the payout screen.
+#[derive(Debug, Clone)]
+pub struct PendingTotal {
+    pub user: User,
+    pub amount_cents: i32,
+}
+
+#[juniper::graphql_object(context = GraphQLContext)]
+impl PendingTotal {
+    pub fn user(&self) -> &User {
+        &self.user
+    }
+    pub fn amount_cents(&self) -> i32 {
+        self.amount_cents
+    }
+}
+
+impl PendingTotal {
     pub fn new(user: User, amount_cents: i32) -> Self {
         Self { user, amount_cents }
     }

@@ -8,3 +8,14 @@ export const LIST_BALANCES_GQL = gql`
     }
   }
 `;
+
+export const GET_PENDING_TOTALS = gql`
+  query GetPendingTotals {
+    getPendingTotals {
+      amountCents
+      user {
+        id
+      }
+    }
+  }
+`;

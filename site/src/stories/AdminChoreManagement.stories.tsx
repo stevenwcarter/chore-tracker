@@ -40,6 +40,7 @@ const mockChores: Chore[] = [
     active: true,
     createdAt: '2023-01-01T00:00:00Z',
     createdByAdminId: 1,
+    availabilityWindow: null,
     assignedUsers: [mockUsers[0], mockUsers[1]],
   },
   {
@@ -53,6 +54,7 @@ const mockChores: Chore[] = [
     active: true,
     createdAt: '2023-01-05T00:00:00Z',
     createdByAdminId: 1,
+    availabilityWindow: null,
     assignedUsers: [mockUsers[1]],
   },
   {
@@ -66,6 +68,7 @@ const mockChores: Chore[] = [
     active: true,
     createdAt: '2023-01-10T00:00:00Z',
     createdByAdminId: 1,
+    availabilityWindow: null,
     assignedUsers: mockUsers,
   },
   {
@@ -79,6 +82,7 @@ const mockChores: Chore[] = [
     active: false,
     createdAt: '2023-01-15T00:00:00Z',
     createdByAdminId: 1,
+    availabilityWindow: null,
     assignedUsers: [],
   },
 ];

@@ -86,9 +86,22 @@ impl ChoreSvc {
     }
 
     pub fn update(context: &GraphQLContext, chore: &Chore) -> Result<Chore> {
+        // `available_start`/`available_end` are `#[diesel(skip_update)]` on `Chore` (see
+        // models.rs), so the derived `AsChangeset` above never touches those two columns -
+        // they're set explicitly here instead. That's deliberate: `Chore`'s AsChangeset
+        // does NOT use `treat_none_as_null`, so a bare `.set(chore)` would silently omit
+        // any `None` field from the UPDATE rather than nulling it, making it impossible to
+        // clear a chore's availability window once set. Setting the two columns here (via
+        // `Option<i32>::eq`, which binds NULL for `None`) makes clearing them work, without
+        // reintroducing the same field into the derived changeset and risking Diesel
+        // assigning the same column twice in one UPDATE.
         diesel::update(chores::table)
             .filter(chores::uuid.eq(&chore.uuid))
-            .set(chore)
+            .set((
+                chore,
+                chores::available_start.eq(chore.available_start),
+                chores::available_end.eq(chore.available_end),
+            ))
             .execute(&mut get_conn(context)?)
             .context("Could not update chore")?;
 
@@ -260,6 +273,8 @@ mod tests {
             updated_at: chore.updated_at,
             bonus_date: None,
             max_claims: None,
+            available_start: None,
+            available_end: None,
         };
 
         let result = ChoreSvc::update(&context, &updated_chore).unwrap();
@@ -299,8 +314,9 @@ mod tests {
             created_by_admin_id: admin.id.unwrap(),
             bonus_date: None,
             max_claims: None,
+            availability_window: None,
         };
-        let chore2 = Chore::from(chore2_input);
+        let chore2 = Chore::try_from(chore2_input).unwrap();
         let _chore2 = ChoreSvc::create(&context, &chore2).unwrap();
 
         let _chore3 = create_test_chore(
@@ -420,8 +436,9 @@ mod tests {
             created_by_admin_id: admin.id.unwrap(),
             bonus_date: None,
             max_claims: None,
+            availability_window: None,
         };
-        let chore3 = Chore::from(chore3_input);
+        let chore3 = Chore::try_from(chore3_input).unwrap();
         let chore3 = ChoreSvc::create(&context, &chore3).unwrap();
 
         // Assign chores to users
@@ -474,8 +491,9 @@ mod tests {
             created_by_admin_id: admin.id.unwrap(),
             bonus_date: Some(target_date),
             max_claims: None,
+            availability_window: None,
         };
-        let bonus_chore_raw = Chore::from(bonus_input);
+        let bonus_chore_raw = Chore::try_from(bonus_input).unwrap();
         let bonus_chore = ChoreSvc::create(&context, &bonus_chore_raw).unwrap();
 
         // Create a regular chore (no bonus_date)
@@ -500,8 +518,9 @@ mod tests {
             created_by_admin_id: admin.id.unwrap(),
             bonus_date: Some(other_date),
             max_claims: None,
+            availability_window: None,
         };
-        let other_raw = Chore::from(other_input);
+        let other_raw = Chore::try_from(other_input).unwrap();
         ChoreSvc::create(&context, &other_raw).unwrap();
 
         let results = ChoreSvc::list_bonus_chores(&context, target_date).unwrap();
@@ -525,8 +544,9 @@ mod tests {
             created_by_admin_id: admin.id.unwrap(),
             bonus_date: Some(NaiveDate::from_ymd_opt(2026, 4, 15).unwrap()),
             max_claims: None,
+            availability_window: None,
         };
-        let chore_raw = Chore::from(input);
+        let chore_raw = Chore::try_from(input).unwrap();
         let chore = ChoreSvc::create(&context, &chore_raw).unwrap();
 
         // With no max_claims, should always be claimable
@@ -549,8 +569,9 @@ mod tests {
             created_by_admin_id: admin.id.unwrap(),
             bonus_date: Some(NaiveDate::from_ymd_opt(2026, 4, 15).unwrap()),
             max_claims: Some(2),
+            availability_window: None,
         };
-        let chore_raw = Chore::from(input);
+        let chore_raw = Chore::try_from(input).unwrap();
         let chore = ChoreSvc::create(&context, &chore_raw).unwrap();
 
         // Zero completions, cap is 2 → claimable
@@ -577,8 +598,9 @@ mod tests {
             created_by_admin_id: admin.id.unwrap(),
             bonus_date: Some(NaiveDate::from_ymd_opt(2026, 4, 15).unwrap()),
             max_claims: Some(1),
+            availability_window: None,
         };
-        let chore_raw = Chore::from(input);
+        let chore_raw = Chore::try_from(input).unwrap();
         let chore = ChoreSvc::create(&context, &chore_raw).unwrap();
         let chore_id = chore.id.unwrap();
 
@@ -613,8 +635,9 @@ mod tests {
             created_by_admin_id: admin.id.unwrap(),
             bonus_date: Some(target_date),
             max_claims: None,
+            availability_window: None,
         };
-        let chore_raw = Chore::from(input);
+        let chore_raw = Chore::try_from(input).unwrap();
         ChoreSvc::create(&context, &chore_raw).unwrap();
 
         let results = ChoreSvc::list_bonus_chores(&context, target_date).unwrap();
@@ -654,5 +677,221 @@ mod tests {
         );
         let result = ChoreSvc::unassign_user(&context, chore.id.unwrap(), user.id.unwrap());
         assert!(result.is_ok()); // Should not error even if assignment doesn't exist
+    }
+
+    #[test]
+    fn test_chore_persists_availability_window_columns() {
+        use crate::models::AvailabilityWindowInput;
+
+        let context = create_test_context();
+        let admin = create_test_admin(&context, "Test Admin", "admin@test.com");
+
+        let input = ChoreInput {
+            uuid: None,
+            name: "School year chore".to_owned(),
+            description: None,
+            payment_type: PaymentType::Daily,
+            amount_cents: 100,
+            required_days: day_patterns::weekdays(),
+            active: Some(true),
+            created_by_admin_id: admin.id.unwrap(),
+            bonus_date: None,
+            max_claims: None,
+            availability_window: Some(AvailabilityWindowInput {
+                start_month: 9,
+                start_day: 1,
+                end_month: 6,
+                end_day: 15,
+            }),
+        };
+        let created = ChoreSvc::create(&context, &Chore::try_from(input).unwrap()).unwrap();
+
+        let reloaded = ChoreSvc::get(&context, &created.uuid).unwrap();
+        assert_eq!(reloaded.available_start, Some(901));
+        assert_eq!(reloaded.available_end, Some(615));
+    }
+
+    #[test]
+    fn test_chore_without_availability_window_stores_nulls() {
+        let context = create_test_context();
+        let admin = create_test_admin(&context, "Test Admin", "admin@test.com");
+
+        let chore = create_test_chore(
+            &context,
+            "Year round chore",
+            PaymentType::Daily,
+            100,
+            day_patterns::every_day(),
+            admin.id.unwrap(),
+        );
+
+        let reloaded = ChoreSvc::get(&context, &chore.uuid).unwrap();
+        assert_eq!(reloaded.available_start, None);
+        assert_eq!(reloaded.available_end, None);
+    }
+
+    #[test]
+    fn test_chore_input_availability_window_maps_to_columns() {
+        use crate::models::AvailabilityWindowInput;
+
+        let input = ChoreInput {
+            uuid: None,
+            name: "Spelling test".to_owned(),
+            description: None,
+            payment_type: PaymentType::Daily,
+            amount_cents: 100,
+            required_days: day_patterns::weekdays(),
+            active: Some(true),
+            created_by_admin_id: 1,
+            bonus_date: None,
+            max_claims: None,
+            availability_window: Some(AvailabilityWindowInput {
+                start_month: 9,
+                start_day: 1,
+                end_month: 6,
+                end_day: 15,
+            }),
+        };
+
+        let chore = Chore::try_from(input).unwrap();
+        assert_eq!(chore.available_start, Some(901));
+        assert_eq!(chore.available_end, Some(615));
+    }
+
+    #[test]
+    fn test_chore_input_without_window_clears_the_struct_fields() {
+        // Note: this only exercises `Chore::try_from`, not the database. It does NOT
+        // prove that `ChoreSvc::update` clears the columns on an existing row - see
+        // `test_update_clears_persisted_availability_window` for that.
+        let input = ChoreInput {
+            uuid: None,
+            name: "Make bed".to_owned(),
+            description: None,
+            payment_type: PaymentType::Daily,
+            amount_cents: 100,
+            required_days: day_patterns::every_day(),
+            active: Some(true),
+            created_by_admin_id: 1,
+            bonus_date: None,
+            max_claims: None,
+            availability_window: None,
+        };
+
+        let chore = Chore::try_from(input).unwrap();
+        assert_eq!(chore.available_start, None);
+        assert_eq!(chore.available_end, None);
+    }
+
+    #[test]
+    fn test_chore_input_rejects_an_invalid_month_day() {
+        use crate::models::AvailabilityWindowInput;
+
+        let input = ChoreInput {
+            uuid: None,
+            name: "Impossible".to_owned(),
+            description: None,
+            payment_type: PaymentType::Daily,
+            amount_cents: 100,
+            required_days: 0,
+            active: Some(true),
+            created_by_admin_id: 1,
+            bonus_date: None,
+            max_claims: None,
+            availability_window: Some(AvailabilityWindowInput {
+                start_month: 2,
+                start_day: 30,
+                end_month: 6,
+                end_day: 15,
+            }),
+        };
+
+        assert!(
+            Chore::try_from(input).is_err(),
+            "Feb 30 is not a valid boundary"
+        );
+    }
+
+    /// The load-bearing regression test for the "can't clear a chore's availability
+    /// window" bug: `Chore` derives `AsChangeset` without `treat_none_as_null`, so
+    /// Diesel omits `None` fields from the UPDATE by default. `ChoreSvc::update` must
+    /// set `available_start`/`available_end` explicitly so clearing actually persists.
+    #[test]
+    fn test_update_clears_persisted_availability_window() {
+        use crate::models::AvailabilityWindowInput;
+
+        let context = create_test_context();
+        let admin = create_test_admin(&context, "Test Admin", "admin@test.com");
+
+        let input = ChoreInput {
+            uuid: None,
+            name: "Study spelling".to_owned(),
+            description: None,
+            payment_type: PaymentType::Daily,
+            amount_cents: 100,
+            required_days: day_patterns::weekdays(),
+            active: Some(true),
+            created_by_admin_id: admin.id.unwrap(),
+            bonus_date: None,
+            max_claims: None,
+            availability_window: Some(AvailabilityWindowInput {
+                start_month: 9,
+                start_day: 1,
+                end_month: 6,
+                end_day: 15,
+            }),
+        };
+        let created = ChoreSvc::create(&context, &Chore::try_from(input).unwrap()).unwrap();
+        assert_eq!(created.available_start, Some(901));
+        assert_eq!(created.available_end, Some(615));
+
+        let uuid = created.uuid.clone();
+        let cleared = Chore {
+            available_start: None,
+            available_end: None,
+            ..created
+        };
+        ChoreSvc::update(&context, &cleared).unwrap();
+
+        let reloaded = ChoreSvc::get(&context, &uuid).unwrap();
+        assert_eq!(
+            reloaded.available_start, None,
+            "available_start should have been cleared by the update"
+        );
+        assert_eq!(
+            reloaded.available_end, None,
+            "available_end should have been cleared by the update"
+        );
+    }
+
+    /// The converse of the clearing test: updating a windowless chore to add a window
+    /// must also persist, since `ChoreSvc::update` now sets both columns explicitly
+    /// rather than relying on the derived `AsChangeset`.
+    #[test]
+    fn test_update_sets_previously_absent_availability_window() {
+        let context = create_test_context();
+        let admin = create_test_admin(&context, "Test Admin", "admin@test.com");
+
+        let chore = create_test_chore(
+            &context,
+            "Make bed",
+            PaymentType::Daily,
+            100,
+            day_patterns::every_day(),
+            admin.id.unwrap(),
+        );
+        assert_eq!(chore.available_start, None);
+        assert_eq!(chore.available_end, None);
+
+        let uuid = chore.uuid.clone();
+        let windowed = Chore {
+            available_start: Some(901),
+            available_end: Some(615),
+            ..chore
+        };
+        ChoreSvc::update(&context, &windowed).unwrap();
+
+        let reloaded = ChoreSvc::get(&context, &uuid).unwrap();
+        assert_eq!(reloaded.available_start, Some(901));
+        assert_eq!(reloaded.available_end, Some(615));
     }
 }

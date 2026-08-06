@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 import { Chore, ChoreInput, UserInput } from '../types/chore';
 import LoadingSpinner from './LoadingSpinner';
 import Modal from './Modal';
 import ChoreCard from './ChoreCard';
+import ChoreAssigneeFilter, { AssigneeFilterValue } from './ChoreAssigneeFilter';
 import CreateChoreForm from './CreateChoreForm';
 import CreateBonusChoreForm from './CreateBonusChoreForm';
 import CreateUserForm from './CreateUserForm';
@@ -24,6 +25,7 @@ export const AdminChoreManagement: React.FC<AdminChoreManagementProps> = ({ admi
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [isManagingUsers, setIsManagingUsers] = useState(false);
   const [selectedChore, setSelectedChore] = useState<Chore | null>(null);
+  const [assigneeFilter, setAssigneeFilter] = useState<AssigneeFilterValue>('all');
 
   const {
     chores,
@@ -39,6 +41,23 @@ export const AdminChoreManagement: React.FC<AdminChoreManagementProps> = ({ admi
   } = useAdminChoreManagement();
 
   const { uploadImage, removeImage } = useUserImages(refetchUsers);
+
+  // Filtering is client-side: the chore list and its assignments are already loaded
+  // for the assignment modal, so there is nothing to refetch.
+  const visibleChores = useMemo(() => {
+    if (assigneeFilter === 'all') return chores;
+    if (assigneeFilter === 'unassigned') {
+      return chores.filter((chore) => (chore.assignedUsers?.length ?? 0) === 0);
+    }
+    return chores.filter((chore) =>
+      chore.assignedUsers?.some((user) => user.id === assigneeFilter),
+    );
+  }, [chores, assigneeFilter]);
+
+  const emptyStateMessage =
+    assigneeFilter === 'unassigned'
+      ? 'No unassigned chores.'
+      : `No chores assigned to ${users.find((u) => u.id === assigneeFilter)?.name ?? 'this user'}.`;
 
   const handleImageUpload = async (userUuid: string, file: File) => {
     try {
@@ -105,19 +124,25 @@ export const AdminChoreManagement: React.FC<AdminChoreManagementProps> = ({ admi
           onCreateChore={() => setIsCreatingChore(true)}
           onCreateBonusChore={() => setIsCreatingBonusChore(true)}
         />
+
+        <ChoreAssigneeFilter users={users} value={assigneeFilter} onChange={setAssigneeFilter} />
       </div>
 
       {/* Existing Chores */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-        {chores.map((chore) => (
-          <ChoreCard
-            key={chore.id}
-            chore={chore}
-            onManage={setSelectedChore}
-            onEdit={setEditingChore}
-          />
-        ))}
-      </div>
+      {visibleChores.length === 0 && assigneeFilter !== 'all' ? (
+        <p className="text-gray-400">{emptyStateMessage}</p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+          {visibleChores.map((chore) => (
+            <ChoreCard
+              key={chore.id}
+              chore={chore}
+              onManage={setSelectedChore}
+              onEdit={setEditingChore}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Create Chore Modal */}
       <Modal

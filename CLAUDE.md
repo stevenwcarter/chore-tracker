@@ -78,6 +78,15 @@ GraphQL is at `/graphql`. REST endpoints are minimal; prefer GraphQL for new fea
 
 **Package manager**: Always use `yarn` in the `site/` directory, never `npm`.
 
+**Two totals queries, easily confused**: `getUnpaidTotals` is **approved and**
+unpaid — it drives the admin payout screen and deliberately keeps zero-owed users
+visible via a LEFT JOIN. `getPendingTotals` is unpaid **regardless of approval** —
+it drives the "earned so far" figure under each kid on the landing page, and a
+user with nothing pending is simply absent from the result. Both are in **cents**.
+The YNAB `getBalances` figure shown beside them on that page is in **whole
+dollars** and is matched to a kid **by name**, not by id — keep the units and the
+join keys straight when touching `UserBalance`.
+
 ## Adding New Features
 
 1. Create Diesel migration (`diesel migration generate`)
@@ -95,6 +104,54 @@ GraphQL is at `/graphql`. REST endpoints are minimal; prefer GraphQL for new fea
 - Foreign keys enabled via pragma
 - Always test migrations in both directions: `run` → `revert` → `run`
 
+**Nullable columns cannot be cleared through a derived `AsChangeset`.** Our model
+structs derive `AsChangeset` without `treat_none_as_null`, so Diesel **omits**
+`None` fields from the generated `UPDATE` rather than writing NULL. A bare
+`.set(&model)` therefore silently cannot clear an already-set optional column —
+the update appears to succeed and the old value survives.
+
+`Chore::available_start` / `available_end` hit this and are fixed by marking them
+`#[diesel(skip_update)]` and setting both columns explicitly in `ChoreSvc::update`.
+Do **not** reach for `treat_none_as_null = true` on the whole struct — it would
+also NULL `created_at` / `updated_at`, which the input conversions set to `None`
+on every update. **`Chore::description` still has this bug** and cannot currently
+be cleared once set; the same `skip_update` pattern would fix it.
+
+When you add a nullable column a user can unset, **write the test that
+round-trips through the database** — create with a value, update to `None`,
+reload, assert NULL. A test that only asserts the in-memory struct conversion
+passes while the persistence is broken; that is exactly how this shipped green.
+
 ## Weekly Chore Payment Logic
 
 Weekly chores split payment across assigned days (e.g., $1.50 chore on 3 days = $0.50/day). Required days are stored as a bitmask (1=Mon, 2=Tue, 4=Wed, 8=Thu, 16=Fri, 32=Sat, 64=Sun). See `WEEKLY_CHORE_FIX.md` for the correction mutations if payment amounts need fixing.
+
+Each per-day amount is then **rounded to the nearest 25 cents** by
+`PaymentType::round_to_nearest_quarter`, so the daily payouts deliberately need
+not sum back to the chore's total — $1.50 over 5 weekdays pays 25¢/day, $1.25
+across the week. `test_weekly_chore_payout_with_rounding` pins this.
+
+## Chore Availability Windows
+
+A chore may be limited to part of the calendar year, repeating annually — a
+school-year chore runs Sep 1 → Jun 15. The window lives in two nullable `chores`
+columns, `available_start` and `available_end`, MMDD-encoded as `month * 100 + day`
+(Sep 1 = `901`). Both NULL means available year round; exactly one set is an error.
+The window is **inclusive at both ends**, and an end that sorts before the start
+wraps the new year — which is the normal case, not an edge case.
+
+`src/availability.rs` owns the encoding and the wrap-aware `contains` check;
+`site/src/utils/availabilityWindow.ts` mirrors it for the client. **The two test
+tables are deliberately parallel — change the wrap logic on one side and you must
+change the other.**
+
+`ChoreCompletionSvc::create` is the enforcement point: it rejects any completion
+dated outside its chore's window, and it is the only path that inserts a
+completion row. The weekly grid's blanked cells and hidden rows are a UI
+affordance only, so a frontend refactor cannot silently remove the guarantee.
+
+A season never changes the weekly per-day rate — a week cut short by the window
+simply pays fewer days, it does not pay the full amount over fewer days.
+`weekly_rate_ignores_the_availability_window` pins this by asserting a seasonal
+chore and an identical year-round chore pay the same per completion. Full design:
+`docs/superpowers/specs/2026-08-05-chore-availability-and-pending-totals-design.md`.

@@ -7,7 +7,8 @@ use crate::{
     context::GraphQLContext,
     models::{
         Admin, AdminInput, Chore, ChoreCompletion, ChoreCompletionInput, ChoreCompletionNote,
-        ChoreCompletionNoteInput, ChoreInput, UnpaidTotal, User, UserBadge, UserInput,
+        ChoreCompletionNoteInput, ChoreInput, PendingTotal, UnpaidTotal, User, UserBadge,
+        UserInput,
     },
     svc::{
         AdminSvc, ChoreCompletionNoteSvc, ChoreCompletionSvc, ChoreSvc, UserSvc,
@@ -133,6 +134,16 @@ impl Query {
         Ok(unpaid_totals)
     }
 
+    /// Amount each user has earned but not yet been paid out, regardless of whether an
+    /// admin has approved it. A user with nothing pending is omitted entirely.
+    pub fn get_pending_totals(context: &GraphQLContext) -> FieldResult<Vec<PendingTotal>> {
+        let results = ChoreCompletionSvc::get_pending_totals(context)?;
+        Ok(results
+            .into_iter()
+            .map(|(user, amount)| PendingTotal::new(user, amount))
+            .collect())
+    }
+
     // Chore Completion Notes
     pub fn list_chore_completion_notes(
         context: &GraphQLContext,
@@ -201,7 +212,9 @@ impl Mutation {
     // Chores
     pub async fn create_chore(context: &GraphQLContext, chore: ChoreInput) -> FieldResult<Chore> {
         context.require_admin()?;
-        graphql_translate_anyhow(ChoreSvc::create(context, &chore.into()))
+        graphql_translate_anyhow(
+            Chore::try_from(chore).and_then(|chore| ChoreSvc::create(context, &chore)),
+        )
     }
 
     pub async fn create_bonus_chore(
@@ -209,12 +222,16 @@ impl Mutation {
         chore: ChoreInput,
     ) -> FieldResult<Chore> {
         context.require_admin()?;
-        graphql_translate_anyhow(ChoreSvc::create(context, &chore.into()))
+        graphql_translate_anyhow(
+            Chore::try_from(chore).and_then(|chore| ChoreSvc::create(context, &chore)),
+        )
     }
 
     pub async fn update_chore(context: &GraphQLContext, chore: ChoreInput) -> FieldResult<Chore> {
         context.require_admin()?;
-        graphql_translate_anyhow(ChoreSvc::update(context, &chore.into()))
+        graphql_translate_anyhow(
+            Chore::try_from(chore).and_then(|chore| ChoreSvc::update(context, &chore)),
+        )
     }
 
     pub async fn delete_chore(context: &GraphQLContext, chore_uuid: String) -> FieldResult<bool> {

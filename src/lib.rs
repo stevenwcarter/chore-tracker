@@ -8,6 +8,7 @@ use uuid::Uuid;
 
 pub mod api;
 pub mod auth;
+pub mod availability;
 pub mod context;
 pub mod db;
 pub mod graphql;

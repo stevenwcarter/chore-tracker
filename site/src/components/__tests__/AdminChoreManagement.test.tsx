@@ -48,6 +48,7 @@ const WASH_DISHES = {
   requiredDays: 0,
   active: true,
   createdAt: '2026-01-01T00:00:00Z',
+  availabilityWindow: null,
   assignedUsers: [{ id: 1, uuid: 'user-uuid-1', name: 'Alice', imageId: null, imagePath: null }],
 };
 const chores = [WASH_DISHES];
@@ -390,5 +391,131 @@ describe('AdminChoreManagement image upload/remove', () => {
 
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Error removing image'));
     expect(toast.error).toHaveBeenCalledTimes(1);
+  });
+});
+
+const READ_BOOK = {
+  id: 11,
+  uuid: 'chore-uuid-11',
+  name: 'Read a book',
+  description: null,
+  amountCents: 100,
+  paymentType: PaymentType.Daily,
+  requiredDays: 0,
+  active: true,
+  createdAt: '2026-01-01T00:00:00Z',
+  assignedUsers: [{ id: 2, uuid: 'user-uuid-2', name: 'Bob', imageId: null, imagePath: null }],
+  availabilityWindow: null,
+};
+
+const SPELLING = {
+  id: 12,
+  uuid: 'chore-uuid-12',
+  name: 'Study spelling',
+  description: null,
+  amountCents: 100,
+  paymentType: PaymentType.Daily,
+  requiredDays: 0,
+  active: true,
+  createdAt: '2026-01-01T00:00:00Z',
+  assignedUsers: [],
+  availabilityWindow: { startMonth: 9, startDay: 1, endMonth: 6, endDay: 15 },
+};
+
+describe('assignee filter', () => {
+  const filterMocks = (): MockedResponse[] => [
+    {
+      request: { query: GET_ALL_CHORES },
+      result: { data: { listChores: [WASH_DISHES, READ_BOOK, SPELLING] } },
+    },
+    { request: { query: GET_ALL_USERS }, result: { data: { listUsers: users } } },
+  ];
+
+  const renderScreen = () =>
+    render(
+      <MockedProvider mocks={filterMocks()}>
+        <AdminChoreManagement adminId={1} />
+      </MockedProvider>,
+    );
+
+  it('shows every chore by default', async () => {
+    renderScreen();
+    expect(await screen.findByText('Wash dishes')).toBeInTheDocument();
+    expect(screen.getByText('Read a book')).toBeInTheDocument();
+    expect(screen.getByText('Study spelling')).toBeInTheDocument();
+  });
+
+  it('narrows to one kid when their chip is clicked', async () => {
+    renderScreen();
+    await screen.findByText('Wash dishes');
+
+    await userEvent.click(screen.getByRole('button', { name: /alice/i }));
+
+    expect(screen.getByText('Wash dishes')).toBeInTheDocument();
+    expect(screen.queryByText('Read a book')).not.toBeInTheDocument();
+    expect(screen.queryByText('Study spelling')).not.toBeInTheDocument();
+  });
+
+  it('shows only unassigned chores for the Unassigned chip', async () => {
+    renderScreen();
+    await screen.findByText('Wash dishes');
+
+    await userEvent.click(screen.getByRole('button', { name: /unassigned/i }));
+
+    expect(screen.getByText('Study spelling')).toBeInTheDocument();
+    expect(screen.queryByText('Wash dishes')).not.toBeInTheDocument();
+    expect(screen.queryByText('Read a book')).not.toBeInTheDocument();
+  });
+
+  it('restores the full list via All', async () => {
+    renderScreen();
+    await screen.findByText('Wash dishes');
+
+    await userEvent.click(screen.getByRole('button', { name: /^bob$/i }));
+    expect(screen.queryByText('Wash dishes')).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: /^all$/i }));
+    expect(screen.getByText('Wash dishes')).toBeInTheDocument();
+    expect(screen.getByText('Read a book')).toBeInTheDocument();
+  });
+
+  it('renders an empty state when the filter matches nothing', async () => {
+    render(
+      <MockedProvider
+        mocks={[
+          { request: { query: GET_ALL_CHORES }, result: { data: { listChores: [WASH_DISHES] } } },
+          { request: { query: GET_ALL_USERS }, result: { data: { listUsers: users } } },
+        ]}
+      >
+        <AdminChoreManagement adminId={1} />
+      </MockedProvider>,
+    );
+    await screen.findByText('Wash dishes');
+
+    await userEvent.click(screen.getByRole('button', { name: /^bob$/i }));
+
+    expect(screen.getByText(/no chores assigned to bob/i)).toBeInTheDocument();
+  });
+});
+
+describe('ChoreCard availability window', () => {
+  it('shows the window only for a seasonal chore', async () => {
+    render(
+      <MockedProvider
+        mocks={[
+          {
+            request: { query: GET_ALL_CHORES },
+            result: { data: { listChores: [WASH_DISHES, SPELLING] } },
+          },
+          { request: { query: GET_ALL_USERS }, result: { data: { listUsers: users } } },
+        ]}
+      >
+        <AdminChoreManagement adminId={1} />
+      </MockedProvider>,
+    );
+    await screen.findByText('Study spelling');
+
+    expect(screen.getByText('Sep 1 – Jun 15')).toBeInTheDocument();
+    expect(screen.getAllByText(/available:/i)).toHaveLength(1);
   });
 });

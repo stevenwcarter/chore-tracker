@@ -38,6 +38,12 @@ export const GET_USER_CHORES = gql`
       requiredDays
       active
       createdAt
+      availabilityWindow {
+        startMonth
+        startDay
+        endMonth
+        endDay
+      }
     }
   }
 `;
@@ -129,6 +135,12 @@ export const GET_ALL_CHORES = gql`
       requiredDays
       active
       createdAt
+      availabilityWindow {
+        startMonth
+        startDay
+        endMonth
+        endDay
+      }
       assignedUsers {
         id
         uuid
@@ -238,6 +250,12 @@ export const UPDATE_CHORE = gql`
       requiredDays
       active
       createdAt
+      availabilityWindow {
+        startMonth
+        startDay
+        endMonth
+        endDay
+      }
     }
   }
 `;

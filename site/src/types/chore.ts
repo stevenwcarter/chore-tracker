@@ -14,6 +14,20 @@ export interface Admin {
   createdAt: string;
 }
 
+/**
+ * A chore's yearly availability window, inclusive at both ends. Month is 1-12 and
+ * day is 1-31. When the end sorts before the start the window wraps the new year -
+ * a Sep 1 to Jun 15 school-year chore is in season in December.
+ *
+ * Mirrors `AvailabilityWindow` in `src/availability.rs`.
+ */
+export interface AvailabilityWindow {
+  startMonth: number;
+  startDay: number;
+  endMonth: number;
+  endDay: number;
+}
+
 export interface Chore {
   id: number;
   uuid: string;
@@ -34,6 +48,7 @@ export interface Chore {
   assignedUsers?: User[];
   bonusDate?: string | null; // ISO 8601 date, null for regular chores
   maxClaims?: number | null; // null for unlimited
+  availabilityWindow?: AvailabilityWindow | null;
 }
 
 export interface ChoreCompletion {
@@ -109,6 +124,7 @@ export interface ChoreInput {
   requiredDays: number;
   active?: boolean;
   createdByAdminId: number;
+  availabilityWindow?: AvailabilityWindow | null;
 }
 
 // Frontend form type (what the UI uses)

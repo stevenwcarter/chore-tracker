@@ -2,7 +2,8 @@ import { useQuery } from '@apollo/client/react';
 import { useMemo } from 'react';
 import { ChoreCompletion, WeeklyChoreData, Chore } from 'types/chore';
 import { GET_USER_CHORES, GET_WEEKLY_CHORES, CREATE_CHORE_COMPLETION } from 'graphql/queries';
-import { formatDateForGraphQL } from 'utils/dateUtils';
+import { formatDateForGraphQL, getWeekDateRange } from 'utils/dateUtils';
+import { isWeekInWindow } from 'utils/availabilityWindow';
 import { withErrorToast } from 'utils/withErrorToast';
 import { useRefetchingMutation } from './useRefetchingMutation';
 
@@ -59,11 +60,18 @@ export const useUserChores = ({ userId, weekStartDate }: UseUserChoresOptions) =
       completionMap.get(choreId)!.push({ ...completion, approved: completion.approved || false });
     });
 
-    return userChoresData.listChores.map((backendChore: Chore) => ({
-      chore: { ...backendChore },
-      completions: completionMap.get(backendChore.id) ?? [],
-    }));
-  }, [userChoresData, weeklyData]);
+    // A seasonal chore drops out of the grid entirely when no day of the displayed
+    // week falls inside its availability window; on a boundary week it stays and
+    // ChoreRow blanks the individual out-of-season days.
+    const weekDates = getWeekDateRange(weekStartDate).dates;
+
+    return userChoresData.listChores
+      .filter((chore: Chore) => isWeekInWindow(chore.availabilityWindow, weekDates))
+      .map((backendChore: Chore) => ({
+        chore: { ...backendChore },
+        completions: completionMap.get(backendChore.id) ?? [],
+      }));
+  }, [userChoresData, weeklyData, weekStartDate]);
 
   const completeChore = (choreId: number, completionDate: Date) =>
     withErrorToast('Error completing chore', () =>

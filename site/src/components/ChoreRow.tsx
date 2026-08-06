@@ -3,6 +3,7 @@ import confetti from 'canvas-confetti';
 import { WeeklyChoreData, ChoreCompletion, PaymentType } from '../types/chore';
 import { formatCurrency, isSameDayAsString } from '../utils/dateUtils';
 import { isDayInBitmask } from '../utils/weekdayBitmask';
+import { isDateInWindow } from '../utils/availabilityWindow';
 import clsx from 'clsx';
 
 interface ChoreRowProps {
@@ -34,7 +35,13 @@ export const ChoreRow: React.FC<ChoreRowProps> = ({
 
   const renderChoreCell = (date: Date) => {
     const completion = getCompletionForDate(date);
-    const isScheduled = isDayInBitmask(choreData.chore.requiredDays, date);
+    // A day is offered only when the chore is scheduled for that weekday AND the
+    // date falls inside the chore's yearly availability window. Out-of-season days
+    // render exactly like unscheduled ones. The server enforces the same rule in
+    // ChoreCompletionSvc::create - this is only the affordance.
+    const isScheduled =
+      isDayInBitmask(choreData.chore.requiredDays, date) &&
+      isDateInWindow(choreData.chore.availabilityWindow, date);
     const isCompletedByAnyone = isChoreCompletedByAnyone(choreData.chore.id, date);
 
     const getCompletionNotes = () => {

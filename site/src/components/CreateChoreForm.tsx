@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { PaymentType, User, Chore } from 'types/chore';
 import { DAY_NAMES, DayName, bitmaskFromDayNames, dayNamesFromBitmask } from 'utils/weekdayBitmask';
+import MonthDayPicker from './MonthDayPicker';
+
+// Default availability window shown once the season checkbox is first ticked
+// for a new chore. Shared by the useState initializers below and by the
+// create-mode reset in handleSubmit, so the two cannot drift apart.
+const DEFAULT_SEASON_WINDOW = { startMonth: 9, startDay: 1, endMonth: 6, endDay: 15 };
 
 interface CreateChoreFormProps {
   users: User[];
@@ -25,6 +31,11 @@ const CreateChoreForm: React.FC<CreateChoreFormProps> = ({
   const [paymentType, setPaymentType] = useState<PaymentType>(PaymentType.Daily);
   const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
   const [selectedDays, setSelectedDays] = useState<DayName[]>([]);
+  const [seasonEnabled, setSeasonEnabled] = useState(false);
+  const [startMonth, setStartMonth] = useState(DEFAULT_SEASON_WINDOW.startMonth);
+  const [startDay, setStartDay] = useState(DEFAULT_SEASON_WINDOW.startDay);
+  const [endMonth, setEndMonth] = useState(DEFAULT_SEASON_WINDOW.endMonth);
+  const [endDay, setEndDay] = useState(DEFAULT_SEASON_WINDOW.endDay);
 
   const isEditMode = !!initialChore;
 
@@ -37,6 +48,15 @@ const CreateChoreForm: React.FC<CreateChoreFormProps> = ({
       setPaymentType(initialChore.paymentType || PaymentType.Daily);
 
       setSelectedDays(dayNamesFromBitmask(initialChore.requiredDays ?? 0));
+
+      const window = initialChore.availabilityWindow;
+      setSeasonEnabled(!!window);
+      if (window) {
+        setStartMonth(window.startMonth);
+        setStartDay(window.startDay);
+        setEndMonth(window.endMonth);
+        setEndDay(window.endDay);
+      }
 
       // Set assigned users
       const assignedUserIds = initialChore.assignedUsers?.map((user) => user.id) || [];
@@ -57,6 +77,7 @@ const CreateChoreForm: React.FC<CreateChoreFormProps> = ({
         createdByAdminId: adminId,
         requiredDays,
         active: initialChore?.active ?? true, // Preserve existing active state or default to true
+        availabilityWindow: seasonEnabled ? { startMonth, startDay, endMonth, endDay } : null,
       };
       await onSubmit(choreData, selectedUserIds);
       // Reset form only if not in edit mode
@@ -67,6 +88,11 @@ const CreateChoreForm: React.FC<CreateChoreFormProps> = ({
         setPaymentType(PaymentType.Daily);
         setSelectedUserIds([]);
         setSelectedDays([]);
+        setSeasonEnabled(false);
+        setStartMonth(DEFAULT_SEASON_WINDOW.startMonth);
+        setStartDay(DEFAULT_SEASON_WINDOW.startDay);
+        setEndMonth(DEFAULT_SEASON_WINDOW.endMonth);
+        setEndDay(DEFAULT_SEASON_WINDOW.endDay);
       }
     }
   };
@@ -163,6 +189,48 @@ const CreateChoreForm: React.FC<CreateChoreFormProps> = ({
             </label>
           ))}
         </div>
+      </div>
+
+      <div>
+        <label className="flex items-center space-x-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={seasonEnabled}
+            onChange={(e) => setSeasonEnabled(e.target.checked)}
+            className="rounded text-blue-600 focus:ring-blue-500"
+            disabled={loading}
+          />
+          <span className="text-sm font-medium text-gray-700">Only available part of the year</span>
+        </label>
+
+        {seasonEnabled && (
+          <div className="mt-3 space-y-3 border border-gray-200 rounded-md p-3">
+            <MonthDayPicker
+              label="Available from"
+              month={startMonth}
+              day={startDay}
+              onChange={(month, day) => {
+                setStartMonth(month);
+                setStartDay(day);
+              }}
+              disabled={loading}
+            />
+            <MonthDayPicker
+              label="Available until"
+              month={endMonth}
+              day={endDay}
+              onChange={(month, day) => {
+                setEndMonth(month);
+                setEndDay(day);
+              }}
+              disabled={loading}
+            />
+            <p className="text-xs text-gray-500">
+              Repeats every year. An end before the start wraps the new year — Sep 1 to Jun 15 is
+              the school year.
+            </p>
+          </div>
+        )}
       </div>
 
       <div>

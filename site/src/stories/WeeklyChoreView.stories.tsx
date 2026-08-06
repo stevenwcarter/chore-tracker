@@ -83,6 +83,7 @@ const mockChores = [
     active: true,
     createdAt: '2023-01-01T00:00:00Z',
     createdByAdminId: 1,
+    availabilityWindow: null,
   },
   {
     id: 2,
@@ -95,6 +96,7 @@ const mockChores = [
     active: true,
     createdAt: '2023-01-05T00:00:00Z',
     createdByAdminId: 1,
+    availabilityWindow: null,
   },
   {
     id: 3,
@@ -107,6 +109,7 @@ const mockChores = [
     active: true,
     createdAt: '2023-01-10T00:00:00Z',
     createdByAdminId: 1,
+    availabilityWindow: null,
   },
 ];
 
