@@ -201,7 +201,9 @@ impl Mutation {
     // Chores
     pub async fn create_chore(context: &GraphQLContext, chore: ChoreInput) -> FieldResult<Chore> {
         context.require_admin()?;
-        graphql_translate_anyhow(ChoreSvc::create(context, &chore.into()))
+        graphql_translate_anyhow(
+            Chore::try_from(chore).and_then(|chore| ChoreSvc::create(context, &chore)),
+        )
     }
 
     pub async fn create_bonus_chore(
@@ -209,12 +211,16 @@ impl Mutation {
         chore: ChoreInput,
     ) -> FieldResult<Chore> {
         context.require_admin()?;
-        graphql_translate_anyhow(ChoreSvc::create(context, &chore.into()))
+        graphql_translate_anyhow(
+            Chore::try_from(chore).and_then(|chore| ChoreSvc::create(context, &chore)),
+        )
     }
 
     pub async fn update_chore(context: &GraphQLContext, chore: ChoreInput) -> FieldResult<Chore> {
         context.require_admin()?;
-        graphql_translate_anyhow(ChoreSvc::update(context, &chore.into()))
+        graphql_translate_anyhow(
+            Chore::try_from(chore).and_then(|chore| ChoreSvc::update(context, &chore)),
+        )
     }
 
     pub async fn delete_chore(context: &GraphQLContext, chore_uuid: String) -> FieldResult<bool> {

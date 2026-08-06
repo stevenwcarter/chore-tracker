@@ -111,11 +111,10 @@ pub mod test_db {
             created_by_admin_id: admin_id,
             bonus_date: None,
             max_claims: None,
-            available_start: None,
-            available_end: None,
+            availability_window: None,
         };
 
-        let chore = Chore::from(chore_input);
+        let chore = Chore::try_from(chore_input).unwrap();
 
         diesel::insert_into(chores::table)
             .values(&chore)

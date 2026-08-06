@@ -366,10 +366,9 @@ mod tests {
             created_by_admin_id: admin_id,
             bonus_date: Some(create_test_date(2026, 4, 15)),
             max_claims: Some(max_claims),
-            available_start: None,
-            available_end: None,
+            availability_window: None,
         };
-        ChoreSvc::create(context, &Chore::from(chore_input)).unwrap()
+        ChoreSvc::create(context, &Chore::try_from(chore_input).unwrap()).unwrap()
     }
 
     #[test]
@@ -868,10 +867,9 @@ mod tests {
             created_by_admin_id: admin.id.unwrap(),
             bonus_date: Some(today),
             max_claims: Some(1),
-            available_start: None,
-            available_end: None,
+            availability_window: None,
         };
-        let chore_raw = Chore::from(chore_input);
+        let chore_raw = Chore::try_from(chore_input).unwrap();
         let chore = ChoreSvc::create(&context, &chore_raw).unwrap();
         let chore_id = chore.id.unwrap();
 
