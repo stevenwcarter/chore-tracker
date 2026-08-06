@@ -260,6 +260,8 @@ mod tests {
             updated_at: chore.updated_at,
             bonus_date: None,
             max_claims: None,
+            available_start: None,
+            available_end: None,
         };
 
         let result = ChoreSvc::update(&context, &updated_chore).unwrap();
@@ -299,6 +301,8 @@ mod tests {
             created_by_admin_id: admin.id.unwrap(),
             bonus_date: None,
             max_claims: None,
+            available_start: None,
+            available_end: None,
         };
         let chore2 = Chore::from(chore2_input);
         let _chore2 = ChoreSvc::create(&context, &chore2).unwrap();
@@ -420,6 +424,8 @@ mod tests {
             created_by_admin_id: admin.id.unwrap(),
             bonus_date: None,
             max_claims: None,
+            available_start: None,
+            available_end: None,
         };
         let chore3 = Chore::from(chore3_input);
         let chore3 = ChoreSvc::create(&context, &chore3).unwrap();
@@ -474,6 +480,8 @@ mod tests {
             created_by_admin_id: admin.id.unwrap(),
             bonus_date: Some(target_date),
             max_claims: None,
+            available_start: None,
+            available_end: None,
         };
         let bonus_chore_raw = Chore::from(bonus_input);
         let bonus_chore = ChoreSvc::create(&context, &bonus_chore_raw).unwrap();
@@ -500,6 +508,8 @@ mod tests {
             created_by_admin_id: admin.id.unwrap(),
             bonus_date: Some(other_date),
             max_claims: None,
+            available_start: None,
+            available_end: None,
         };
         let other_raw = Chore::from(other_input);
         ChoreSvc::create(&context, &other_raw).unwrap();
@@ -525,6 +535,8 @@ mod tests {
             created_by_admin_id: admin.id.unwrap(),
             bonus_date: Some(NaiveDate::from_ymd_opt(2026, 4, 15).unwrap()),
             max_claims: None,
+            available_start: None,
+            available_end: None,
         };
         let chore_raw = Chore::from(input);
         let chore = ChoreSvc::create(&context, &chore_raw).unwrap();
@@ -549,6 +561,8 @@ mod tests {
             created_by_admin_id: admin.id.unwrap(),
             bonus_date: Some(NaiveDate::from_ymd_opt(2026, 4, 15).unwrap()),
             max_claims: Some(2),
+            available_start: None,
+            available_end: None,
         };
         let chore_raw = Chore::from(input);
         let chore = ChoreSvc::create(&context, &chore_raw).unwrap();
@@ -577,6 +591,8 @@ mod tests {
             created_by_admin_id: admin.id.unwrap(),
             bonus_date: Some(NaiveDate::from_ymd_opt(2026, 4, 15).unwrap()),
             max_claims: Some(1),
+            available_start: None,
+            available_end: None,
         };
         let chore_raw = Chore::from(input);
         let chore = ChoreSvc::create(&context, &chore_raw).unwrap();
@@ -613,6 +629,8 @@ mod tests {
             created_by_admin_id: admin.id.unwrap(),
             bonus_date: Some(target_date),
             max_claims: None,
+            available_start: None,
+            available_end: None,
         };
         let chore_raw = Chore::from(input);
         ChoreSvc::create(&context, &chore_raw).unwrap();
@@ -654,5 +672,50 @@ mod tests {
         );
         let result = ChoreSvc::unassign_user(&context, chore.id.unwrap(), user.id.unwrap());
         assert!(result.is_ok()); // Should not error even if assignment doesn't exist
+    }
+
+    #[test]
+    fn test_chore_persists_availability_window_columns() {
+        let context = create_test_context();
+        let admin = create_test_admin(&context, "Test Admin", "admin@test.com");
+
+        let input = ChoreInput {
+            uuid: None,
+            name: "School year chore".to_owned(),
+            description: None,
+            payment_type: PaymentType::Daily,
+            amount_cents: 100,
+            required_days: day_patterns::weekdays(),
+            active: Some(true),
+            created_by_admin_id: admin.id.unwrap(),
+            bonus_date: None,
+            max_claims: None,
+            available_start: Some(901),
+            available_end: Some(615),
+        };
+        let created = ChoreSvc::create(&context, &Chore::from(input)).unwrap();
+
+        let reloaded = ChoreSvc::get(&context, &created.uuid).unwrap();
+        assert_eq!(reloaded.available_start, Some(901));
+        assert_eq!(reloaded.available_end, Some(615));
+    }
+
+    #[test]
+    fn test_chore_without_availability_window_stores_nulls() {
+        let context = create_test_context();
+        let admin = create_test_admin(&context, "Test Admin", "admin@test.com");
+
+        let chore = create_test_chore(
+            &context,
+            "Year round chore",
+            PaymentType::Daily,
+            100,
+            day_patterns::every_day(),
+            admin.id.unwrap(),
+        );
+
+        let reloaded = ChoreSvc::get(&context, &chore.uuid).unwrap();
+        assert_eq!(reloaded.available_start, None);
+        assert_eq!(reloaded.available_end, None);
     }
 }

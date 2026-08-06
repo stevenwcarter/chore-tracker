@@ -284,6 +284,14 @@ pub struct Chore {
     pub updated_at: Option<NaiveDateTime>,
     pub bonus_date: Option<NaiveDate>,
     pub max_claims: Option<i32>,
+    /// Start of the chore's yearly availability window, MMDD-encoded
+    /// (`month * 100 + day`), or `None` for a chore available year round.
+    /// Always set together with `available_end`; see `crate::availability`.
+    pub available_start: Option<i32>,
+    /// End of the yearly availability window, MMDD-encoded and inclusive. When
+    /// `available_end < available_start` the window wraps the new year, which is
+    /// the normal case for a school-year chore (Sep 1 - Jun 15).
+    pub available_end: Option<i32>,
 }
 
 #[juniper::graphql_object(context = GraphQLContext)]
@@ -359,6 +367,8 @@ pub struct ChoreInput {
     pub created_by_admin_id: i32,
     pub bonus_date: Option<NaiveDate>,
     pub max_claims: Option<i32>,
+    pub available_start: Option<i32>,
+    pub available_end: Option<i32>,
 }
 
 impl From<ChoreInput> for Chore {
@@ -377,6 +387,8 @@ impl From<ChoreInput> for Chore {
             updated_at: None,
             bonus_date: input.bonus_date,
             max_claims: input.max_claims,
+            available_start: input.available_start,
+            available_end: input.available_end,
         }
     }
 }
