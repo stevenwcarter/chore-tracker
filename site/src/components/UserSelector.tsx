@@ -4,6 +4,7 @@ import { User } from 'types/chore';
 import LoadingSpinner from './LoadingSpinner';
 import UserImage from './UserImage';
 import { useBalances } from 'hooks/useBalances';
+import { usePendingTotals } from 'hooks/usePendingTotals';
 import UserBalance from './UserBalance';
 
 interface UserSelectorProps {
@@ -19,6 +20,7 @@ export default function UserSelector({
 }: UserSelectorProps) {
   const { data, loading, error } = useQuery<{ listUsers: User[] }>(GET_ALL_USERS);
   const { balances } = useBalances();
+  const { pendingByUserId } = usePendingTotals();
 
   if (loading) return <LoadingSpinner />;
   if (error) return <div className="text-red-500">Error loading users: {error.message}</div>;
@@ -43,7 +45,14 @@ export default function UserSelector({
             <UserImage user={user} />
             <div className="mt-2 text-center">
               <span className="text-sm font-medium text-white">{user.name}</span>
-              <UserBalance name={user.name} balances={balances} />
+              {/* Balance is YNAB spending money, looked up by name; pending is our
+                  own database's figure, looked up by user id. Different sources,
+                  different keys - keep them separate. */}
+              <UserBalance
+                name={user.name}
+                balances={balances}
+                pendingCents={pendingByUserId.get(user.id)}
+              />
             </div>
             {selectedUserId === user.id && (
               <div className="absolute -top-1 -right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
