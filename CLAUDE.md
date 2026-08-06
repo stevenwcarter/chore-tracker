@@ -104,6 +104,24 @@ join keys straight when touching `UserBalance`.
 - Foreign keys enabled via pragma
 - Always test migrations in both directions: `run` → `revert` → `run`
 
+**Nullable columns cannot be cleared through a derived `AsChangeset`.** Our model
+structs derive `AsChangeset` without `treat_none_as_null`, so Diesel **omits**
+`None` fields from the generated `UPDATE` rather than writing NULL. A bare
+`.set(&model)` therefore silently cannot clear an already-set optional column —
+the update appears to succeed and the old value survives.
+
+`Chore::available_start` / `available_end` hit this and are fixed by marking them
+`#[diesel(skip_update)]` and setting both columns explicitly in `ChoreSvc::update`.
+Do **not** reach for `treat_none_as_null = true` on the whole struct — it would
+also NULL `created_at` / `updated_at`, which the input conversions set to `None`
+on every update. **`Chore::description` still has this bug** and cannot currently
+be cleared once set; the same `skip_update` pattern would fix it.
+
+When you add a nullable column a user can unset, **write the test that
+round-trips through the database** — create with a value, update to `None`,
+reload, assert NULL. A test that only asserts the in-memory struct conversion
+passes while the persistence is broken; that is exactly how this shipped green.
+
 ## Weekly Chore Payment Logic
 
 Weekly chores split payment across assigned days (e.g., $1.50 chore on 3 days = $0.50/day). Required days are stored as a bitmask (1=Mon, 2=Tue, 4=Wed, 8=Thu, 16=Fri, 32=Sat, 64=Sun). See `WEEKLY_CHORE_FIX.md` for the correction mutations if payment amounts need fixing.
