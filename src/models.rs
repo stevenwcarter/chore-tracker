@@ -879,6 +879,30 @@ impl UnpaidTotal {
     }
 }
 
+/// A kid's earned-but-unpaid total, regardless of approval status. Distinct from
+/// [`UnpaidTotal`], which is approved-and-unpaid and drives the payout screen.
+#[derive(Debug, Clone)]
+pub struct PendingTotal {
+    pub user: User,
+    pub amount_cents: i32,
+}
+
+#[juniper::graphql_object(context = GraphQLContext)]
+impl PendingTotal {
+    pub fn user(&self) -> &User {
+        &self.user
+    }
+    pub fn amount_cents(&self) -> i32 {
+        self.amount_cents
+    }
+}
+
+impl PendingTotal {
+    pub fn new(user: User, amount_cents: i32) -> Self {
+        Self { user, amount_cents }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

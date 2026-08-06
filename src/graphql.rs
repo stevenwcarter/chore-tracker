@@ -7,7 +7,8 @@ use crate::{
     context::GraphQLContext,
     models::{
         Admin, AdminInput, Chore, ChoreCompletion, ChoreCompletionInput, ChoreCompletionNote,
-        ChoreCompletionNoteInput, ChoreInput, UnpaidTotal, User, UserBadge, UserInput,
+        ChoreCompletionNoteInput, ChoreInput, PendingTotal, UnpaidTotal, User, UserBadge,
+        UserInput,
     },
     svc::{
         AdminSvc, ChoreCompletionNoteSvc, ChoreCompletionSvc, ChoreSvc, UserSvc,
@@ -131,6 +132,16 @@ impl Query {
             .map(|(user, amount)| UnpaidTotal::new(user, amount))
             .collect();
         Ok(unpaid_totals)
+    }
+
+    /// Amount each user has earned but not yet been paid out, regardless of whether an
+    /// admin has approved it. A user with nothing pending is omitted entirely.
+    pub fn get_pending_totals(context: &GraphQLContext) -> FieldResult<Vec<PendingTotal>> {
+        let results = ChoreCompletionSvc::get_pending_totals(context)?;
+        Ok(results
+            .into_iter()
+            .map(|(user, amount)| PendingTotal::new(user, amount))
+            .collect())
     }
 
     // Chore Completion Notes

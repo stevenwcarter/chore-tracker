@@ -180,6 +180,36 @@ impl ChoreCompletionSvc {
         Ok(converted_results)
     }
 
+    /// Per-user totals of money earned but not yet received: every completion with
+    /// `paid_out = false`, **regardless of approval status**.
+    ///
+    /// This is deliberately not `get_unpaid_totals`. That one is the payout screen's
+    /// query - approved *and* unpaid, with a LEFT JOIN that keeps zero-owed users
+    /// visible. This one answers the kid's "what have I earned so far" question, so
+    /// work still awaiting an admin's approval counts.
+    ///
+    /// Paid-out completions are excluded because that money has already moved into
+    /// the kid's YNAB balance, which the landing page shows alongside this figure -
+    /// counting it in both places would double it. A user with nothing pending is
+    /// absent from the result rather than present with a zero.
+    pub fn get_pending_totals(context: &GraphQLContext) -> Result<Vec<(User, i32)>> {
+        let results: Vec<(User, Option<i64>)> = users::table
+            .inner_join(chore_completions::table)
+            .filter(chore_completions::paid_out.eq(false))
+            .group_by(users::id)
+            .select((
+                User::as_select(),
+                diesel::dsl::sum(chore_completions::amount_cents).nullable(),
+            ))
+            .load(&mut get_conn(context)?)
+            .context("Could not load pending totals")?;
+
+        Ok(results
+            .into_iter()
+            .map(|(user, total)| (user, i32::try_from(total.unwrap_or(0)).unwrap_or(i32::MAX)))
+            .collect())
+    }
+
     /// Creates a completion for `completion_input`, computing its payout from the chore's
     /// payment type and enforcing the bonus-chore claim cap.
     ///
@@ -1350,6 +1380,143 @@ mod tests {
             user2_total_after,
             Some(100),
             "User2 should still have 100 unpaid"
+        );
+    }
+
+    /// Pending = completed but not paid out, regardless of approval. Approval is the
+    /// admin's gate on *payout*, not on whether the kid has done the work, so an
+    /// unapproved completion still shows in the kid's pending figure.
+    #[test]
+    fn pending_totals_count_unapproved_and_approved_but_not_paid_out() {
+        let context = create_test_context();
+        let admin = create_test_admin(&context, "Test Admin", "admin@test.com");
+        let user = create_test_user(&context, "Test User");
+        let chore = create_test_chore(
+            &context,
+            "Make bed",
+            PaymentType::Daily,
+            100,
+            day_patterns::every_day(),
+            admin.id.unwrap(),
+        );
+
+        // Unapproved.
+        ChoreCompletionSvc::create(
+            &context,
+            &ChoreCompletionInput {
+                uuid: None,
+                chore_id: chore.id.unwrap(),
+                user_id: user.id.unwrap(),
+                completed_date: NaiveDate::from_ymd_opt(2026, 5, 4).unwrap(),
+            },
+        )
+        .unwrap();
+
+        // Approved but not paid out.
+        let approved = ChoreCompletionSvc::create(
+            &context,
+            &ChoreCompletionInput {
+                uuid: None,
+                chore_id: chore.id.unwrap(),
+                user_id: user.id.unwrap(),
+                completed_date: NaiveDate::from_ymd_opt(2026, 5, 5).unwrap(),
+            },
+        )
+        .unwrap();
+        ChoreCompletionSvc::approve(&context, &approved.uuid, admin.id.unwrap()).unwrap();
+
+        let totals = ChoreCompletionSvc::get_pending_totals(&context).unwrap();
+        let (_, amount) = totals
+            .iter()
+            .find(|(u, _)| u.id == user.id)
+            .expect("user has pending work");
+
+        assert_eq!(*amount, 200, "both completions count");
+    }
+
+    #[test]
+    fn pending_totals_exclude_paid_out_completions() {
+        let context = create_test_context();
+        let admin = create_test_admin(&context, "Test Admin", "admin@test.com");
+        let user = create_test_user(&context, "Test User");
+        let chore = create_test_chore(
+            &context,
+            "Make bed",
+            PaymentType::Daily,
+            100,
+            day_patterns::every_day(),
+            admin.id.unwrap(),
+        );
+
+        let completion = ChoreCompletionSvc::create(
+            &context,
+            &ChoreCompletionInput {
+                uuid: None,
+                chore_id: chore.id.unwrap(),
+                user_id: user.id.unwrap(),
+                completed_date: NaiveDate::from_ymd_opt(2026, 5, 4).unwrap(),
+            },
+        )
+        .unwrap();
+        ChoreCompletionSvc::approve(&context, &completion.uuid, admin.id.unwrap()).unwrap();
+        ChoreCompletionSvc::mark_as_paid(&context, Some(user.id.unwrap())).unwrap();
+
+        let totals = ChoreCompletionSvc::get_pending_totals(&context).unwrap();
+        let entry = totals.iter().find(|(u, _)| u.id == user.id);
+
+        assert!(
+            entry.is_none() || entry.unwrap().1 == 0,
+            "paid-out money has moved to the YNAB balance and must not be counted twice"
+        );
+    }
+
+    #[test]
+    fn pending_totals_keep_users_separate() {
+        let context = create_test_context();
+        let admin = create_test_admin(&context, "Test Admin", "admin@test.com");
+        let alice = create_test_user(&context, "Alice");
+        let bob = create_test_user(&context, "Bob");
+        let chore = create_test_chore(
+            &context,
+            "Make bed",
+            PaymentType::Daily,
+            100,
+            day_patterns::every_day(),
+            admin.id.unwrap(),
+        );
+
+        for (user_id, count) in [(alice.id.unwrap(), 2), (bob.id.unwrap(), 1)] {
+            for day in 0..count {
+                ChoreCompletionSvc::create(
+                    &context,
+                    &ChoreCompletionInput {
+                        uuid: None,
+                        chore_id: chore.id.unwrap(),
+                        user_id,
+                        completed_date: NaiveDate::from_ymd_opt(2026, 5, 4 + day).unwrap(),
+                    },
+                )
+                .unwrap();
+            }
+        }
+
+        let totals = ChoreCompletionSvc::get_pending_totals(&context).unwrap();
+        assert_eq!(
+            totals.iter().find(|(u, _)| u.id == alice.id).unwrap().1,
+            200
+        );
+        assert_eq!(totals.iter().find(|(u, _)| u.id == bob.id).unwrap().1, 100);
+    }
+
+    #[test]
+    fn pending_totals_omit_a_user_with_no_completions() {
+        let context = create_test_context();
+        let user = create_test_user(&context, "Idle User");
+
+        let totals = ChoreCompletionSvc::get_pending_totals(&context).unwrap();
+        assert!(
+            totals.iter().all(|(u, _)| u.id != user.id),
+            "a user with nothing pending is absent; the client reads that as zero"
         );
     }
 }
