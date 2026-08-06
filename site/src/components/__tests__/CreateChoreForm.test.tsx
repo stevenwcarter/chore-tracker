@@ -78,6 +78,45 @@ describe('CreateChoreForm availability window', () => {
     expect(screen.getByLabelText(/available until day/i)).toHaveValue('15');
   });
 
+  it("does not leak one chore's season into the next after a create-mode submit", async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    render(<CreateChoreForm users={users} adminId={1} onSubmit={onSubmit} onCancel={vi.fn()} />);
+
+    // Chore A: a non-default window (differs from the 9/1-6/15 default in all
+    // four values), so a leak is unambiguous.
+    await userEvent.type(screen.getByLabelText(/chore title/i), 'Shovel snow');
+    await userEvent.click(screen.getByLabelText(/only available part of the year/i));
+    await userEvent.selectOptions(screen.getByLabelText(/available from month/i), '12');
+    await userEvent.selectOptions(screen.getByLabelText(/available from day/i), '1');
+    await userEvent.selectOptions(screen.getByLabelText(/available until month/i), '1');
+    await userEvent.selectOptions(screen.getByLabelText(/available until day/i), '31');
+    await userEvent.click(screen.getByRole('button', { name: /create chore/i }));
+
+    expect(onSubmit).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        availabilityWindow: { startMonth: 12, startDay: 1, endMonth: 1, endDay: 31 },
+      }),
+      [],
+    );
+
+    // Chore B, same mounted form: the season checkbox resets to unticked, and
+    // re-ticking it must show the default window, not chore A's leftover values.
+    expect(screen.getByLabelText(/only available part of the year/i)).not.toBeChecked();
+
+    await userEvent.type(screen.getByLabelText(/chore title/i), 'Rake leaves');
+    await userEvent.click(screen.getByLabelText(/only available part of the year/i));
+    await userEvent.click(screen.getByRole('button', { name: /create chore/i }));
+
+    expect(onSubmit).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        availabilityWindow: { startMonth: 9, startDay: 1, endMonth: 6, endDay: 15 },
+      }),
+      [],
+    );
+  });
+
   it('limits February to 29 days', async () => {
     render(<CreateChoreForm users={users} adminId={1} onSubmit={vi.fn()} onCancel={vi.fn()} />);
 

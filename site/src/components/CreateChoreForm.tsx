@@ -3,6 +3,11 @@ import { PaymentType, User, Chore } from 'types/chore';
 import { DAY_NAMES, DayName, bitmaskFromDayNames, dayNamesFromBitmask } from 'utils/weekdayBitmask';
 import MonthDayPicker from './MonthDayPicker';
 
+// Default availability window shown once the season checkbox is first ticked
+// for a new chore. Shared by the useState initializers below and by the
+// create-mode reset in handleSubmit, so the two cannot drift apart.
+const DEFAULT_SEASON_WINDOW = { startMonth: 9, startDay: 1, endMonth: 6, endDay: 15 };
+
 interface CreateChoreFormProps {
   users: User[];
   adminId: number;
@@ -27,10 +32,10 @@ const CreateChoreForm: React.FC<CreateChoreFormProps> = ({
   const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
   const [selectedDays, setSelectedDays] = useState<DayName[]>([]);
   const [seasonEnabled, setSeasonEnabled] = useState(false);
-  const [startMonth, setStartMonth] = useState(9);
-  const [startDay, setStartDay] = useState(1);
-  const [endMonth, setEndMonth] = useState(6);
-  const [endDay, setEndDay] = useState(15);
+  const [startMonth, setStartMonth] = useState(DEFAULT_SEASON_WINDOW.startMonth);
+  const [startDay, setStartDay] = useState(DEFAULT_SEASON_WINDOW.startDay);
+  const [endMonth, setEndMonth] = useState(DEFAULT_SEASON_WINDOW.endMonth);
+  const [endDay, setEndDay] = useState(DEFAULT_SEASON_WINDOW.endDay);
 
   const isEditMode = !!initialChore;
 
@@ -84,6 +89,10 @@ const CreateChoreForm: React.FC<CreateChoreFormProps> = ({
         setSelectedUserIds([]);
         setSelectedDays([]);
         setSeasonEnabled(false);
+        setStartMonth(DEFAULT_SEASON_WINDOW.startMonth);
+        setStartDay(DEFAULT_SEASON_WINDOW.startDay);
+        setEndMonth(DEFAULT_SEASON_WINDOW.endMonth);
+        setEndDay(DEFAULT_SEASON_WINDOW.endDay);
       }
     }
   };

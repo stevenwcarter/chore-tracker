@@ -57,6 +57,9 @@ export const MonthDayPicker: React.FC<MonthDayPickerProps> = ({
     <div>
       <div className="block text-sm font-medium text-gray-700 mb-1">{label}</div>
       <div className="flex gap-2">
+        <label htmlFor={monthId} className="sr-only">
+          {label} month
+        </label>
         <select
           id={monthId}
           aria-label={`${label} month`}
@@ -71,6 +74,9 @@ export const MonthDayPicker: React.FC<MonthDayPickerProps> = ({
             </option>
           ))}
         </select>
+        <label htmlFor={dayId} className="sr-only">
+          {label} day
+        </label>
         <select
           id={dayId}
           aria-label={`${label} day`}
