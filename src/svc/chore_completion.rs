@@ -1,5 +1,6 @@
 #![allow(clippy::too_many_arguments)]
 use crate::{
+    availability::AvailabilityWindow,
     context::GraphQLContext,
     db::get_conn,
     models::{Chore, ChoreCompletion, ChoreCompletionInput, PaymentType, User},
@@ -201,6 +202,7 @@ impl ChoreCompletionSvc {
                 .context("Could not find chore by ID")?;
 
             ensure_bonus_claim_allowed(&chore, conn)?;
+            ensure_within_availability_window(&chore, completion_input.completed_date)?;
 
             let payment_type = PaymentType::from(chore.payment_type);
             let amount_cents = PaymentType::calculate_completion_amount(
@@ -303,6 +305,29 @@ fn ensure_bonus_claim_allowed(chore: &Chore, conn: &mut SqliteConnection) -> Res
         anyhow::bail!("Bonus chore has reached its claim limit");
     }
     Ok(())
+}
+
+/// Rejects a completion dated outside the chore's yearly availability window.
+///
+/// This is the enforcement point for seasonal chores. The weekly grid also hides
+/// out-of-season days, but that is a UI affordance - correctness lives here, so a
+/// future frontend change cannot silently remove the guarantee.
+fn ensure_within_availability_window(chore: &Chore, completed_date: NaiveDate) -> Result<()> {
+    let window = AvailabilityWindow::from_columns(chore.available_start, chore.available_end)?;
+
+    match window {
+        Some(window) if !window.contains(completed_date) => {
+            anyhow::bail!(
+                "'{}' is not available on {completed_date}; it runs {}/{} to {}/{}",
+                chore.name,
+                window.start().month(),
+                window.start().day(),
+                window.end().month(),
+                window.end().day(),
+            )
+        }
+        _ => Ok(()),
+    }
 }
 
 /// Builds the completion row to insert; `amount_cents` is the already-computed payout.
@@ -994,6 +1019,224 @@ mod tests {
                 "All completions should be within the specified week"
             );
         }
+    }
+
+    /// Creates a chore whose availability window runs Sep 1 - Jun 15 (a school year,
+    /// so the window wraps the new year).
+    fn create_school_year_chore(context: &GraphQLContext, admin_id: i32) -> Chore {
+        use crate::models::AvailabilityWindowInput;
+
+        let input = ChoreInput {
+            uuid: None,
+            name: "Study spelling".to_owned(),
+            description: None,
+            payment_type: PaymentType::Daily,
+            amount_cents: 100,
+            required_days: 0,
+            active: Some(true),
+            created_by_admin_id: admin_id,
+            bonus_date: None,
+            max_claims: None,
+            availability_window: Some(AvailabilityWindowInput {
+                start_month: 9,
+                start_day: 1,
+                end_month: 6,
+                end_day: 15,
+            }),
+        };
+        ChoreSvc::create(context, &Chore::try_from(input).unwrap()).unwrap()
+    }
+
+    #[test]
+    fn create_rejects_a_completion_outside_the_availability_window() {
+        let context = create_test_context();
+        let admin = create_test_admin(&context, "Test Admin", "admin@test.com");
+        let user = create_test_user(&context, "Test User");
+        let chore = create_school_year_chore(&context, admin.id.unwrap());
+
+        let result = ChoreCompletionSvc::create(
+            &context,
+            &ChoreCompletionInput {
+                uuid: None,
+                chore_id: chore.id.unwrap(),
+                user_id: user.id.unwrap(),
+                completed_date: NaiveDate::from_ymd_opt(2026, 7, 4).unwrap(), // summer
+            },
+        );
+
+        assert!(result.is_err(), "July 4 is outside a Sep 1 - Jun 15 window");
+    }
+
+    #[test]
+    fn create_accepts_a_completion_inside_the_availability_window() {
+        let context = create_test_context();
+        let admin = create_test_admin(&context, "Test Admin", "admin@test.com");
+        let user = create_test_user(&context, "Test User");
+        let chore = create_school_year_chore(&context, admin.id.unwrap());
+
+        let result = ChoreCompletionSvc::create(
+            &context,
+            &ChoreCompletionInput {
+                uuid: None,
+                chore_id: chore.id.unwrap(),
+                user_id: user.id.unwrap(),
+                completed_date: NaiveDate::from_ymd_opt(2026, 10, 20).unwrap(),
+            },
+        );
+
+        assert!(
+            result.is_ok(),
+            "October 20 is inside a Sep 1 - Jun 15 window"
+        );
+    }
+
+    #[test]
+    fn create_accepts_completions_on_both_window_boundaries() {
+        let context = create_test_context();
+        let admin = create_test_admin(&context, "Test Admin", "admin@test.com");
+        let user = create_test_user(&context, "Test User");
+        let chore = create_school_year_chore(&context, admin.id.unwrap());
+
+        for (label, day) in [
+            (
+                "start boundary",
+                NaiveDate::from_ymd_opt(2026, 9, 1).unwrap(),
+            ),
+            (
+                "end boundary",
+                NaiveDate::from_ymd_opt(2027, 6, 15).unwrap(),
+            ),
+        ] {
+            let result = ChoreCompletionSvc::create(
+                &context,
+                &ChoreCompletionInput {
+                    uuid: None,
+                    chore_id: chore.id.unwrap(),
+                    user_id: user.id.unwrap(),
+                    completed_date: day,
+                },
+            );
+            assert!(result.is_ok(), "{label} must be inclusive");
+        }
+    }
+
+    #[test]
+    fn create_accepts_any_date_for_a_chore_with_no_window() {
+        let context = create_test_context();
+        let admin = create_test_admin(&context, "Test Admin", "admin@test.com");
+        let user = create_test_user(&context, "Test User");
+        let chore = create_test_chore(
+            &context,
+            "Year round",
+            PaymentType::Daily,
+            100,
+            day_patterns::every_day(),
+            admin.id.unwrap(),
+        );
+
+        let result = ChoreCompletionSvc::create(
+            &context,
+            &ChoreCompletionInput {
+                uuid: None,
+                chore_id: chore.id.unwrap(),
+                user_id: user.id.unwrap(),
+                completed_date: NaiveDate::from_ymd_opt(2026, 7, 4).unwrap(),
+            },
+        );
+
+        assert!(result.is_ok(), "a windowless chore is never out of season");
+    }
+
+    /// Pins the decision that a season never changes the weekly per-day rate: the
+    /// season only removes *days* from the week, it never changes the *rate* paid
+    /// for the days that remain in season. That rate is
+    /// `amount_cents / required-day-count`, subject to the pre-existing
+    /// quarter-rounding pinned by `test_weekly_chore_payout_with_rounding` - this
+    /// test deliberately uses rounding-neutral inputs (500 / 5 = 100, already a
+    /// multiple of 25) so its assertions aren't coupled to that unrelated rounding
+    /// rule.
+    ///
+    /// The load-bearing check is the equality assertion between the seasonal and
+    /// windowless completions: two otherwise-identical Weekly chores, one with a
+    /// Sep 1 - Jun 17 window (cut short mid-week) and one with no window at all,
+    /// must pay the same amount for the same in-season day. A future proration
+    /// change must break that assertion deliberately.
+    #[test]
+    fn weekly_rate_ignores_the_availability_window() {
+        use crate::models::AvailabilityWindowInput;
+
+        let context = create_test_context();
+        let admin = create_test_admin(&context, "Test Admin", "admin@test.com");
+        let user = create_test_user(&context, "Test User");
+
+        let seasonal_input = ChoreInput {
+            uuid: None,
+            name: "Weekly seasonal".to_owned(),
+            description: None,
+            payment_type: PaymentType::Weekly,
+            amount_cents: 500,
+            required_days: day_patterns::weekdays(), // 5 days -> 100 cents each
+            active: Some(true),
+            created_by_admin_id: admin.id.unwrap(),
+            bonus_date: None,
+            max_claims: None,
+            availability_window: Some(AvailabilityWindowInput {
+                start_month: 9,
+                start_day: 1,
+                end_month: 6,
+                end_day: 17, // window ends mid-week
+            }),
+        };
+        let seasonal_chore =
+            ChoreSvc::create(&context, &Chore::try_from(seasonal_input).unwrap()).unwrap();
+
+        let year_round_input = ChoreInput {
+            uuid: None,
+            name: "Weekly year round".to_owned(),
+            description: None,
+            payment_type: PaymentType::Weekly,
+            amount_cents: 500,
+            required_days: day_patterns::weekdays(),
+            active: Some(true),
+            created_by_admin_id: admin.id.unwrap(),
+            bonus_date: None,
+            max_claims: None,
+            availability_window: None,
+        };
+        let year_round_chore =
+            ChoreSvc::create(&context, &Chore::try_from(year_round_input).unwrap()).unwrap();
+
+        // Wednesday 2026-06-17 is the final in-season day of the seasonal chore's week.
+        let completed_date = NaiveDate::from_ymd_opt(2026, 6, 17).unwrap();
+
+        let seasonal_completion = ChoreCompletionSvc::create(
+            &context,
+            &ChoreCompletionInput {
+                uuid: None,
+                chore_id: seasonal_chore.id.unwrap(),
+                user_id: user.id.unwrap(),
+                completed_date,
+            },
+        )
+        .unwrap();
+
+        let year_round_completion = ChoreCompletionSvc::create(
+            &context,
+            &ChoreCompletionInput {
+                uuid: None,
+                chore_id: year_round_chore.id.unwrap(),
+                user_id: user.id.unwrap(),
+                completed_date,
+            },
+        )
+        .unwrap();
+
+        assert_eq!(
+            seasonal_completion.amount_cents, year_round_completion.amount_cents,
+            "a season-shortened week must pay the same per-day rate as a year-round week"
+        );
+        assert_eq!(seasonal_completion.amount_cents, 100);
+        assert_eq!(year_round_completion.amount_cents, 100);
     }
 
     #[test]
