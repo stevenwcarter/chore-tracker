@@ -1,19 +1,10 @@
-use axum::Json;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::response::Response;
-use serde::Serialize;
 
 pub mod auth;
 pub mod graphql;
 pub mod images;
-
-pub fn err_wrapper<T: Serialize>(result: anyhow::Result<T>) -> impl IntoResponse {
-    match result {
-        Ok(val) => (StatusCode::OK, Json(val)).into_response(),
-        Err(err) => (StatusCode::NOT_FOUND, err.to_string()).into_response(),
-    }
-}
 
 /// Axum-friendly error wrapper around `anyhow::Error` that converts to an HTTP response,
 /// mapping `Unauthorized` messages to 401 and everything else to 404.
