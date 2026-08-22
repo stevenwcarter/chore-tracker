@@ -35,12 +35,6 @@ Last triage: 2026-08-04 against `tidy/2026-08-04` @ b59bb45. Toolchain: cargo bu
 
 ## Medium severity
 
-### T19. Unused dependency — static assets are served by a hand-rolled StaticFile wrapper over rust_embed: `axum-embed` (Cargo.toml:63)
-- Lenses: dead-code
-- Risk: high — needs characterization tests first
-- Proposed fix: Delete the `axum-embed = "0.1.0"` line from [dependencies]. Verified two ways: cargo machete reports it unused, and `git grep -n 'axum_embed|axum-embed|ServeEmbed'` over the whole repo (excluding Cargo.lock/target) hits only Cargo.toml itself. src/routes.rs uses `rust_embed::RustEmbed` + mime_guess directly.
-- [x] execute   [ ] skip
-
 ### T20. Direct dependency only ever imported transitively: `react-router` (site/package.json:27)
 - Lenses: dead-code
 - Risk: high — needs characterization tests first
