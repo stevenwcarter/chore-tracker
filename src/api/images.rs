@@ -15,6 +15,15 @@ use tracing::error;
 use uuid::Uuid;
 
 const MAX_IMAGE_SIZE: usize = 5 * 1024 * 1024;
+
+/// Body-size ceiling for the multipart upload route.
+///
+/// One megabyte above [`MAX_IMAGE_SIZE`] to leave room for the multipart
+/// envelope — boundary markers, per-part headers, and the trailing boundary —
+/// so a file exactly at the image limit is rejected by the size check with its
+/// own error rather than by the transport layer.
+pub const MAX_UPLOAD_BODY_SIZE: usize = MAX_IMAGE_SIZE + 1024 * 1024;
+
 const IMAGE_CACHE_CONTROL: &str = "public, max-age=86400";
 
 fn require_admin_cookie(context: &GraphQLContext, jar: &CookieJar) -> Result<i32, AppError> {

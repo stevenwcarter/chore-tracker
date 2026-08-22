@@ -85,7 +85,7 @@ pub async fn app(context: GraphQLContext) -> Router {
     let image_routes = images::image_routes()
         .layer(Extension(context.clone()))
         .layer(tower_http::limit::RequestBodyLimitLayer::new(
-            6 * 1024 * 1024,
+            images::MAX_UPLOAD_BODY_SIZE,
         ));
 
     Router::new()
