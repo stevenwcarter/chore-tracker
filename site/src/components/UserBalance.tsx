@@ -1,5 +1,5 @@
 import { Balance } from 'types';
-import { formatCurrency } from 'utils/dateUtils';
+import { formatCents, formatDollars } from 'utils/currency';
 
 interface UserBalanceProps {
   name: string;
@@ -13,17 +13,6 @@ interface UserBalanceProps {
    */
   pendingCents?: number;
 }
-
-const formatBalance = (amount: number, currency = 'USD', locale = 'en-US') => {
-  if (amount === 0) {
-    return '-';
-  }
-
-  return new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency,
-  }).format(amount);
-};
 
 export const UserBalance = (props: UserBalanceProps) => {
   const { name, balances, pendingCents } = props;
@@ -43,11 +32,13 @@ export const UserBalance = (props: UserBalanceProps) => {
   return (
     <div className="mt-1">
       {hasBalances && (
-        <div className="text-sm text-white">{formatBalance(userBalance.balance)}</div>
+        <div className="text-sm text-white">
+          {formatDollars(userBalance.balance, { zeroAs: '-' })}
+        </div>
       )}
       {hasPending && (
         <div className="text-xs text-yellow-400" title="Earned, awaiting payout">
-          ({formatCurrency(pendingCents)})
+          ({formatCents(pendingCents)})
         </div>
       )}
     </div>

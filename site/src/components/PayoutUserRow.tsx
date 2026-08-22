@@ -1,6 +1,6 @@
 import React from 'react';
 import { UnpaidTotal } from '../types/chore';
-import { formatCurrency } from '../utils/dateUtils';
+import { formatCents } from '../utils/currency';
 
 interface PayoutUserRowProps {
   total: UnpaidTotal;
@@ -34,7 +34,7 @@ export const PayoutUserRow: React.FC<PayoutUserRowProps> = ({ total, selected, o
           total.amountCents > 0 ? 'text-green-400' : 'text-gray-400'
         }`}
       >
-        {formatCurrency(total.amountCents)}
+        {formatCents(total.amountCents)}
       </p>
       {total.amountCents === 0 && <p className="text-xs text-gray-500">No unpaid chores</p>}
     </div>

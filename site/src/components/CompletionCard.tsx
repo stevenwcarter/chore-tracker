@@ -1,6 +1,6 @@
 import React from 'react';
 import { ChoreCompletion } from '../types/chore';
-import { formatCurrency } from '../utils/dateUtils';
+import { formatCents } from '../utils/currency';
 
 interface CompletionCardProps {
   completion: ChoreCompletion;
@@ -33,7 +33,7 @@ export const CompletionCard: React.FC<CompletionCardProps> = ({
             {completion.completedDate || completion.createdAt}
           </p>
           <p className="text-sm text-green-400 font-medium">
-            {formatCurrency(completion.amountCents)}
+            {formatCents(completion.amountCents)}
           </p>
           {completion.approved && completion.approvedAt && (
             <p className="text-xs text-gray-400">

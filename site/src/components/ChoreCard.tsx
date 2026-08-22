@@ -1,6 +1,6 @@
 import React from 'react';
 import { Chore } from '../types/chore';
-import { formatCurrency } from '../utils/dateUtils';
+import { formatCents } from '../utils/currency';
 import { formatWindow } from '../utils/availabilityWindow';
 
 interface ChoreCardProps {
@@ -43,7 +43,7 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({ chore, onManage, onEdit })
       <div className="space-y-2 text-sm">
         <div className="flex justify-between">
           <span className="text-gray-400">Amount:</span>
-          <span className="font-semibold text-white">{formatCurrency(chore.amountCents)}</span>
+          <span className="font-semibold text-white">{formatCents(chore.amountCents)}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-gray-400">Payment:</span>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatCurrency } from '../utils/dateUtils';
+import { formatCents } from '../utils/currency';
 
 interface PayoutSummaryCardsProps {
   userCount: number;
@@ -20,12 +20,12 @@ export const PayoutSummaryCards: React.FC<PayoutSummaryCardsProps> = ({
 
     <div className="bg-green-900 p-4 rounded-lg border-l-4 border-green-500">
       <h3 className="font-semibold text-green-100">Total Outstanding</h3>
-      <p className="text-2xl font-bold text-green-100">{formatCurrency(totalUnpaidAmount)}</p>
+      <p className="text-2xl font-bold text-green-100">{formatCents(totalUnpaidAmount)}</p>
     </div>
 
     <div className="bg-purple-900 p-4 rounded-lg border-l-4 border-purple-500">
       <h3 className="font-semibold text-purple-100">Selected for Payout</h3>
-      <p className="text-2xl font-bold text-purple-100">{formatCurrency(selectedTotal)}</p>
+      <p className="text-2xl font-bold text-purple-100">{formatCents(selectedTotal)}</p>
     </div>
   </div>
 );

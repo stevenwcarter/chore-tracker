@@ -1,7 +1,8 @@
 import React from 'react';
 import confetti from 'canvas-confetti';
 import { WeeklyChoreData, ChoreCompletion, PaymentType } from '../types/chore';
-import { formatCurrency, isSameDayAsString } from '../utils/dateUtils';
+import { formatCents } from '../utils/currency';
+import { isSameDayAsString } from '../utils/dateUtils';
 import { isDayInBitmask } from '../utils/weekdayBitmask';
 import { isDateInWindow } from '../utils/availabilityWindow';
 import clsx from 'clsx';
@@ -123,7 +124,7 @@ export const ChoreRow: React.FC<ChoreRowProps> = ({
               <p className="text-sm text-gray-300">{choreData.chore.description}</p>
             )}
             <p className="text-sm text-green-400 font-medium">
-              {formatCurrency(choreData.chore.amountCents)}
+              {formatCents(choreData.chore.amountCents)}
               {choreData.chore.paymentType === PaymentType.Weekly && ' (weekly)'}
             </p>
           </div>
@@ -145,7 +146,7 @@ export const ChoreRow: React.FC<ChoreRowProps> = ({
             <div className="text-sm text-gray-300">{choreData.chore.description}</div>
           )}
           <div className="text-sm text-green-400 font-medium">
-            {formatCurrency(choreData.chore.amountCents)}
+            {formatCents(choreData.chore.amountCents)}
             {choreData.chore.paymentType === PaymentType.Weekly && ' (weekly)'}
           </div>
         </div>

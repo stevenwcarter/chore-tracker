@@ -56,13 +56,6 @@ export function formatDateForDisplay(date: Date): string {
   });
 }
 
-export function formatCurrency(amountCents: number): string {
-  return (amountCents / 100).toLocaleString('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  });
-}
-
 function isSameDay(date1: Date, date2: Date): boolean {
   return (
     date1.getFullYear() === date2.getFullYear() &&

@@ -1,7 +1,7 @@
 import React from 'react';
 import confetti from 'canvas-confetti';
 import { useBonusChores } from 'hooks/useBonusChores';
-import { formatCurrency } from 'utils/dateUtils';
+import { formatCents } from 'utils/currency';
 import LoadingSpinner from './LoadingSpinner';
 
 interface BonusChoreSectionProps {
@@ -61,9 +61,7 @@ export const BonusChoreSection: React.FC<BonusChoreSectionProps> = ({
               className="bg-gray-700 rounded-lg p-4 flex flex-col gap-2 min-w-[180px] max-w-xs"
             >
               <div className="font-medium text-white">{chore.name}</div>
-              <div className="text-green-400 font-semibold">
-                {formatCurrency(chore.amountCents)}
-              </div>
+              <div className="text-green-400 font-semibold">{formatCents(chore.amountCents)}</div>
               <button
                 onClick={handleClaim}
                 disabled={alreadyClaimed}

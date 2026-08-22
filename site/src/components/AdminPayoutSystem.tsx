@@ -3,7 +3,7 @@ import { useQuery, useMutation } from '@apollo/client/react';
 import { toast } from 'react-toastify';
 import { GET_UNPAID_TOTALS, MARK_COMPLETIONS_AS_PAID } from '../graphql/queries';
 import { UnpaidTotal } from '../types/chore';
-import { formatCurrency } from '../utils/dateUtils';
+import { formatCents } from '../utils/currency';
 import LoadingSpinner from './LoadingSpinner';
 import PayoutSummaryCards from './PayoutSummaryCards';
 import PayoutUserRow from './PayoutUserRow';
@@ -90,7 +90,7 @@ export const AdminPayoutSystem: React.FC<AdminPayoutSystemProps> = () => {
         </div>
         <div className="text-right">
           <p className="text-sm text-gray-600">Total Outstanding</p>
-          <p className="text-2xl font-bold text-green-600">{formatCurrency(totalUnpaidAmount)}</p>
+          <p className="text-2xl font-bold text-green-600">{formatCents(totalUnpaidAmount)}</p>
         </div>
       </div>
 

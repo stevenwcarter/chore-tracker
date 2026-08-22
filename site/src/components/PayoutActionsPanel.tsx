@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatCurrency } from '../utils/dateUtils';
+import { formatCents } from '../utils/currency';
 
 interface PayoutActionsPanelProps {
   selectedCount: number;
@@ -34,7 +34,7 @@ export const PayoutActionsPanel: React.FC<PayoutActionsPanelProps> = ({
           Selected: {selectedCount} user{selectedCount !== 1 ? 's' : ''}
         </p>
         <p className="text-lg font-semibold text-green-400">
-          Total Amount: {formatCurrency(selectedTotal)}
+          Total Amount: {formatCents(selectedTotal)}
         </p>
       </div>
 

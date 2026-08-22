@@ -1,6 +1,6 @@
 import React from 'react';
 import { ChoreCompletion } from '../types/chore';
-import { formatCurrency } from '../utils/dateUtils';
+import { formatCents } from '../utils/currency';
 
 interface CompletionSummaryProps {
   completion: ChoreCompletion;
@@ -37,7 +37,7 @@ export const CompletionSummary: React.FC<CompletionSummaryProps> = ({ completion
 
       <div>
         <p className="text-sm text-gray-400">Amount:</p>
-        <p className="font-medium text-green-400">{formatCurrency(completion.amountCents)}</p>
+        <p className="font-medium text-green-400">{formatCents(completion.amountCents)}</p>
       </div>
     </>
   );
