@@ -400,6 +400,34 @@ mod tests {
     }
 
     #[test]
+    fn assigned_users_resolver_matches_the_service_query() {
+        let context = create_test_context();
+        let admin = create_test_admin(&context, "Test Admin", "admin@test.com");
+        let chore = create_test_chore(
+            &context,
+            "Resolver Parity Chore",
+            PaymentType::Daily,
+            100,
+            day_patterns::weekdays(),
+            admin.id.unwrap(),
+        );
+        let user1 = create_test_user(&context, "Alice");
+        let user2 = create_test_user(&context, "Bob");
+
+        ChoreSvc::assign_user(&context, chore.id.unwrap(), user1.id.unwrap()).unwrap();
+        ChoreSvc::assign_user(&context, chore.id.unwrap(), user2.id.unwrap()).unwrap();
+
+        let via_resolver = chore.assigned_users(&context).unwrap();
+        let via_service = ChoreSvc::get_assigned_users(&context, chore.id.unwrap()).unwrap();
+
+        assert_eq!(
+            via_resolver.iter().map(|u| u.id).collect::<Vec<_>>(),
+            via_service.iter().map(|u| u.id).collect::<Vec<_>>(),
+            "resolver and service must agree on both membership and order"
+        );
+    }
+
+    #[test]
     fn test_list_chores_by_user() {
         let context = create_test_context();
         let admin = create_test_admin(&context, "Test Admin", "admin@test.com");
