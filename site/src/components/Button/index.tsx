@@ -21,7 +21,6 @@ export const MyButton = (props: ButtonProps) => {
     props;
 
   const classes = clsx(
-    // 'text-black',
     'transition',
     'text-white',
     'cursor-pointer',
@@ -37,8 +36,6 @@ export const MyButton = (props: ButtonProps) => {
     'rounded-l-full rounded-r-full',
     'py-2 px-6',
     props.size === 'sm' ? 'leading-[1.1875rem]' : 'text-sm',
-    // getVariant(type, disabled),
-    // block && 'w-full',
     className,
   );
 
