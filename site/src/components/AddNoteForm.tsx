@@ -51,20 +51,18 @@ export const AddNoteForm: React.FC<AddNoteFormProps> = ({ isAdmin = false, onSav
             className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white text-sm"
             rows={3}
           />
-          {isAdmin && (
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="noteVisibility"
-                checked={noteVisibleToUser}
-                onChange={(e) => setNoteVisibleToUser(e.target.checked)}
-                className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
-              />
-              <label htmlFor="noteVisibility" className="text-sm text-gray-300">
-                Visible to user
-              </label>
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="noteVisibility"
+              checked={noteVisibleToUser}
+              onChange={(e) => setNoteVisibleToUser(e.target.checked)}
+              className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
+            />
+            <label htmlFor="noteVisibility" className="text-sm text-gray-300">
+              Visible to user
+            </label>
+          </div>
           <div className="flex gap-2">
             <button
               onClick={handleSave}

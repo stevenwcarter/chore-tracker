@@ -1,7 +1,7 @@
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useQuery } from '@apollo/client/react';
-import { toast } from 'react-toastify';
 import { GET_PENDING_TOTALS } from './queries';
+import { useErrorToast } from './useErrorToast';
 
 interface PendingTotal {
   amountCents: number;
@@ -27,9 +27,7 @@ export const usePendingTotals = () => {
     pollInterval: 30_000,
   });
 
-  useEffect(() => {
-    if (error) toast.error('Error loading pending totals');
-  }, [error]);
+  useErrorToast(error, 'Error loading pending totals');
 
   const pendingByUserId = useMemo(() => {
     const map = new Map<number, number>();

@@ -83,7 +83,8 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
 
   const handleCompleteChore = async (choreId: number, completionDate: Date) => {
     // `completeChore` already toasts via withErrorToast; letting the rejection
-    // propagate is load-bearing - ChoreRow catches it to suppress the confetti.
+    // propagate is load-bearing - celebrateOnSuccess (via ChoreCell) is the
+    // swallow point that suppresses the confetti on failure.
     await completeChore(choreId, completionDate);
     refetchAllCompletions();
   };
