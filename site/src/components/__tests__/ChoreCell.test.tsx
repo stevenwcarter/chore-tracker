@@ -1,8 +1,18 @@
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import '@testing-library/jest-dom';
 import ChoreCell from '../ChoreCell';
 import { AuthorType, Chore, ChoreCompletion, PaymentType } from 'types/chore';
+
+// canvas-confetti is unmocked globally, and the ChoreCell -> celebrateOnSuccess
+// chain is the sole point that decides whether it fires (see celebrate.ts).
+vi.mock('canvas-confetti');
+import confetti from 'canvas-confetti';
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 const CHORE: Chore = {
   id: 1,
@@ -105,5 +115,41 @@ describe('ChoreCell', () => {
       />,
     );
     expect(screen.getByRole('button', { name: '+' })).toBeDisabled();
+  });
+
+  it('fires confetti when onCompleteChore resolves', async () => {
+    const onCompleteChore = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ChoreCell
+        {...baseProps}
+        onCompleteChore={onCompleteChore}
+        completion={null}
+        isScheduled
+        isCompletedByAnyone={false}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: '+' }));
+
+    expect(onCompleteChore).toHaveBeenCalledWith(CHORE.id, baseProps.date);
+    expect(confetti).toHaveBeenCalled();
+  });
+
+  it('does not fire confetti when onCompleteChore rejects', async () => {
+    const onCompleteChore = vi.fn().mockRejectedValue(new Error('boom'));
+    render(
+      <ChoreCell
+        {...baseProps}
+        onCompleteChore={onCompleteChore}
+        completion={null}
+        isScheduled
+        isCompletedByAnyone={false}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: '+' }));
+
+    expect(onCompleteChore).toHaveBeenCalled();
+    expect(confetti).not.toHaveBeenCalled();
   });
 });
