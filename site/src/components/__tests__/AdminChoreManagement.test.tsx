@@ -210,12 +210,15 @@ describe('AdminChoreManagement chore assignment modal', () => {
     await waitFor(() => expect(toast.error).not.toHaveBeenCalled());
   });
 
-  // Known bug, deliberately NOT fixed by this refactor: both the
-  // `useAdminChoreManagement.assignUser` (via withErrorToast) and this
-  // component's own `handleAssignUser` catch block toast on failure, so a
-  // single failed assignment shows two error toasts. This test pins that
-  // behaviour so the extraction doesn't accidentally change it.
-  it('shows two error toasts on assignment failure (known double-toast bug, not fixed here)', async () => {
+  // [T31] UPDATED, not newly added: this test previously pinned a known
+  // double-toast bug ("both `useAdminChoreManagement.assignUser` (via
+  // withErrorToast) and this component's own `handleAssignUser` catch block
+  // toast on failure, so a single failed assignment shows two error toasts").
+  // T31 is exactly the fix for that bug (AdminChoreManagement now passes the
+  // hook's `assignUser` straight through instead of wrapping it in its own
+  // toasting catch), so the old two-toast assertion is invalidated by design.
+  // Minimal update in place: same scenario, now asserting the single toast.
+  it('toasts exactly once, not twice, when assigning a user fails', async () => {
     renderComponent([
       {
         request: {
@@ -235,9 +238,9 @@ describe('AdminChoreManagement chore assignment modal', () => {
 
     await userEvent.click(within(modalRoot).getByRole('button', { name: 'Assign' }));
 
-    await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(2));
-    expect(toast.error).toHaveBeenNthCalledWith(1, 'Error assigning user to chore');
-    expect(toast.error).toHaveBeenNthCalledWith(2, 'Error assigning chore to user');
+    await waitFor(() => expect(toast.error).toHaveBeenCalled());
+    expect(toast.error).toHaveBeenCalledTimes(1);
+    expect(toast.error).toHaveBeenCalledWith('Error assigning user to chore');
   });
 });
 

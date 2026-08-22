@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import { toast } from 'react-toastify';
 import { Chore, ChoreInput, UserInput } from '../types/chore';
 import LoadingSpinner from './LoadingSpinner';
 import Modal from './Modal';
@@ -77,20 +76,21 @@ export const AdminChoreManagement: React.FC<AdminChoreManagementProps> = ({ admi
     }
   };
 
-  const handleAssignUser = async (choreId: number, userId: number) => {
-    try {
-      await assignUser(choreId, userId);
-    } catch (err) {
-      toast.error('Error assigning chore to user');
-    }
+  // [T31] Deviation from the brief's literal "pass assignUser/unassignUser
+  // straight through": assignUser/unassignUser already toast via
+  // withErrorToast and then re-throw, and ChoreAssignmentModal's onClick
+  // invokes onAssign/onUnassign without awaiting or catching. Passing the
+  // hook functions directly reproduced the same real unhandled-promise-
+  // rejection failure Task 21 hit on AdminCompletionReview (vitest exits 1
+  // even though every assertion passes). These wrappers no longer toast --
+  // that was the actual double-toast bug -- they only swallow the already-
+  // handled rejection, matching handleImageUpload/handleRemoveImage above.
+  const handleAssignUser = (choreId: number, userId: number) => {
+    assignUser(choreId, userId).catch(() => {});
   };
 
-  const handleUnassignUser = async (choreId: number, userId: number) => {
-    try {
-      await unassignUser(choreId, userId);
-    } catch (err) {
-      toast.error('Error unassigning chore from user');
-    }
+  const handleUnassignUser = (choreId: number, userId: number) => {
+    unassignUser(choreId, userId).catch(() => {});
   };
 
   const handleCreateChore = async (choreData: ChoreInput, selectedUserIds: number[]) => {

@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@apollo/client/react';
-import { toast } from 'react-toastify';
 import { GET_ALL_WEEKLY_COMPLETIONS } from 'graphql/queries';
 import { User, ChoreCompletion } from 'types/chore';
 import { getWeekDateRange, formatDateForGraphQL, formatDateForDisplay } from 'utils/dateUtils';
@@ -78,12 +77,10 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
     useCompletionLookup(allCompletionsData);
 
   const handleCompleteChore = async (choreId: number, completionDate: Date) => {
-    try {
-      await completeChore(choreId, completionDate);
-      refetchAllCompletions();
-    } catch (err) {
-      toast.error('Error completing chore');
-    }
+    // `completeChore` already toasts via withErrorToast; letting the rejection
+    // propagate is load-bearing - ChoreRow catches it to suppress the confetti.
+    await completeChore(choreId, completionDate);
+    refetchAllCompletions();
   };
 
   const handleCompletionUpdate = () => {

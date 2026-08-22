@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { toast } from 'react-toastify';
 import { UserInput } from '../types/chore';
 
 interface CreateUserFormProps {
@@ -22,7 +21,10 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({ onSubmit, onCanc
       await onSubmit(userForm);
       setUserForm({ name: '' });
     } catch (error) {
-      toast.error('Error creating user');
+      // onSubmit (AdminChoreManagement's handleCreateUser -> createNewUser)
+      // already toasts via withErrorToast; swallow here so the form is left
+      // un-cleared on failure without producing a double toast or an
+      // unhandled rejection.
     } finally {
       setIsSubmitting(false);
     }

@@ -1,7 +1,7 @@
 import { useMutation } from '@apollo/client/react';
-import { toast } from 'react-toastify';
 import { ChoreCompletion, AuthorType } from 'types/chore';
 import { ADD_CHORE_NOTE, APPROVE_CHORE_COMPLETION, DELETE_CHORE_COMPLETION } from 'graphql/queries';
+import { withErrorToast } from 'utils/withErrorToast';
 
 interface UseCompletionActionsArgs {
   completion: ChoreCompletion;
@@ -54,54 +54,39 @@ export const useCompletionActions = ({
     if (!noteText.trim()) return false;
 
     try {
-      await addChoreNote({
-        variables: {
-          note: {
-            choreCompletionId: completion.id,
-            noteText: noteText.trim(),
-            authorType: isAdmin ? AuthorType.Admin : AuthorType.User,
-            ...(isAdmin ? { authorAdminId: adminId } : { authorUserId: userId }),
-            visibleToUser,
+      await withErrorToast('Error adding note', () =>
+        addChoreNote({
+          variables: {
+            note: {
+              choreCompletionId: completion.id,
+              noteText: noteText.trim(),
+              authorType: isAdmin ? AuthorType.Admin : AuthorType.User,
+              ...(isAdmin ? { authorAdminId: adminId } : { authorUserId: userId }),
+              visibleToUser,
+            },
           },
-        },
-      });
+        }),
+      );
       return true;
-    } catch (err) {
-      toast.error('Error adding note');
+    } catch {
+      // Already toasted by withErrorToast; the boolean is the caller's signal.
       return false;
     }
   };
 
   const approve = async () => {
     if (!isAdmin) return;
-
-    try {
-      await approveChoreCompletion({
-        variables: {
-          completionUuid: completion.uuid,
-        },
-      });
-    } catch (err) {
-      toast.error('Error approving completion');
-    }
+    await withErrorToast('Error approving completion', () =>
+      approveChoreCompletion({ variables: { completionUuid: completion.uuid } }),
+    ).catch(() => {});
   };
 
   const reject = async () => {
     if (!isAdmin) return;
-
-    if (!confirm('Are you sure you want to reject and delete this completion?')) {
-      return;
-    }
-
-    try {
-      await deleteChoreCompletion({
-        variables: {
-          completionUuid: completion.uuid,
-        },
-      });
-    } catch (err) {
-      toast.error('Error rejecting completion');
-    }
+    if (!confirm('Are you sure you want to reject and delete this completion?')) return;
+    await withErrorToast('Error rejecting completion', () =>
+      deleteChoreCompletion({ variables: { completionUuid: completion.uuid } }),
+    ).catch(() => {});
   };
 
   return { addNote, approve, reject };

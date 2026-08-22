@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client/react';
-import { toast } from 'react-toastify';
 import { GET_UNPAID_TOTALS, MARK_COMPLETIONS_AS_PAID } from '../graphql/queries';
 import { UnpaidTotal } from '../types/chore';
 import { formatCents } from '../utils/currency';
+import { withErrorToast } from '../utils/withErrorToast';
 import LoadingSpinner from './LoadingSpinner';
 import PayoutSummaryCards from './PayoutSummaryCards';
 import PayoutUserRow from './PayoutUserRow';
@@ -69,11 +69,10 @@ export const AdminPayoutSystem: React.FC<AdminPayoutSystemProps> = () => {
 
     setIsProcessingPayout(true);
     try {
-      await markCompletionsAsPaid({
-        variables: { userIds: selectedUsers },
-      });
+      await withErrorToast('Error processing payout', () =>
+        markCompletionsAsPaid({ variables: { userIds: selectedUsers } }),
+      );
     } catch (e) {
-      toast.error('Error processing payout');
       setIsProcessingPayout(false);
     }
   };
