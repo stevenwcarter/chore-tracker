@@ -1,5 +1,5 @@
 #![allow(clippy::collapsible_if)]
-use crate::api::AppError;
+use crate::api::{AppError, Unauthorized};
 use crate::auth::admin_id_from_jar;
 use crate::context::GraphQLContext;
 use crate::svc::{UserImageSvc, UserSvc};
@@ -29,7 +29,7 @@ const IMAGE_CACHE_CONTROL: &str = "public, max-age=86400";
 fn require_admin_cookie(context: &GraphQLContext, jar: &CookieJar) -> Result<i32, AppError> {
     admin_id_from_jar(context, jar)
         .map_err(AppError)?
-        .ok_or_else(|| AppError(anyhow!("Unauthorized")))
+        .ok_or_else(|| AppError(anyhow!(Unauthorized)))
 }
 
 /// Builds the image router for uploading, fetching, and deleting user profile images.
