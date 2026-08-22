@@ -15,13 +15,14 @@ use juniper::{GraphQLEnum, GraphQLInputObject, GraphQLObject};
 use serde::Serialize;
 use std::collections::HashMap;
 use std::sync::Mutex;
-use tracing::{debug, info};
+use tracing::info;
 use uuid::Uuid;
 
 use crate::{
     context::GraphQLContext,
+    graphql,
     schema::*,
-    svc::ChoreCompletionNoteSvc,
+    svc::{ChoreCompletionNoteSvc, ChoreSvc},
 };
 
 // Enums
@@ -376,22 +377,10 @@ impl Chore {
         })
     }
     pub fn assigned_users(&self, context: &GraphQLContext) -> juniper::FieldResult<Vec<User>> {
-        use crate::schema::chore_assignments::dsl::*;
-        use crate::schema::users::dsl as users_dsl;
-
-        let connection = &mut context.pool.get()?;
-        let assignments = chore_assignments
-            .filter(chore_id.eq(self.id.ok_or_else(|| {
-                juniper::FieldError::new("Chore has no id", juniper::Value::null())
-            })?))
-            .load::<ChoreAssignment>(connection)?;
-
-        let user_ids: Vec<i32> = assignments.iter().map(|a| a.user_id).collect();
-        let users_vec = users_dsl::users
-            .filter(users_dsl::id.eq_any(&user_ids))
-            .load::<User>(connection)?;
-        debug!("Assigned users for chore {:?}", assignments);
-        Ok(users_vec)
+        let chore_id = self
+            .id
+            .ok_or_else(|| juniper::FieldError::new("Chore has no id", juniper::Value::null()))?;
+        graphql::graphql_translate_anyhow(ChoreSvc::get_assigned_users(context, chore_id))
     }
 }
 
