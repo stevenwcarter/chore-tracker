@@ -41,12 +41,6 @@ Last triage: 2026-08-04 against `tidy/2026-08-04` @ b59bb45. Toolchain: cargo bu
 - Proposed fix: Remove `"rxjs": "^7.8.2"` from site/package.json dependencies and re-run yarn install. Verified: `grep -rn 'rxjs|Observable|Subject'` over site/src .ts/.tsx returns only false positives on the substring `oidcSubject`; nothing imports from 'rxjs'. State is handled by Apollo Client and React hooks.
 - [x] execute   [ ] skip
 
-### T23. Lint tooling installed with no config or script that invokes it: `stylelint`, `stylelint-config-standard`, `prettier-eslint` (site/package.json:73-76)
-- Lenses: dead-code
-- Risk: high — needs characterization tests first
-- Proposed fix: Remove stylelint (:75), stylelint-config-standard (:76) and prettier-eslint (:73) from devDependencies. Verified: no `.stylelintrc*`/`stylelint.config*` exists outside node_modules, site/package.json has no stylelint key, no script in either package.json runs stylelint or prettier-eslint, and site/.lintstagedrc.json runs only `eslint --fix` and `prettier --write`. prettier itself and eslint-plugin-prettier stay.
-- [x] execute   [ ] skip
-
 ### T24. Raw fetch + try/catch + toast boilerplate duplicated in a component, against the hooks convention: `handleImageUpload` / `handleRemoveImage` (site/src/components/AdminChoreManagement.tsx:38-72)
 - Lenses: duplication, idioms
 - Risk: low
