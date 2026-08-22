@@ -25,6 +25,11 @@ export const useWeeklyCompletions = ({ weekStartDate, onMutated }: UseWeeklyComp
       weekStartDate: formatDateForGraphQL(weekStartDate),
     },
     pollInterval: 30_000,
+    // Apollo Client 4 defaults this to true, which would flip `loading` back
+    // to true on every background poll. AdminCompletionReview hard-gates on
+    // `if (loading) return <LoadingSpinner />`, so without this the whole
+    // page (including an open Completion Details modal) unmounts every 30s.
+    notifyOnNetworkStatusChange: false,
   });
 
   const [approveChoreCompletion] = useRefetchingMutation(APPROVE_CHORE_COMPLETION, refetch);

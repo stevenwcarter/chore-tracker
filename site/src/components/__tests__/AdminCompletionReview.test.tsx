@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MockedProvider } from '@apollo/client/testing/react';
 import type { MockedResponse } from '@apollo/client/testing';
@@ -405,5 +405,51 @@ describe('AdminCompletionReview loading and error states', () => {
     );
 
     await waitFor(() => expect(screen.getByText(/Error loading completions/)).toBeInTheDocument());
+  });
+});
+
+describe('AdminCompletionReview background polling', () => {
+  it('keeps the completions on screen while a background poll is still in flight', async () => {
+    // Full fake timers (not just Date) so we can advance past the 30s
+    // pollInterval on useWeeklyCompletions without a real 30-second wait.
+    vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] });
+    vi.setSystemTime(new Date('2026-08-05T12:00:00'));
+
+    renderComponent(
+      [
+        {
+          // The poll's own response. An explicit 5s delay - much longer than
+          // the 30s+100ms we advance below - guarantees this fetch is still
+          // in flight at the point we assert, i.e. exactly the window where
+          // Apollo Client 4's notifyOnNetworkStatusChange default (true)
+          // would otherwise flip `loading` back to true mid-poll.
+          request: {
+            query: GET_ALL_WEEKLY_COMPLETIONS,
+            variables: { weekStartDate: CURRENT_WEEK_START },
+          },
+          result: { data: { getAllWeeklyCompletions: [PENDING_COMPLETION] } },
+          delay: 5_000,
+        },
+      ],
+      [PENDING_COMPLETION],
+    );
+
+    // Let the initial load settle.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(100);
+    });
+    expect(screen.getByText('Completion Review')).toBeInTheDocument();
+    expect(screen.getByText('Take out trash')).toBeInTheDocument();
+
+    // Cross the 30s poll interval. The poll's request is still in flight (it
+    // won't resolve for another ~5s per the mock above).
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(30_000);
+    });
+
+    // A background poll must not blank the page: the content should still be
+    // rendered, not replaced by the full-page loading spinner.
+    expect(screen.getByText('Completion Review')).toBeInTheDocument();
+    expect(screen.getByText('Take out trash')).toBeInTheDocument();
   });
 });
