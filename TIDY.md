@@ -35,12 +35,6 @@ Last triage: 2026-08-04 against `tidy/2026-08-04` @ b59bb45. Toolchain: cargo bu
 
 ## Medium severity
 
-### T20. Direct dependency only ever imported transitively: `react-router` (site/package.json:27)
-- Lenses: dead-code
-- Risk: high — needs characterization tests first
-- Proposed fix: Remove `"react-router": "^7.9.4"` from site/package.json dependencies. Verified: `grep -rn 'react-router'` over site/src shows every import is from 'react-router-dom' — zero bare `from 'react-router'`. react-router-dom@7 depends on react-router, so resolution is unaffected.
-- [x] execute   [ ] skip
-
 ### T21. Runtime dependency with no import anywhere in the frontend: `rxjs` (site/package.json:30)
 - Lenses: dead-code
 - Risk: high — needs characterization tests first
