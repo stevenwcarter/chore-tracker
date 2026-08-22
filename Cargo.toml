@@ -58,7 +58,6 @@ reqwest = { version = "0.12.15", default-features = false, features = [
   "rustls-tls-webpki-roots",
   "zstd",
 ] }
-chrono-tz = { version = "0.10.3", features = ["serde"] }
 tracing = "0.1.41"
 axum-embed = "0.1.0"
 rust-embed = { version = "8.7.2", features = [
