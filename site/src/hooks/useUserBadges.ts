@@ -1,8 +1,7 @@
-import { useEffect } from 'react';
 import { useQuery } from '@apollo/client/react';
-import { toast } from 'react-toastify';
 import { UserBadge } from 'types/chore';
 import { GET_USER_BADGES } from 'graphql/queries';
+import { useErrorToast } from './useErrorToast';
 
 interface UseUserBadgesResult {
   badges: UserBadge[];
@@ -14,9 +13,7 @@ export const useUserBadges = (userId: number): UseUserBadgesResult => {
     variables: { userId },
   });
 
-  useEffect(() => {
-    if (error) toast.error('Error loading badges');
-  }, [error]);
+  useErrorToast(error, 'Error loading badges');
 
   return {
     badges: data?.userBadges ?? [],

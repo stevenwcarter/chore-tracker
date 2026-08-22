@@ -1,10 +1,9 @@
-import { useEffect } from 'react';
 import { useQuery } from '@apollo/client/react';
-import { toast } from 'react-toastify';
 import { Chore, PaymentType } from 'types/chore';
 import { LIST_BONUS_CHORES, CREATE_BONUS_CHORE } from 'graphql/queries';
 import { withErrorToast } from 'utils/withErrorToast';
 import { useRefetchingMutation } from './useRefetchingMutation';
+import { useErrorToast } from './useErrorToast';
 
 interface CreateBonusChoreInput {
   name: string;
@@ -31,9 +30,7 @@ export const useBonusChores = (date: string): UseBonusChoresResult => {
     { variables: { date } },
   );
 
-  useEffect(() => {
-    if (error) toast.error('Error loading bonus chores');
-  }, [error]);
+  useErrorToast(error, 'Error loading bonus chores');
 
   const [createMutation, { loading: creating }] = useRefetchingMutation(
     CREATE_BONUS_CHORE,
