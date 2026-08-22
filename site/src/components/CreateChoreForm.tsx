@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PaymentType, User, Chore } from 'types/chore';
+import { PaymentType, User, Chore, ChoreInput } from 'types/chore';
 import { DAY_NAMES, DayName, bitmaskFromDayNames, dayNamesFromBitmask } from 'utils/weekdayBitmask';
 import MonthDayPicker from './MonthDayPicker';
 
@@ -11,7 +11,7 @@ const DEFAULT_SEASON_WINDOW = { startMonth: 9, startDay: 1, endMonth: 6, endDay:
 interface CreateChoreFormProps {
   users: User[];
   adminId: number;
-  onSubmit: (choreData: any, selectedUserIds: number[]) => Promise<void>;
+  onSubmit: (choreData: ChoreInput, selectedUserIds: number[]) => Promise<void>;
   onCancel: () => void;
   loading?: boolean;
   initialChore?: Chore; // For editing mode
@@ -66,7 +66,7 @@ const CreateChoreForm: React.FC<CreateChoreFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const requiredDays = bitmaskFromDayNames(selectedDays as DayName[]);
+    const requiredDays = bitmaskFromDayNames(selectedDays);
     if (title.trim()) {
       const choreData = {
         uuid: initialChore?.uuid, // Include UUID for updates
