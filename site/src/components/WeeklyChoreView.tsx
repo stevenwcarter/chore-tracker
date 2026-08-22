@@ -65,12 +65,17 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
   const { badges } = useUserBadges(user.id);
 
   // Query to get all completions for the week (to check if chores are completed by anyone)
+  // Same options as the other weekly consumers (useWeeklyCompletions,
+  // useUserChores): without them the "completed by someone else" ticks went
+  // stale while its partner query refreshed every 30s.
   const { data: allCompletionsData, refetch: refetchAllCompletions } = useQuery<{
     getAllWeeklyCompletions: ChoreCompletion[];
   }>(GET_ALL_WEEKLY_COMPLETIONS, {
+    fetchPolicy: 'cache-and-network',
     variables: {
       weekStartDate: formatDateForGraphQL(weekRange.start),
     },
+    pollInterval: 30_000,
   });
 
   const { isChoreCompletedByAnyone, isChoreCompletedByUser } =
