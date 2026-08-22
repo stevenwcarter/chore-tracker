@@ -291,10 +291,19 @@ describe('ChoreCompletionDetail notes display', () => {
 });
 
 describe('ChoreCompletionDetail add note', () => {
-  it('"+ Add Note" is visible to both admin and non-admin viewers', () => {
-    renderCompletion({ isAdmin: false });
+  // T52: `createChoreCompletionNote` requires an admin session server-side, so
+  // AddNoteForm now gates the whole control on `isAdmin` - a non-admin viewer
+  // gets no Add Note button at all (previously it rendered unconditionally).
+  it('shows the Add Note button for an admin viewer', () => {
+    renderCompletion({ isAdmin: true, adminId: 1 });
 
     expect(screen.getByRole('button', { name: /Add Note/ })).toBeInTheDocument();
+  });
+
+  it('hides the Add Note button entirely for a non-admin viewer', () => {
+    renderCompletion({ isAdmin: false });
+
+    expect(screen.queryByRole('button', { name: /Add Note/ })).not.toBeInTheDocument();
   });
 
   it('admin sees a "Visible to user" checkbox, checked by default, after opening the form', async () => {
@@ -305,16 +314,8 @@ describe('ChoreCompletionDetail add note', () => {
     expect(screen.getByRole('checkbox', { name: /Visible to user/ })).toBeChecked();
   });
 
-  it('non-admin does not see the visibility checkbox', async () => {
-    renderCompletion({ isAdmin: false, userId: 5 });
-
-    await userEvent.click(screen.getByRole('button', { name: /Add Note/ }));
-
-    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
-  });
-
   it('Cancel hides the form and clears the note text', async () => {
-    renderCompletion({ isAdmin: false });
+    renderCompletion({ isAdmin: true, adminId: 1 });
 
     await userEvent.click(screen.getByRole('button', { name: /Add Note/ }));
     await userEvent.type(screen.getByPlaceholderText('Add a note...'), 'draft note');
@@ -329,7 +330,7 @@ describe('ChoreCompletionDetail add note', () => {
   it('does not fire a mutation when Save is clicked with blank/whitespace-only text', async () => {
     // No mocks configured: if a request were attempted, MockedProvider would
     // reject with "no more mocked responses" and the catch block would toast.
-    renderCompletion({ isAdmin: false }, []);
+    renderCompletion({ isAdmin: true, adminId: 1 }, []);
 
     await userEvent.click(screen.getByRole('button', { name: /Add Note/ }));
     await userEvent.type(screen.getByPlaceholderText('Add a note...'), '   ');
@@ -433,49 +434,6 @@ describe('ChoreCompletionDetail add note', () => {
 
     expect(screen.getByPlaceholderText('Add a note...')).toHaveValue('');
     expect(screen.getByRole('checkbox', { name: /Visible to user/ })).not.toBeChecked();
-  });
-
-  // This pins the kid-facing "Add Note" button's current wiring exactly as-is.
-  // TIDY finding T12 notes that in production this mutation always errors for
-  // a non-admin session -- that is a known, out-of-scope issue (not fixed
-  // here). This test only characterizes the client-side request the button
-  // fires; it does not assert anything about T12 itself.
-  it('non-admin save: fires ADD_CHORE_NOTE with authorUserId and visibleToUser true', async () => {
-    const mocks: MockedResponse[] = [
-      {
-        request: {
-          query: ADD_CHORE_NOTE,
-          variables: {
-            note: {
-              choreCompletionId: BASE_COMPLETION.id,
-              noteText: 'I did it early',
-              authorType: AuthorType.User,
-              authorUserId: 5,
-              visibleToUser: true,
-            },
-          },
-        },
-        result: {
-          data: {
-            createChoreCompletionNote: {
-              id: 10,
-              uuid: 'note-10',
-              noteText: 'I did it early',
-              authorType: AuthorType.User,
-              visibleToUser: true,
-              createdAt: '2026-08-02T00:00:00Z',
-            },
-          },
-        },
-      },
-    ];
-    const { onUpdate } = renderCompletion({ isAdmin: false, userId: 5 }, mocks);
-
-    await userEvent.click(screen.getByRole('button', { name: /Add Note/ }));
-    await userEvent.type(screen.getByPlaceholderText('Add a note...'), 'I did it early');
-    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
-
-    await waitFor(() => expect(onUpdate).toHaveBeenCalledTimes(1));
   });
 
   it('add-note failure shows toast.error and leaves the form open', async () => {

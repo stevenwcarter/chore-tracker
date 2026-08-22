@@ -11,6 +11,13 @@ export const AddNoteForm: React.FC<AddNoteFormProps> = ({ isAdmin = false, onSav
   const [isAddingNote, setIsAddingNote] = useState(false);
   const [noteVisibleToUser, setNoteVisibleToUser] = useState(true);
 
+  // `createChoreCompletionNote` requires an admin session server-side, so for a
+  // kid this control could only ever produce an error toast. Kids' completions
+  // are still visible to them via CompletionNotesList - only authoring is admin-only.
+  if (!isAdmin) {
+    return null;
+  }
+
   const handleSave = async () => {
     const saved = await onSave(noteText, noteVisibleToUser);
     if (saved) {
