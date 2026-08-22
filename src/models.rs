@@ -21,7 +21,7 @@ use uuid::Uuid;
 use crate::{
     context::GraphQLContext,
     schema::*,
-    svc::{ChoreCompletionNoteSvc, UserImageSvc},
+    svc::ChoreCompletionNoteSvc,
 };
 
 // Enums
@@ -106,15 +106,21 @@ impl User {
     pub fn name(&self) -> &str {
         &self.name
     }
-    pub fn image_path(&self, context: &GraphQLContext) -> Option<String> {
-        let image = UserImageSvc::get_by_user_id(context, self.id?);
-        if let Ok(Some(image)) = image {
-            if let Some(image_uuid) = image.uuid {
-                return Some(format!("/images/{}", image_uuid));
-            }
-        }
-
-        None
+    /// URL for this user's profile image, or `None` when they have none.
+    ///
+    /// Answered entirely from the already-loaded `image_id` column: this
+    /// resolver runs once per user in a result set, so querying `user_images`
+    /// here fanned out to chores x users on nested selections. `image_id`
+    /// is set on upload and cleared on delete, so its presence is equivalent
+    /// to the row existing.
+    ///
+    /// `?v=` carries the image id because `/images/user/{id}` is a stable URL
+    /// served with a 24h `Cache-Control`; without a changing key a replaced
+    /// avatar would stay stale in the browser for a day.
+    pub fn image_path(&self) -> Option<String> {
+        let user_id = self.id?;
+        let image_id = self.image_id?;
+        Some(format!("/images/user/{user_id}?v={image_id}"))
     }
     pub fn created_at(&self) -> Option<NaiveDateTime> {
         self.created_at

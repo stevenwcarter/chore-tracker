@@ -132,6 +132,33 @@ mod tests {
     }
 
     #[test]
+    fn image_path_is_none_without_an_image_and_versioned_with_one() {
+        let context = create_test_context();
+        let user = create_test_user(&context, "Avatar Kid");
+
+        // No image yet -> no path.
+        let reloaded = UserSvc::get_by_id(&context, user.id.unwrap()).unwrap();
+        assert_eq!(reloaded.image_path(), None);
+
+        // After an upload the path is present and carries the image id as a cache key.
+        let image_input = create_test_user_image_input(user.id.unwrap());
+        let image = UserImageSvc::create(&context, image_input).unwrap();
+        UserImageSvc::update_user_image_reference(&context, user.id.unwrap(), Some(image.id))
+            .unwrap();
+
+        let reloaded = UserSvc::get_by_id(&context, user.id.unwrap()).unwrap();
+        let path = reloaded.image_path().expect("expected an image path");
+        assert!(
+            path.starts_with(&format!("/images/user/{}", user.id.unwrap())),
+            "path should address the user route, got {path}"
+        );
+        assert!(
+            path.contains(&image.id.to_string()),
+            "path should carry the image id as a cache key, got {path}"
+        );
+    }
+
+    #[test]
     fn test_user_image_creation() {
         let context = create_test_context();
         let user = create_test_user(&context, "Test User");
