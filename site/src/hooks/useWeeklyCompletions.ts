@@ -12,9 +12,11 @@ import { useRefetchingMutation } from './useRefetchingMutation';
 
 interface UseWeeklyCompletionsOptions {
   weekStartDate: Date;
+  /** Runs after a successful approve/delete/note — e.g. to close a detail modal. */
+  onMutated?: () => void;
 }
 
-export const useWeeklyCompletions = ({ weekStartDate }: UseWeeklyCompletionsOptions) => {
+export const useWeeklyCompletions = ({ weekStartDate, onMutated }: UseWeeklyCompletionsOptions) => {
   const { data, loading, error, refetch } = useQuery<{
     getAllWeeklyCompletions: ChoreCompletion[];
   }>(GET_ALL_WEEKLY_COMPLETIONS, {
@@ -34,12 +36,18 @@ export const useWeeklyCompletions = ({ weekStartDate }: UseWeeklyCompletionsOpti
   const approveCompletion = (completionUuid: string) =>
     withErrorToast('Error approving completion', () =>
       approveChoreCompletion({ variables: { completionUuid } }),
-    );
+    ).then((result) => {
+      onMutated?.();
+      return result;
+    });
 
   const deleteCompletion = (completionUuid: string) =>
     withErrorToast('Error deleting completion', () =>
       deleteChoreCompletion({ variables: { completionUuid } }),
-    );
+    ).then((result) => {
+      onMutated?.();
+      return result;
+    });
 
   const addNote = (noteData: ChoreCompletionNoteInput) =>
     withErrorToast('Error adding note', () => addChoreNote({ variables: { note: noteData } }));

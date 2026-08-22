@@ -254,6 +254,12 @@ describe('AdminCompletionReview pending completions', () => {
   });
 
   it('reject failure shows toast.error and the completion stays pending', async () => {
+    // NOTE [T26]: message text changed from 'Error rejecting completion' to
+    // 'Error deleting completion' -- the component now delegates to the
+    // shared useWeeklyCompletions hook, whose deleteCompletion wraps
+    // withErrorToast('Error deleting completion', ...). This is the hook's
+    // pre-existing message (it had zero importers before this task), not a
+    // new choice made here.
     vi.stubGlobal(
       'confirm',
       vi.fn(() => true),
@@ -274,7 +280,7 @@ describe('AdminCompletionReview pending completions', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /Reject/ }));
 
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Error rejecting completion'));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Error deleting completion'));
     expect(screen.getByText('Pending Approval (1)')).toBeInTheDocument();
   });
 });

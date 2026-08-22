@@ -1,13 +1,7 @@
 import React, { useState } from 'react';
-import { useQuery, useMutation } from '@apollo/client/react';
-import { toast } from 'react-toastify';
-import {
-  GET_ALL_WEEKLY_COMPLETIONS,
-  APPROVE_CHORE_COMPLETION,
-  DELETE_CHORE_COMPLETION,
-} from '../graphql/queries';
+import { getWeekDateRange, formatDateForDisplay } from '../utils/dateUtils';
 import { ChoreCompletion } from '../types/chore';
-import { getWeekDateRange, formatDateForGraphQL, formatDateForDisplay } from '../utils/dateUtils';
+import { useWeeklyCompletions } from '../hooks/useWeeklyCompletions';
 import LoadingSpinner from './LoadingSpinner';
 import Modal from './Modal';
 import ChoreCompletionDetail from './ChoreCompletionDetail';
@@ -24,62 +18,36 @@ export const AdminCompletionReview: React.FC<AdminCompletionReviewProps> = ({ ad
 
   const weekRange = getWeekDateRange(currentWeekStart);
 
-  const { data, loading, error, refetch } = useQuery<{
-    getAllWeeklyCompletions: ChoreCompletion[];
-  }>(GET_ALL_WEEKLY_COMPLETIONS, {
-    variables: {
-      weekStartDate: formatDateForGraphQL(weekRange.start),
-    },
+  const {
+    pendingCompletions,
+    approvedCompletions,
+    loading,
+    error,
+    refetch,
+    approveCompletion,
+    deleteCompletion,
+  } = useWeeklyCompletions({
+    weekStartDate: weekRange.start,
+    onMutated: () => setSelectedCompletion(null),
   });
 
-  const [approveChoreCompletion] = useMutation(APPROVE_CHORE_COMPLETION, {
-    onCompleted: () => {
-      refetch();
-      setSelectedCompletion(null);
-    },
-  });
-
-  const [deleteChoreCompletion] = useMutation(DELETE_CHORE_COMPLETION, {
-    onCompleted: () => {
-      refetch();
-      setSelectedCompletion(null);
-    },
-  });
-
-  const handleApproveCompletion = async (completion: ChoreCompletion) => {
-    try {
-      await approveChoreCompletion({
-        variables: {
-          completionUuid: completion.uuid,
-        },
-      });
-    } catch (err) {
-      toast.error('Error approving completion');
-    }
-  };
+  // approveCompletion/deleteCompletion already toast on failure (withErrorToast)
+  // and then re-throw; CompletionCard invokes these handlers from a bare
+  // onClick without awaiting or catching the result, so an uncaught rejection
+  // here surfaces as an unhandled promise rejection. Nothing downstream needs
+  // the rejection to propagate further, so swallow it after the toast fires.
+  const handleApproveCompletion = (completion: ChoreCompletion) =>
+    approveCompletion(completion.uuid).catch(() => {});
 
   const handleRejectCompletion = async (completion: ChoreCompletion) => {
     if (!confirm('Are you sure you want to reject and delete this completion?')) {
       return;
     }
-
-    try {
-      await deleteChoreCompletion({
-        variables: {
-          completionUuid: completion.uuid,
-        },
-      });
-    } catch (err) {
-      toast.error('Error rejecting completion');
-    }
+    await deleteCompletion(completion.uuid).catch(() => {});
   };
 
   if (loading) return <LoadingSpinner />;
   if (error) return <div className="text-red-500">Error loading completions: {error.message}</div>;
-
-  const completions: ChoreCompletion[] = data?.getAllWeeklyCompletions || [];
-  const pendingCompletions = completions.filter((c) => !c.approved);
-  const approvedCompletions = completions.filter((c) => c.approved);
 
   return (
     <div className="p-6 space-y-6">
