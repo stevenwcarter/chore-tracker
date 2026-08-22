@@ -1,13 +1,69 @@
 import { gql } from '@apollo/client';
 
+/**
+ * Shared field lists, DRYing out selection sets that were duplicated verbatim
+ * across the queries below.
+ *
+ * These are plain strings interpolated into each query's `gql` template -
+ * deliberately NOT real GraphQL `fragment` / `...spread` syntax. A real
+ * fragment spread needs `__typename` present on every mocked object for
+ * Apollo's `InMemoryCache` to resolve it when normalizing a write; none of
+ * this app's test fixtures currently supply `__typename`, so switching to
+ * real fragments silently dropped every field reached only through a spread
+ * in several existing tests (verified by reproducing it outside React,
+ * directly against `InMemoryCache`). Plain string interpolation parses to the
+ * exact same `OperationDefinition` - no fragment definitions at all - so it
+ * shares the field list at the source level without changing the query shape
+ * Apollo executes.
+ */
+const USER_SUMMARY_FIELDS = `
+  id
+  uuid
+  name
+  imagePath
+`;
+
+const CHORE_SUMMARY_FIELDS = `
+  id
+  uuid
+  name
+  description
+  amountCents
+  paymentType
+  requiredDays
+  active
+  createdAt
+`;
+
+const NOTE_FIELDS = `
+  id
+  uuid
+  noteText
+  authorType
+  visibleToUser
+  createdAt
+`;
+
+const COMPLETION_FIELDS = `
+  id
+  uuid
+  userId
+  choreId
+  completedDate
+  approved
+  amountCents
+  paidOutAt
+  approvedAt
+  approvedByAdminId
+  createdAt
+  updatedAt
+`;
+
 // User queries
 export const GET_ALL_USERS = gql`
   query GetAllUsers {
     listUsers {
-      id
-      uuid
-      name
-      imagePath
+      ${USER_SUMMARY_FIELDS}
       createdAt
     }
   }
@@ -29,15 +85,7 @@ export const GET_USER = gql`
 export const GET_USER_CHORES = gql`
   query GetUserChores($userId: Int!) {
     listChores(userId: $userId, activeOnly: true) {
-      id
-      uuid
-      name
-      description
-      paymentType
-      amountCents
-      requiredDays
-      active
-      createdAt
+      ${CHORE_SUMMARY_FIELDS}
       availabilityWindow {
         startMonth
         startDay
@@ -51,18 +99,7 @@ export const GET_USER_CHORES = gql`
 export const GET_WEEKLY_CHORES = gql`
   query GetWeeklyChores($userId: Int!, $weekStartDate: LocalDate!) {
     getWeeklyChoreCompletions(userId: $userId, weekStartDate: $weekStartDate) {
-      id
-      uuid
-      userId
-      choreId
-      completedDate
-      approved
-      amountCents
-      paidOutAt
-      approvedAt
-      approvedByAdminId
-      createdAt
-      updatedAt
+      ${COMPLETION_FIELDS}
       chore {
         id
         uuid
@@ -78,12 +115,7 @@ export const GET_WEEKLY_CHORES = gql`
         name
       }
       notes {
-        id
-        uuid
-        noteText
-        authorType
-        visibleToUser
-        createdAt
+        ${NOTE_FIELDS}
       }
     }
   }
@@ -126,15 +158,7 @@ export const GET_ALL_WEEKLY_COMPLETIONS = gql`
 export const GET_ALL_CHORES = gql`
   query GetAllChores {
     listChores {
-      id
-      uuid
-      name
-      description
-      amountCents
-      paymentType
-      requiredDays
-      active
-      createdAt
+      ${CHORE_SUMMARY_FIELDS}
       availabilityWindow {
         startMonth
         startDay
@@ -199,12 +223,7 @@ export const DELETE_CHORE_COMPLETION = gql`
 export const ADD_CHORE_NOTE = gql`
   mutation AddChoreNote($note: ChoreCompletionNoteInput!) {
     createChoreCompletionNote(note: $note) {
-      id
-      uuid
-      noteText
-      authorType
-      visibleToUser
-      createdAt
+      ${NOTE_FIELDS}
     }
   }
 `;
@@ -213,10 +232,7 @@ export const ADD_CHORE_NOTE = gql`
 export const CREATE_USER = gql`
   mutation CreateUser($user: UserInput!) {
     createUser(user: $user) {
-      id
-      uuid
-      name
-      imagePath
+      ${USER_SUMMARY_FIELDS}
       createdAt
     }
   }
@@ -225,15 +241,7 @@ export const CREATE_USER = gql`
 export const CREATE_CHORE = gql`
   mutation CreateChore($chore: ChoreInput!) {
     createChore(chore: $chore) {
-      id
-      uuid
-      name
-      description
-      amountCents
-      paymentType
-      requiredDays
-      active
-      createdAt
+      ${CHORE_SUMMARY_FIELDS}
     }
   }
 `;
@@ -241,15 +249,7 @@ export const CREATE_CHORE = gql`
 export const UPDATE_CHORE = gql`
   mutation UpdateChore($chore: ChoreInput!) {
     updateChore(chore: $chore) {
-      id
-      uuid
-      name
-      description
-      amountCents
-      paymentType
-      requiredDays
-      active
-      createdAt
+      ${CHORE_SUMMARY_FIELDS}
       availabilityWindow {
         startMonth
         startDay
