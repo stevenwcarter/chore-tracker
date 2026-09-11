@@ -11,7 +11,15 @@ interface ChoreGridProps {
   isChoreCompletedByAnyone: (choreId: number, date: Date) => boolean;
 }
 
-/** Desktop weekly chore table: a header row of dates plus one ChoreRow per chore. */
+/**
+ * Desktop weekly chore table: a header row of dates plus one ChoreRow per chore.
+ *
+ * `table-fixed` is load-bearing, not cosmetic. With the browser's default auto
+ * layout a long chore name widens the first column and pushes Saturday off the
+ * right edge of a kiosk display. Fixed layout makes the column widths come from
+ * the header alone (see ChoreGridHeader), so the seven day columns always divide
+ * the container evenly and the whole week stays on screen at any width.
+ */
 export const ChoreGrid: React.FC<ChoreGridProps> = ({
   weeklyChoreData,
   dates,
@@ -21,7 +29,7 @@ export const ChoreGrid: React.FC<ChoreGridProps> = ({
 }) => {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full border-collapse">
+      <table className="w-full table-fixed border-collapse">
         <ChoreGridHeader dates={dates} />
         <tbody>
           {weeklyChoreData.map((choreData) => (

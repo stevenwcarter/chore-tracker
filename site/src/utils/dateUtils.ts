@@ -56,6 +56,31 @@ export function formatDateForDisplay(date: Date): string {
   });
 }
 
+export interface DateParts {
+  /** Abbreviated weekday, e.g. `Sun`. */
+  weekday: string;
+  /** Abbreviated month and unpadded day, e.g. `Sep 6`. */
+  monthDay: string;
+}
+
+/**
+ * The same pieces `formatDateForDisplay` renders on one line, returned
+ * separately so the weekly grid header can stack them:
+ *
+ *     Sun
+ *     Sep 6
+ *
+ * Stacking is what lets seven day columns fit a kiosk display without
+ * horizontal scrolling. Every other caller still wants the one-line form, so
+ * this is an addition rather than a change to `formatDateForDisplay`.
+ */
+export function formatDateParts(date: Date): DateParts {
+  return {
+    weekday: date.toLocaleDateString('en-US', { weekday: 'short' }),
+    monthDay: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+  };
+}
+
 function isSameDay(date1: Date, date2: Date): boolean {
   return (
     date1.getFullYear() === date2.getFullYear() &&

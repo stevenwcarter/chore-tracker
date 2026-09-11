@@ -76,7 +76,7 @@ export const ChoreRow: React.FC<ChoreRowProps> = ({
   return (
     <tr className="hover:bg-gray-700">
       <td className="p-3 border-b border-gray-600">
-        <div>
+        <div className="break-words">
           <div className="font-medium text-white">{choreData.chore.name}</div>
           {choreData.chore.description && (
             <div className="text-sm text-gray-300">{choreData.chore.description}</div>
@@ -97,7 +97,7 @@ export const ChoreRow: React.FC<ChoreRowProps> = ({
           isDateInWindow(choreData.chore.availabilityWindow, date);
 
         return (
-          <td key={dateIndex} className="p-3 border-b border-gray-600 text-center">
+          <td key={dateIndex} className="px-1 py-2 border-b border-gray-600 text-center">
             <div className="relative">
               <ChoreCell
                 chore={choreData.chore}

@@ -87,6 +87,27 @@ The YNAB `getBalances` figure shown beside them on that page is in **whole
 dollars** and is matched to a kid **by name**, not by id — keep the units and the
 join keys straight when touching `UserBalance`.
 
+## Weekly Chore Grid Layout
+
+The per-user weekly grid is displayed on a **kiosk with a small screen**, so all
+seven day columns must stay visible without horizontal scrolling. Two things
+enforce that and are load-bearing, not cosmetic:
+
+- `ChoreGrid`'s table is **`table-fixed`**, and `ChoreGridHeader` sizes columns by
+  percentage share. Do not reintroduce `min-w-*` on the header cells — pixel
+  minimums are what pushed Saturday off the edge, because auto layout lets a long
+  chore name widen the first column.
+- Every `ChoreCell` state renders into the single exported **`CELL_BOX`** geometry,
+  so markers line up down a column and no state is taller than another. A state
+  that restates its own sizing breaks the alignment; `ChoreCell.test.tsx` pins
+  this for all four states.
+
+Dates are stacked (`Sun` over `Sep 6`) via `formatDateParts`, which is separate
+from `formatDateForDisplay` on purpose — the other five callers still want the
+one-line form. Completion notes have **no visible affordance in the grid** (a
+count line made cells with notes taller); they live in the marker's `title` and
+in `ChoreCompletionDetail`.
+
 ## Adding New Features
 
 1. Create Diesel migration (`diesel migration generate`)
