@@ -109,8 +109,19 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
 
   return (
     <div className="p-6 bg-gray-800 text-white rounded-lg shadow-lg">
-      {/* Header with user info and week navigation */}
-      <div className={`flex ${isMobile ? 'flex-col' : 'justify-between items-center'} mb-6`}>
+      {/*
+        Header with user info and week navigation.
+
+        On desktop this is a wrapping row. `flex-wrap` is what drops the week
+        navigator onto its own line the moment the user's name and badges stop
+        leaving room for it beside them - without it the navigator simply
+        overflowed and was clipped off the right edge of a kiosk screen. The
+        navigator keeps `ml-auto` so it stays in the same top-right corner
+        whether it sits beside the badges or on the line below them.
+      */}
+      <div
+        className={`flex ${isMobile ? 'flex-col' : 'flex-wrap justify-between items-center'} mb-6`}
+      >
         <div className="flex items-center gap-4 mb-4">
           {onBack && (
             <button
@@ -136,14 +147,16 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
           </div>
         </div>
 
-        {isMobile && <BadgeChips badges={badges} wrap />}
+        {isMobile && <BadgeChips badges={badges} />}
 
-        <WeekNavigator
-          currentWeekStart={currentWeekStart}
-          onWeekChange={handleWeekChange}
-          weekRange={weekRange}
-          isMobile={isMobile}
-        />
+        <div className={isMobile ? undefined : 'ml-auto mb-4'}>
+          <WeekNavigator
+            currentWeekStart={currentWeekStart}
+            onWeekChange={handleWeekChange}
+            weekRange={weekRange}
+            isMobile={isMobile}
+          />
+        </div>
       </div>
 
       {/* Mobile day navigator */}

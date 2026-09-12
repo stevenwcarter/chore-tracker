@@ -172,6 +172,23 @@ describe('WeeklyChoreView desktop (viewport >= 600px)', () => {
     expect(marks).toHaveLength(1);
     expect(marks[0]).toHaveClass('bg-gray-500');
   });
+
+  // Without `flex-wrap` the week navigator had nowhere to go once the name and
+  // badges filled the row, so it overflowed and was clipped off the right edge
+  // of the kiosk screen. `ml-auto` keeps it in the same top-right corner
+  // whether it sits beside the badges or on the line below them. jsdom does no
+  // layout, so the classes that produce the wrap are what we can pin.
+  it('lets the week navigator wrap to its own row, still right-aligned', async () => {
+    renderComponent();
+    await waitForLoaded();
+
+    const navigator = screen.getByRole('button', { name: /Previous/ }).closest('div');
+    const navigatorSlot = navigator?.parentElement;
+    expect(navigatorSlot).toHaveClass('ml-auto');
+
+    const header = navigatorSlot?.parentElement;
+    expect(header).toHaveClass('flex', 'flex-wrap');
+  });
 });
 
 describe('WeeklyChoreView mobile (viewport < 600px)', () => {

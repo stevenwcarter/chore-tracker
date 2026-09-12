@@ -78,6 +78,11 @@ GraphQL is at `/graphql`. REST endpoints are minimal; prefer GraphQL for new fea
 
 **Package manager**: Always use `yarn` in the `site/` directory, never `npm`.
 
+**Button cursors**: Tailwind v4's Preflight resets buttons to `cursor: default`.
+`site/src/index.css` restores `cursor: pointer` for all non-disabled buttons and
+`[role="button"]` in one base rule — don't add `cursor-pointer` per button. A
+button needing a different cursor sets it as a class, which still wins.
+
 **Two totals queries, easily confused**: `getUnpaidTotals` is **approved and**
 unpaid — it drives the admin payout screen and deliberately keeps zero-owed users
 visible via a LEFT JOIN. `getPendingTotals` is unpaid **regardless of approval** —
@@ -101,6 +106,12 @@ enforce that and are load-bearing, not cosmetic:
   so markers line up down a column and no state is taller than another. A state
   that restates its own sizing breaks the alignment; `ChoreCell.test.tsx` pins
   this for all four states.
+
+The header above it is a **wrapping** flex row: `flex-wrap` drops `WeekNavigator`
+onto its own line once the name and badges stop leaving room, and `ml-auto` keeps
+it in the same top-right corner either way. Without the wrap it overflowed and was
+clipped. `BadgeChips` wraps on every viewport for the same reason — it used to be
+a `whitespace-nowrap` strip on desktop whose full width did the shoving.
 
 Dates are stacked (`Sun` over `Sep 6`) via `formatDateParts`, which is separate
 from `formatDateForDisplay` on purpose — the other five callers still want the

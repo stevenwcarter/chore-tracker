@@ -1,6 +1,22 @@
 @import "tailwindcss";
 
 @layer base {
+  /*
+   * Tailwind v4's Preflight resets interactive elements to `cursor: default`,
+   * which silently took the pointer off every button in the app - admin login
+   * and logout, the header nav, week pagination, the chore cells. Only the
+   * shared MyButton set `cursor-pointer` explicitly and kept it.
+   *
+   * Restore it once here rather than per button, so new buttons get it for
+   * free. Disabled buttons are excluded, and a button that wants a different
+   * cursor (ChoreCell's future-date claim button uses `cursor-not-allowed`)
+   * still wins on class specificity.
+   */
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
   h1 {
     @apply text-4xl;
   }
