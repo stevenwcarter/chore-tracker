@@ -256,9 +256,7 @@ impl From<AdminInput> for Admin {
 }
 
 // AdminSession model
-#[derive(
-    Queryable, Debug, Identifiable, Insertable, Selectable, AsChangeset,
-)]
+#[derive(Queryable, Debug, Identifiable, Insertable, Selectable, AsChangeset)]
 #[diesel(primary_key(id))]
 #[diesel(table_name = admin_sessions)]
 pub struct AdminSession {

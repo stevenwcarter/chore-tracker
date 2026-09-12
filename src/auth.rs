@@ -333,8 +333,7 @@ pub async fn callback_handler(
     // a Response.
     let result: std::result::Result<Response, Response> = async {
         let (stored_nonce, jar) = verify_oidc_state(jar, &params)?;
-        let user_info =
-            exchange_code_for_user(&oidc_config, &params.code, &stored_nonce).await?;
+        let user_info = exchange_code_for_user(&oidc_config, &params.code, &stored_nonce).await?;
         let (jar, redirect) = create_admin_session(&context, &user_info, jar)?;
         Ok((jar, redirect).into_response())
     }
@@ -375,10 +374,13 @@ async fn exchange_code_for_user(
     code: &str,
     stored_nonce: &str,
 ) -> std::result::Result<UserInfo, Response> {
-    let token = oidc_config.exchange_code_for_token(code).await.map_err(|e| {
-        error!("Token exchange failed: {}", e);
-        Redirect::to("/?error=token_exchange_failed").into_response()
-    })?;
+    let token = oidc_config
+        .exchange_code_for_token(code)
+        .await
+        .map_err(|e| {
+            error!("Token exchange failed: {}", e);
+            Redirect::to("/?error=token_exchange_failed").into_response()
+        })?;
     debug!("Token exchange successful");
 
     let id_token_str = token

@@ -64,9 +64,7 @@ mod tests {
     fn unauthorized_survives_added_context() {
         // The bug this replaces: a prepended context string moved the message
         // off the "Unauthorized" prefix and silently downgraded 401 to 404.
-        let err = AppError(
-            anyhow::Error::from(Unauthorized).context("fetching user image"),
-        );
+        let err = AppError(anyhow::Error::from(Unauthorized).context("fetching user image"));
         assert_eq!(err.into_response().status(), StatusCode::UNAUTHORIZED);
     }
 

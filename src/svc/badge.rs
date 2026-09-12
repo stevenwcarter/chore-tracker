@@ -102,7 +102,10 @@ impl BadgeSvc {
         let completion_records: Vec<(i32, NaiveDate)> = chore_completions::table
             .filter(chore_completions::user_id.eq(user_id))
             .filter(chore_completions::approved.eq(true))
-            .select((chore_completions::chore_id, chore_completions::completed_date))
+            .select((
+                chore_completions::chore_id,
+                chore_completions::completed_date,
+            ))
             .load(&mut get_conn(context)?)
             .context("check_perfect_week records")?;
 
@@ -175,6 +178,7 @@ impl BadgeSvc {
 mod tests {
     use super::*;
     use crate::models::UserBadge;
+    use crate::svc::{ChoreCompletionSvc, ChoreSvc};
     use crate::{
         models::{ChoreCompletionInput, PaymentType},
         test_helpers::test_db::{
@@ -182,7 +186,6 @@ mod tests {
             day_patterns,
         },
     };
-    use crate::svc::{ChoreSvc, ChoreCompletionSvc};
 
     fn setup_approved_completion(
         context: &GraphQLContext,
@@ -232,7 +235,10 @@ mod tests {
             .filter(user_badges::user_id.eq(user_id))
             .load(conn)
             .unwrap();
-        let first_chore_count = badges.iter().filter(|b| b.badge_type == "first_chore").count();
+        let first_chore_count = badges
+            .iter()
+            .filter(|b| b.badge_type == "first_chore")
+            .count();
         assert_eq!(first_chore_count, 1);
     }
 
@@ -266,7 +272,10 @@ mod tests {
             .filter(user_badges::user_id.eq(user_id))
             .load(conn)
             .unwrap();
-        let first_chore_count = badges.iter().filter(|b| b.badge_type == "first_chore").count();
+        let first_chore_count = badges
+            .iter()
+            .filter(|b| b.badge_type == "first_chore")
+            .count();
         assert_eq!(first_chore_count, 1);
     }
 

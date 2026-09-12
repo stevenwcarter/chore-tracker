@@ -1,4 +1,7 @@
-use crate::{context::GraphQLContext, db::get_conn, models::Admin, models::AdminSession, schema::admins, schema::admin_sessions};
+use crate::{
+    context::GraphQLContext, db::get_conn, models::Admin, models::AdminSession,
+    schema::admin_sessions, schema::admins,
+};
 use anyhow::{Context, Result};
 use chrono::Utc;
 use diesel::prelude::*;

@@ -41,8 +41,8 @@ fn encode_decode_roundtrip_hs256() {
     validation.set_issuer(&["https://issuer.example.com"]);
     validation.set_audience(&["client-abc"]);
 
-    let token_data =
-        decode::<TestClaims>(&token, &DecodingKey::from_secret(secret), &validation).expect("decode");
+    let token_data = decode::<TestClaims>(&token, &DecodingKey::from_secret(secret), &validation)
+        .expect("decode");
     assert_eq!(token_data.claims.sub, "user-123");
     assert_eq!(token_data.claims.nonce.as_deref(), Some("test-nonce"));
 }

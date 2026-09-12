@@ -669,7 +669,11 @@ mod tests {
         ChoreSvc::create(&context, &chore_raw).unwrap();
 
         let results = ChoreSvc::list_bonus_chores(&context, target_date).unwrap();
-        assert_eq!(results.len(), 0, "Inactive bonus chores should not be listed");
+        assert_eq!(
+            results.len(),
+            0,
+            "Inactive bonus chores should not be listed"
+        );
     }
 
     #[test]
