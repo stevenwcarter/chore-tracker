@@ -13,6 +13,7 @@ pub mod context;
 pub mod db;
 pub mod graphql;
 pub mod models;
+pub mod net;
 pub mod routes;
 pub mod schema;
 pub mod svc;

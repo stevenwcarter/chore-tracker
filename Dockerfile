@@ -23,6 +23,6 @@ WORKDIR /
 COPY --from=builder /home/rust/src/target/x86_64-unknown-linux-musl/release/chore-tracker chore-tracker
 COPY env.prod .env
 
-EXPOSE 4000
+EXPOSE 7007
 
 CMD ["/chore-tracker"]

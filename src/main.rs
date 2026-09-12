@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 
-use chore_tracker::{context::GraphQLContext, routes::app};
+use chore_tracker::{context::GraphQLContext, net, routes::app};
 
 use anyhow::{Context, Result};
 use chore_tracker::db::get_pool;
@@ -42,12 +42,19 @@ async fn main() -> Result<()> {
     let app = app(context.clone()).await;
 
     let (tx, mut rx) = mpsc::channel(1);
-    let listen_address = get_env_typed::<String>("LISTEN_ADDRESS", "0.0.0.0".to_owned());
+    // `::` binds one dual-stack socket serving IPv4 and IPv6 together; an
+    // operator can still pin to a single address or family by setting
+    // LISTEN_ADDRESS. See `chore_tracker::net`.
+    let listen_address = get_env_typed::<String>("LISTEN_ADDRESS", "::".to_owned());
     let port = get_env_typed::<u16>("PORT", 7007);
-    let listener = tokio::net::TcpListener::bind(format!("{listen_address}:{port}"))
-        .await
-        .with_context(|| format!("Failed to bind to {listen_address}:{port}"))?;
-    info!("listener set up at {listen_address}:{port}");
+    let addr = net::listen_addr(&listen_address, port)?;
+    let listener = tokio::net::TcpListener::from_std(net::bind(addr)?)
+        .with_context(|| format!("Failed to register the listener for {addr} with tokio"))?;
+    if addr.is_ipv6() {
+        info!("listener set up at {addr} (dual-stack: IPv4 and IPv6)");
+    } else {
+        info!("listener set up at {addr} (IPv4 only)");
+    }
     axum::serve(listener, app)
         .with_graceful_shutdown(async move {
             tokio::signal::ctrl_c()

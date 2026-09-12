@@ -127,6 +127,24 @@ one-line form. Completion notes have **no visible affordance in the grid** (a
 count line made cells with notes taller); they live in the marker's `title` and
 in `ChoreCompletionDetail`.
 
+## Networking
+
+The server binds a **single dual-stack socket**, so IPv4 and IPv6 are served
+together. `src/net.rs` owns this: it parses `LISTEN_ADDRESS`/`PORT` into a
+`SocketAddr` and clears `IPV6_V6ONLY` when the address is IPv6. The flag is set
+explicitly rather than left to the platform — Linux takes its default from the
+`net.ipv6.bindv6only` sysctl, so a bare `[::]` bind is dual-stack on a stock host
+and silently IPv6-only on a hardened one.
+
+`LISTEN_ADDRESS` defaults to `::` (dual-stack) and is still honoured: set it to
+`0.0.0.0` or a specific IP to pin to one address or family. It takes an **address
+only, never a host:port pair** — and note `::7007` is a valid IPv6 address whose
+last group is `0x7007`, not a way to spell a port, so that typo binds somewhere
+unintended rather than failing.
+
+IPv4 clients arrive as IPv4-mapped addresses (`::ffff:192.0.2.1`). Nothing reads
+peer addresses today; anything that starts to must unmap them.
+
 ## Adding New Features
 
 1. Create Diesel migration (`diesel migration generate`)
