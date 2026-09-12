@@ -1,5 +1,7 @@
 import React from 'react';
-import { formatDateForDisplay, formatDateParts } from '../utils/dateUtils';
+import clsx from 'clsx';
+import { formatDateForDisplay, formatDateParts, isToday } from '../utils/dateUtils';
+import { TODAY_COLUMN_TINT } from './todayColumn';
 
 interface ChoreGridHeaderProps {
   dates: Date[];
@@ -30,13 +32,34 @@ export const ChoreGridHeader: React.FC<ChoreGridHeaderProps> = ({ dates, isMobil
         </th>
         {dates.map((date, index) => {
           const { weekday, monthDay } = formatDateParts(date);
+          const today = isToday(date);
           return (
             <th
               key={index}
-              className="text-center px-1 py-2 border-b border-gray-600 font-semibold text-gray-300"
+              // `aria-current` and the visually hidden word carry "today" for
+              // assistive tech and for anyone who cannot separate the tint from
+              // the surrounding grey.
+              aria-current={today ? 'date' : undefined}
+              className={clsx(
+                'text-center px-1 py-2 border-b border-gray-600 font-semibold',
+                today ? `${TODAY_COLUMN_TINT} text-white` : 'text-gray-300',
+              )}
             >
               <div className="leading-tight">{weekday}</div>
-              <div className="text-xs font-normal text-gray-400 leading-tight">{monthDay}</div>
+              <div
+                className={clsx(
+                  'text-xs font-normal leading-tight',
+                  today ? 'text-blue-300' : 'text-gray-400',
+                )}
+              >
+                {monthDay}
+              </div>
+              {today && (
+                <>
+                  <span className="sr-only">Today</span>
+                  <div aria-hidden="true" className="mx-auto mt-1 h-0.5 w-6 rounded bg-blue-400" />
+                </>
+              )}
             </th>
           );
         })}

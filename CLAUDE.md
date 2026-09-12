@@ -107,6 +107,14 @@ enforce that and are load-bearing, not cosmetic:
   that restates its own sizing breaks the alignment; `ChoreCell.test.tsx` pins
   this for all four states.
 
+Today's column is tinted top to bottom when the displayed week contains it, and
+its header keeps the weekday but gains an underline, `aria-current="date"` and an
+`sr-only` "Today" so the cue is not colour-only. `ChoreGridHeader` and `ChoreRow`
+share `TODAY_COLUMN_TINT` (`components/todayColumn.ts`) so the column cannot be
+tinted in one and not the other; it is **translucent** because a cell background
+paints over its row's, and an opaque tint would punch a dead notch through the
+row hover.
+
 The header above it is a **wrapping** flex row: `flex-wrap` drops `WeekNavigator`
 onto its own line once the name and badges stop leaving room, and `ml-auto` keeps
 it in the same top-right corner either way. Without the wrap it overflowed and was

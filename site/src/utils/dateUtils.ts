@@ -90,6 +90,17 @@ function isSameDay(date1: Date, date2: Date): boolean {
 }
 
 /**
+ * True when `date` falls on the current calendar day in local time.
+ *
+ * Compared by calendar day rather than by timestamp on purpose: the week grid's
+ * dates come from `getWeekDateRange`, normalised to local midnight, and must
+ * still match a "now" that is midday.
+ */
+export function isToday(date: Date): boolean {
+  return isSameDay(date, new Date());
+}
+
+/**
  * Compares a Date against a GraphQL date string, which must be in `YYYY-MM-DD` form.
  *
  * The string is split and rebuilt as a local-time Date on purpose: `new Date(dateString)`

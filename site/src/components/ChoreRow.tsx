@@ -1,10 +1,12 @@
 import React from 'react';
+import clsx from 'clsx';
 import { WeeklyChoreData, ChoreCompletion, PaymentType } from '../types/chore';
 import { formatCents } from '../utils/currency';
-import { isSameDayAsString } from '../utils/dateUtils';
+import { isSameDayAsString, isToday } from '../utils/dateUtils';
 import { isDayInBitmask } from '../utils/weekdayBitmask';
 import { isDateInWindow } from '../utils/availabilityWindow';
 import ChoreCell from './ChoreCell';
+import { TODAY_COLUMN_TINT } from './todayColumn';
 
 interface ChoreRowProps {
   choreData: WeeklyChoreData;
@@ -97,7 +99,13 @@ export const ChoreRow: React.FC<ChoreRowProps> = ({
           isDateInWindow(choreData.chore.availabilityWindow, date);
 
         return (
-          <td key={dateIndex} className="px-1 py-2 border-b border-gray-600 text-center">
+          <td
+            key={dateIndex}
+            className={clsx(
+              'px-1 py-2 border-b border-gray-600 text-center',
+              isToday(date) && TODAY_COLUMN_TINT,
+            )}
+          >
             <div className="relative">
               <ChoreCell
                 chore={choreData.chore}
