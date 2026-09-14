@@ -2,7 +2,12 @@ import React, { useState, useMemo } from 'react';
 import { useQuery } from '@apollo/client/react';
 import { GET_ALL_WEEKLY_COMPLETIONS } from 'graphql/queries';
 import { User, ChoreCompletion } from 'types/chore';
-import { getWeekDateRange, formatDateForGraphQL, formatDateForDisplay } from 'utils/dateUtils';
+import {
+  getWeekDateRange,
+  formatDateForGraphQL,
+  formatDateForDisplay,
+  getDefaultDateForWeek,
+} from 'utils/dateUtils';
 import LoadingSpinner from './LoadingSpinner';
 import Modal from './Modal';
 import ChoreCompletionDetail from './ChoreCompletionDetail';
@@ -37,18 +42,15 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
 
   const weekRange = useMemo(() => getWeekDateRange(currentWeekStart), [currentWeekStart]);
 
-  const [selectedDate, setSelectedDate] = useState(() => {
-    return weekRange.dates.length > 0 ? weekRange.dates[0] : new Date();
-  });
-
-  // On mobile the view is pinned to the first day of the current week; on desktop the
-  // user navigates freely through the week and `selectedDate` wins.
-  const currentDate = useMemo(() => {
-    if (isMobile && weekRange.dates.length > 0) {
-      return weekRange.dates[0];
-    }
-    return selectedDate;
-  }, [isMobile, weekRange.dates, selectedDate]);
+  // The day being shown: seeded with today when the current week is on screen, and
+  // thereafter owned by whatever the user picks.
+  //
+  // This must stay plain state. It used to be re-derived per render as
+  // `isMobile ? weekRange.dates[0] : selectedDate`, which silently discarded every
+  // choice the mobile day navigator made -- the buttons updated state and the view
+  // still rendered the Sunday, so they read as dead controls. A default belongs in
+  // an initialiser, not in a derivation that outlives it.
+  const [currentDate, setCurrentDate] = useState(() => getDefaultDateForWeek(weekRange.dates));
 
   // Use custom hook for user chores
   const {
@@ -95,12 +97,12 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
     setSelectedCompletion(null);
   };
 
+  // Changing week re-seeds the shown day, so it always stays inside the week on
+  // screen: DayNavigator locates it by index, and a date left behind in the
+  // previous week would disable both of its buttons.
   const handleWeekChange = (newWeekStart: Date) => {
     setCurrentWeekStart(newWeekStart);
-    if (isMobile) {
-      const newWeekRange = getWeekDateRange(newWeekStart);
-      setSelectedDate(newWeekRange.dates[0]);
-    }
+    setCurrentDate(getDefaultDateForWeek(getWeekDateRange(newWeekStart).dates));
   };
 
   if (choresLoading) return <LoadingSpinner />;
@@ -164,7 +166,7 @@ export const WeeklyChoreView: React.FC<WeeklyChoreViewProps> = ({
         <DayNavigator
           currentDate={currentDate}
           weekDates={weekRange.dates}
-          onDateChange={setSelectedDate}
+          onDateChange={setCurrentDate}
         />
       )}
 

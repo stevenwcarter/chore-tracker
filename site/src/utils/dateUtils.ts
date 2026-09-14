@@ -101,6 +101,19 @@ export function isToday(date: Date): boolean {
 }
 
 /**
+ * The day a week's view should open on: today when the week contains it,
+ * otherwise the week's first day.
+ *
+ * Opening on today is what a kid looking at the current week expects; falling
+ * back to the first day is what makes a past or future week land somewhere
+ * defined. Callers rely on the result always being one of `dates`, so the day
+ * navigator can find its index and offer both directions.
+ */
+export function getDefaultDateForWeek(dates: Date[]): Date {
+  return dates.find(isToday) ?? dates[0] ?? new Date();
+}
+
+/**
  * Compares a Date against a GraphQL date string, which must be in `YYYY-MM-DD` form.
  *
  * The string is split and rebuilt as a local-time Date on purpose: `new Date(dateString)`

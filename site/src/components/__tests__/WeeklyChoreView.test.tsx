@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MockedProvider } from '@apollo/client/testing/react';
 import type { MockedResponse } from '@apollo/client/testing';
 import '@testing-library/jest-dom';
@@ -18,11 +19,23 @@ vi.mock('react-toastify', () => ({
 }));
 
 // "Now" is pinned to Wed 2026-08-05 so the Sunday-start week (see dateUtils.ts) is
-// deterministic: weekRange = Sun 2026-08-02 .. Sat 2026-08-08. Both the mobile
-// "pinned to first day" and the desktop "selectedDate" initializer land on the
-// same value -- weekRange.dates[0] = Sun 2026-08-02 -- so `currentDate` (and thus
-// the bonus-chores `today` variable) is identical in both branches.
+// deterministic: weekRange = Sun 2026-08-02 .. Sat 2026-08-08. Wednesday is
+// deliberately mid-week -- a "now" on the Sunday would make "opens on today" and
+// the old "pinned to the first day of the week" behaviour indistinguishable.
 const WEEK_START = '2026-08-02';
+// Wednesday, the faked "now". The view opens on today rather than on the week's
+// first day, so this -- not WEEK_START -- is the date `currentDate` starts at and
+// the date BonusChoreSection queries with. Index 3 of the week => "4 of 7".
+const TODAY = '2026-08-05';
+const WEEK_DATES = [
+  '2026-08-02',
+  '2026-08-03',
+  '2026-08-04',
+  TODAY,
+  '2026-08-06',
+  '2026-08-07',
+  '2026-08-08',
+];
 
 const USER_KID: User = {
   id: 20,
@@ -97,10 +110,12 @@ function baseMocks(): MockedResponse[] {
       request: { query: GET_USER_BADGES, variables: { userId: 20 } },
       result: { data: { userBadges: [BADGE_FIRST_CHORE] } },
     },
-    {
-      request: { query: LIST_BONUS_CHORES, variables: { date: WEEK_START } },
+    // One per day of the week: BonusChoreSection re-queries as the day navigator
+    // moves, so a single mock would only cover the day the view happens to open on.
+    ...WEEK_DATES.map((date) => ({
+      request: { query: LIST_BONUS_CHORES, variables: { date } },
       result: { data: { listBonusChores: [] } },
-    },
+    })),
   ];
 }
 
@@ -199,8 +214,9 @@ describe('WeeklyChoreView mobile (viewport < 600px)', () => {
     await waitForLoaded();
 
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
-    // DayNavigator's "N of 7" position indicator is mobile-only.
-    expect(screen.getByText('1 of 7')).toBeInTheDocument();
+    // DayNavigator's "N of 7" position indicator is mobile-only. Wed 2026-08-05
+    // is index 3 of the Sunday-start week.
+    expect(screen.getByText('4 of 7')).toBeInTheDocument();
     expect(screen.getByText('Wash dishes')).toBeInTheDocument();
     expect(screen.queryByText(/Week of/)).not.toBeInTheDocument();
   });
@@ -218,12 +234,63 @@ describe('WeeklyChoreView mobile (viewport < 600px)', () => {
   });
 
   it('shows the "completed by someone else" indicator for a chore completed by another user', async () => {
+    const user = userEvent.setup();
     renderComponent();
     await waitForLoaded();
+
+    // The card list renders a single day and the fixture completion is on the
+    // Sunday, so walk back to it from today (Wed) rather than assuming the view
+    // opens there.
+    for (let i = 0; i < 3; i++) {
+      await user.click(screen.getByRole('button', { name: /Previous/ }));
+    }
+    expect(screen.getByText('1 of 7')).toBeInTheDocument();
 
     const marks = await screen.findAllByText('✓');
     expect(marks).toHaveLength(1);
     expect(marks[0]).toHaveClass('bg-gray-500');
+  });
+
+  // Regression: `currentDate` used to be derived as `weekRange.dates[0]` whenever
+  // isMobile was true, so DayNavigator's buttons updated `selectedDate` and the
+  // view still rendered the Sunday -- the controls looked dead. These pin both
+  // halves: the day the view opens on, and that the buttons actually move it.
+  it('opens on today rather than the first day of the week', async () => {
+    renderComponent();
+    await waitForLoaded();
+
+    expect(screen.getByText('4 of 7')).toBeInTheDocument();
+    expect(screen.getByText('Wed, Aug 5')).toBeInTheDocument();
+  });
+
+  it('moves to the next day when Next is clicked', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await waitForLoaded();
+
+    await user.click(screen.getByRole('button', { name: /Next/ }));
+
+    expect(screen.getByText('5 of 7')).toBeInTheDocument();
+    expect(screen.getByText('Thu, Aug 6')).toBeInTheDocument();
+  });
+
+  it('moves to the previous day when Previous is clicked', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await waitForLoaded();
+
+    await user.click(screen.getByRole('button', { name: /Previous/ }));
+
+    expect(screen.getByText('3 of 7')).toBeInTheDocument();
+    expect(screen.getByText('Tue, Aug 4')).toBeInTheDocument();
+  });
+
+  it('keeps both navigation buttons enabled mid-week', async () => {
+    renderComponent();
+    await waitForLoaded();
+
+    expect(screen.getByRole('button', { name: /Previous/ })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /Next/ })).toBeEnabled();
   });
 });
 
@@ -238,6 +305,6 @@ describe('WeeklyChoreView viewport changes', () => {
     setViewportWidth(400);
 
     await waitFor(() => expect(screen.queryByRole('table')).not.toBeInTheDocument());
-    expect(screen.getByText('1 of 7')).toBeInTheDocument();
+    expect(screen.getByText('4 of 7')).toBeInTheDocument();
   });
 });

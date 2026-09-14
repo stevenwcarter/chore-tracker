@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { formatDateForDisplay, formatDateParts, getWeekDateRange, isToday } from '../dateUtils';
+import {
+  formatDateForDisplay,
+  formatDateParts,
+  getDefaultDateForWeek,
+  getWeekDateRange,
+  isToday,
+} from '../dateUtils';
 
 describe('formatDateParts', () => {
   it('splits a date into a short weekday and a short month/day', () => {
@@ -62,5 +68,39 @@ describe('isToday', () => {
   it('does not match the same day number in another month or year', () => {
     expect(isToday(new Date(2026, 7, 7))).toBe(false);
     expect(isToday(new Date(2025, 8, 7))).toBe(false);
+  });
+});
+
+describe('getDefaultDateForWeek', () => {
+  // Mon 2026-09-07, so the containing Sunday-start week is Sun 2026-09-06 ..
+  // Sat 2026-09-12 and today sits at index 1 -- not index 0, which is what makes
+  // "opens on today" distinguishable from the old "opens on the week's first day".
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 8, 7, 13, 30));
+  });
+
+  afterEach(() => vi.useRealTimers());
+
+  it('returns today when the week contains it', () => {
+    const { dates } = getWeekDateRange(new Date(2026, 8, 7));
+    expect(getDefaultDateForWeek(dates)).toBe(dates[1]);
+  });
+
+  it('falls back to the first day for a week that does not contain today', () => {
+    const past = getWeekDateRange(new Date(2026, 7, 12)).dates;
+    const future = getWeekDateRange(new Date(2026, 9, 14)).dates;
+
+    expect(getDefaultDateForWeek(past)).toBe(past[0]);
+    expect(getDefaultDateForWeek(future)).toBe(future[0]);
+  });
+
+  // The day navigator finds its position with `dates.findIndex`, so a result
+  // outside the array would leave it stuck with both buttons disabled.
+  it('always returns one of the days it was given', () => {
+    for (const seed of [new Date(2026, 8, 7), new Date(2026, 7, 12), new Date(2026, 9, 14)]) {
+      const { dates } = getWeekDateRange(seed);
+      expect(dates).toContain(getDefaultDateForWeek(dates));
+    }
   });
 });
